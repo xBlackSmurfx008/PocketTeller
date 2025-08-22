@@ -25,6 +25,24 @@ interface FileAttachment {
   url: string;
 }
 
+// Helper function to safely convert Json to FileAttachment[]
+const parseAttachments = (attachments: any): FileAttachment[] | undefined => {
+  if (!attachments || !Array.isArray(attachments)) {
+    return undefined;
+  }
+  
+  try {
+    return attachments.map(attachment => ({
+      name: attachment.name || '',
+      type: attachment.type || '',
+      url: attachment.url || ''
+    }));
+  } catch (error) {
+    console.error('Error parsing attachments:', error);
+    return undefined;
+  }
+};
+
 const ConversationalAI = () => {
   const { threadId } = useParams();
   const navigate = useNavigate();
@@ -53,7 +71,7 @@ const ConversationalAI = () => {
         role: msg.role as 'user' | 'assistant',
         content: msg.message,
         timestamp: new Date(msg.created_at),
-        attachments: msg.attachments as FileAttachment[] || undefined
+        attachments: parseAttachments(msg.attachments)
       }));
 
       setMessages(formattedMessages);
