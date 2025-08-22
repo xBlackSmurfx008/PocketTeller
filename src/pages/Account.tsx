@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useLayoutPreference } from '@/hooks/useLayoutPreference';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Trash2, AlertTriangle, Monitor, Smartphone } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlaidLink } from '@/components/PlaidLink';
 import {
@@ -23,6 +25,7 @@ import {
 
 export default function Account() {
   const { user, signOut } = useAuth();
+  const { layoutMode, setLayoutMode } = useLayoutPreference();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -137,16 +140,38 @@ export default function Account() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>Customize how Budget AI looks for you</CardDescription>
+            <CardTitle>Layout & Display</CardTitle>
+            <CardDescription>Customize how Budget AI looks and feels</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Theme</p>
                 <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
               </div>
               <ThemeToggle />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {layoutMode === 'desktop' ? (
+                    <Monitor className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Smartphone className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium">Force Desktop Layout</p>
+                  <p className="text-sm text-muted-foreground">
+                    Use desktop layout on mobile devices
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={layoutMode === 'desktop'}
+                onCheckedChange={(checked) => setLayoutMode(checked ? 'desktop' : 'auto')}
+              />
             </div>
           </CardContent>
         </Card>

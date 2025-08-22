@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useLayoutPreference } from '@/hooks/useLayoutPreference';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FinancialHealthSnapshot from '@/components/FinancialHealthSnapshot';
@@ -9,12 +11,16 @@ import UpcomingBills from '@/components/UpcomingBills';
 import { PlaidLink } from '@/components/PlaidLink';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Target } from 'lucide-react';
+import { Settings, Target, MessageSquare } from 'lucide-react';
 
 export default function Dashboard() {
   const { signOut, user } = useAuth();
+  const { isDesktopForced } = useLayoutPreference();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [hasPlaidToken, setHasPlaidToken] = useState(false);
+
+  const showMobileLayout = isMobile && !isDesktopForced;
 
   useEffect(() => {
     checkPlaidConnection();
@@ -44,28 +50,44 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border p-4">
+      <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-foreground">Budget AI</h1>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate('/chat')}>
-              Budgeting Assistant
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/goals')}>
-              <Target className="h-4 w-4 mr-2" />
-              Goals
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
+          <h1 className={`font-bold text-foreground ${showMobileLayout ? 'text-xl' : 'text-2xl'}`}>Budget AI</h1>
+          <div className="flex items-center gap-2 sm:gap-4">
+            {showMobileLayout ? (
+              <>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/chat')}>
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/goals')}>
+                  <Target className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => navigate('/chat')}>
+                  Budgeting Assistant
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/goals')}>
+                  <Target className="h-4 w-4 mr-2" />
+                  Goals
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 space-y-6">
+      <main className={`max-w-7xl mx-auto space-y-4 sm:space-y-6 ${showMobileLayout ? 'p-3' : 'p-4'}`}>
         {/* Bank Connection Card - Only show when not connected */}
         {!hasPlaidToken && (
           <Card>
@@ -86,7 +108,7 @@ export default function Dashboard() {
 
         <FinancialHealthSnapshot />
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={`grid grid-cols-1 lg:grid-cols-2 ${showMobileLayout ? 'gap-4' : 'gap-6'}`}>
           <RecentTransactions />
           <UpcomingBills />
         </div>
