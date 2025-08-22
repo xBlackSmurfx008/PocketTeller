@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
 serve(async (req) => {
@@ -24,6 +24,18 @@ serve(async (req) => {
     if (!token) {
       return new Response(
         JSON.stringify({ error: 'Token is required' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Enhanced token validation - ensure it's the right format
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+      console.log('Invalid token format attempted:', token.substring(0, 8) + '...');
+      return new Response(
+        JSON.stringify({ error: 'Invalid token format' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -84,10 +96,13 @@ serve(async (req) => {
       user_agent: userAgent
     });
 
-    // Increment view count
+    // Increment view count and update last accessed time
     await supabase
       .from('budget_shares')
-      .update({ view_count: share.view_count + 1 })
+      .update({ 
+        view_count: share.view_count + 1,
+        last_accessed_at: new Date().toISOString()
+      })
       .eq('id', share.id);
 
     console.log('Budget share accessed successfully');

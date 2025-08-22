@@ -388,7 +388,8 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
     }
 
     const geminiData = await geminiResponse.json();
-    console.log('Gemini response:', JSON.stringify(geminiData, null, 2));
+    // Don't log full Gemini response for security
+    console.log('Gemini response received successfully');
 
     let assistantMessage = '';
     let functionCalls = [];
@@ -424,7 +425,7 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
             target_amount,
             deadline: deadline || null
           });
-          console.log('Goal created:', args);
+          console.log('Goal created successfully');
         } else if (name === 'update_budget') {
           const { income, expenses, categories } = args;
           
@@ -452,7 +453,7 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
           }, {
             onConflict: 'user_id'
           });
-          console.log('Budget updated:', args);
+          console.log('Budget updated successfully');
         } else if (name === 'analyze_finances') {
           const { analysis_type = 'comprehensive' } = args;
           
@@ -475,7 +476,7 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
           
           assistantMessage += `\n\n📊 FINANCIAL ANALYSIS COMPLETE:\n- Health Score: ${analysisResult.financial_health_score}\n- 24-Month Savings Rate: ${financialAnalysis.savingsRate24Month}%\n- Monthly Net Flow (avg): $${financialAnalysis.monthlyAverages.netFlow.toFixed(2)}\n- Total Balance: $${financialAnalysis.totalBalance.toFixed(2)}`;
           
-          console.log('Financial analysis generated:', analysisResult);
+          console.log('Financial analysis completed successfully');
         }
       } catch (error) {
         console.error('Function call error:', error);

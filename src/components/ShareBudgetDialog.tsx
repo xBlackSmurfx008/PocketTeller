@@ -35,8 +35,15 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
     
     setIsLoading(true);
     try {
-      // Generate a unique token
-      const token = crypto.randomUUID();
+      // Generate a cryptographically secure token using the database function
+      const { data: tokenData, error: tokenError } = await supabase
+        .rpc('generate_secure_token');
+      
+      if (tokenError || !tokenData) {
+        throw new Error('Failed to generate secure token');
+      }
+      
+      const token = tokenData;
       
       // Create budget share record with security settings
       const { data, error } = await supabase

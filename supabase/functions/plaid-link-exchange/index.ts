@@ -60,10 +60,13 @@ serve(async (req) => {
       throw new Error(`Plaid exchange failed: ${exchangeData.error_message}`);
     }
 
-    // Store access token in user profile
+    // Store access token securely (note: in production, this should be encrypted)
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ plaid_access_token: exchangeData.access_token })
+      .update({ 
+        plaid_access_token: exchangeData.access_token,
+        last_token_rotation: new Date().toISOString()
+      })
       .eq('user_id', user.id);
 
     if (updateError) {
