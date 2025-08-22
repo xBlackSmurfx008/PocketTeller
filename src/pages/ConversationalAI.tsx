@@ -228,7 +228,7 @@ export default function ConversationalAI() {
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          message: 'Please test the Plaid connection and generate some sample transaction data for me to see.',
+          message: 'Please test the Plaid connection, generate comprehensive sample transaction data, and then immediately analyze this data to create a personalized budget for me based on the spending patterns. After creating the budget, provide specific insights about my spending habits and recommendations for optimization.',
           conversation_history: messages.map(m => ({
             role: m.role,
             content: m.content
@@ -247,10 +247,52 @@ export default function ConversationalAI() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
+      // Show success message and indicate next steps
       toast({
-        title: "Plaid Test Completed",
-        description: "Check the response for connection status and sample data.",
+        title: "Plaid Connected & Budget Created!",
+        description: "Your financial data has been analyzed and a personalized budget has been created.",
       });
+
+      // Automatically send a follow-up message to get budget details
+      setTimeout(async () => {
+        try {
+          const followUpMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            role: 'user',
+            content: 'Show me my current budget breakdown and spending analysis',
+            timestamp: new Date()
+          };
+
+          setMessages(prev => [...prev, followUpMessage]);
+          setIsLoading(true);
+
+          const { data: followUpData, error: followUpError } = await supabase.functions.invoke('gemini-chat', {
+            body: {
+              message: 'Please show me a detailed breakdown of my current budget, including category allocations, spending vs budget analysis, and actionable recommendations for improving my financial health.',
+              conversation_history: [...messages, assistantMessage, followUpMessage].map(m => ({
+                role: m.role,
+                content: m.content
+              }))
+            }
+          });
+
+          if (followUpError) throw followUpError;
+
+          const followUpResponse: Message = {
+            id: (Date.now() + 3).toString(),
+            role: 'assistant',
+            content: followUpData.message,
+            timestamp: new Date()
+          };
+
+          setMessages(prev => [...prev, followUpResponse]);
+        } catch (followUpError) {
+          console.error('Error getting budget details:', followUpError);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 2000);
+
     } catch (error) {
       console.error('Error testing Plaid:', error);
       toast({
@@ -258,7 +300,6 @@ export default function ConversationalAI() {
         description: "Failed to test Plaid connection. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
