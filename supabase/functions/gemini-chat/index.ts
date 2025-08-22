@@ -163,32 +163,32 @@ CURRENT FINANCIAL CONTEXT:
 - Accounts: ${JSON.stringify(financialContext.accounts)}
 
 COMPREHENSIVE 24-MONTH FINANCIAL ANALYSIS:
-**CURRENT STATUS:**
+CURRENT STATUS:
 - Total Account Balance: $${financialAnalysis.totalBalance.toFixed(2)}
 - Total Transactions Analyzed: ${financialAnalysis.totalTransactionCount}
 - Last Transaction: ${financialAnalysis.lastTransactionDate}
 - Has Long-term Data: ${financialAnalysis.hasLongTermData}
 
-**MONTHLY AVERAGES (24-month basis):**
+MONTHLY AVERAGES (24-month basis):
 - Average Monthly Income: $${financialAnalysis.monthlyAverages.income.toFixed(2)}
 - Average Monthly Expenses: $${financialAnalysis.monthlyAverages.expenses.toFixed(2)}
 - Average Monthly Net Flow: $${financialAnalysis.monthlyAverages.netFlow.toFixed(2)}
 
-**PERIOD COMPARISONS:**
+PERIOD COMPARISONS:
 - Last Month: Income $${financialAnalysis.currentMonth.income.toFixed(2)}, Expenses $${financialAnalysis.currentMonth.expenses.toFixed(2)}, Net $${financialAnalysis.currentMonth.netFlow.toFixed(2)}
 - Last 3 Months: Income $${financialAnalysis.last3Months.income.toFixed(2)}, Expenses $${financialAnalysis.last3Months.expenses.toFixed(2)}, Net $${financialAnalysis.last3Months.netFlow.toFixed(2)}
 - Last Year: Income $${financialAnalysis.lastYear.income.toFixed(2)}, Expenses $${financialAnalysis.lastYear.expenses.toFixed(2)}, Net $${financialAnalysis.lastYear.netFlow.toFixed(2)}
 - Last 24 Months: Income $${financialAnalysis.last24Months.income.toFixed(2)}, Expenses $${financialAnalysis.last24Months.expenses.toFixed(2)}, Net $${financialAnalysis.last24Months.netFlow.toFixed(2)}
 
-**SAVINGS RATES:**
+SAVINGS RATES:
 - 24-Month Savings Rate: ${financialAnalysis.savingsRate24Month}%
 - 12-Month Savings Rate: ${financialAnalysis.savingsRateLastYear}%
 
-**GROWTH TRENDS:**
+GROWTH TRENDS:
 - Income Growth: ${financialAnalysis.incomeGrowth}% year-over-year
 - Expense Growth: ${financialAnalysis.expenseGrowth}% year-over-year
 
-**SPENDING BY CATEGORIES (Recent):**
+SPENDING BY CATEGORIES (Recent):
 ${JSON.stringify(financialAnalysis.currentMonth.categorySpending)}
 
 CRITICAL ASSESSMENT:
@@ -198,11 +198,11 @@ CRITICAL ASSESSMENT:
 - Has Long-term Data: ${financialAnalysis.hasLongTermData}
 
 MANDATORY ACTIONS FOR 24-MONTH DATA:
-1. **COMPREHENSIVE TREND ANALYSIS**: Identify seasonal patterns, growth trends, and spending changes over time
-2. **AUTO-CREATE SOPHISTICATED BUDGET**: If user has substantial data but no budget, create one based on 24-month averages and trends
-3. **SEASONAL INSIGHTS**: Analyze spending patterns by month/season to identify recurring trends
-4. **YEAR-OVER-YEAR COMPARISON**: Compare current vs previous year performance
-5. **PREDICTIVE RECOMMENDATIONS**: Use historical data to suggest future financial strategies
+1. COMPREHENSIVE TREND ANALYSIS: Identify seasonal patterns, growth trends, and spending changes over time
+2. AUTO-CREATE SOPHISTICATED BUDGET: If user has substantial data but no budget, create one based on 24-month averages and trends
+3. SEASONAL INSIGHTS: Analyze spending patterns by month/season to identify recurring trends
+4. YEAR-OVER-YEAR COMPARISON: Compare current vs previous year performance
+5. PREDICTIVE RECOMMENDATIONS: Use historical data to suggest future financial strategies
 
 ANALYSIS REQUIREMENTS FOR LONG-TERM DATA:
 - Identify seasonal spending patterns (holiday spending, quarterly patterns, etc.)
@@ -330,6 +330,7 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
           top_p: 0.8,
           top_k: 40,
           max_output_tokens: 2048,
+          response_mime_type: "text/plain"
         }
       }),
     });
@@ -366,6 +367,9 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
         }
       }
     }
+
+    // Sanitize assistant message to remove any remaining markdown formatting
+    assistantMessage = assistantMessage.replace(/\*\*/g, '').replace(/\*/g, '');
 
     // Execute function calls
     for (const functionCall of functionCalls) {
