@@ -31,20 +31,31 @@ serve(async (req) => {
       );
     }
 
+    // Get client IP and User-Agent for logging
+    const clientIP = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
     console.log('Fetching budget share for token:', token);
 
-    // Get the shared budget
+    // Get the shared budget with enhanced security checks
     const { data: share, error } = await supabase
       .from('budget_shares')
       .select('*')
       .eq('token', token)
       .gt('expires_at', new Date().toISOString())
+      .lt('view_count', supabase.raw('COALESCE(max_views, 10)'))
       .single();
 
     if (error || !share) {
-      console.error('Budget share not found or expired:', error);
+      console.error('Budget share not found, expired, or view limit exceeded:', error);
       return new Response(
-        JSON.stringify({ error: 'Budget share not found or expired' }),
+        JSON.stringify({ 
+          error: error?.code === 'PGRST116' 
+            ? 'Budget share not found, expired, or view limit exceeded' 
+            : 'Budget share not found or expired' 
+        }),
         { 
           status: 404, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -52,20 +63,42 @@ serve(async (req) => {
       );
     }
 
+    // Check if authentication is required
+    if (share.requires_auth) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required to view this budget' }),
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
+    // Log the access attempt
+    await supabase.rpc('log_budget_share_access', {
+      share_id: share.id,
+      ip_address: clientIP,
+      user_agent: userAgent
+    });
+
     // Increment view count
     await supabase
       .from('budget_shares')
       .update({ view_count: share.view_count + 1 })
       .eq('id', share.id);
 
-    console.log('Budget share found successfully');
+    console.log('Budget share accessed successfully');
 
     return new Response(
       JSON.stringify({
         budget_data: share.budget_data,
         created_at: share.created_at,
         expires_at: share.expires_at,
-        view_count: share.view_count + 1
+        view_count: share.view_count + 1,
+        remaining_views: (share.max_views || 10) - (share.view_count + 1)
       }),
       { 
         status: 200,

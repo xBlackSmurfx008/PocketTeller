@@ -7,8 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Share2, Copy, Mail, MessageSquare, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { Share2, Copy, Mail, MessageSquare, Download, FileText, FileSpreadsheet, Shield, Lock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ShareBudgetDialogProps {
   budgetData: any;
@@ -23,6 +25,8 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
   const [recipientPhone, setRecipientPhone] = useState("");
   const [senderName, setSenderName] = useState("");
   const [message, setMessage] = useState("");
+  const [maxViews, setMaxViews] = useState(10);
+  const [requiresAuth, setRequiresAuth] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -34,13 +38,15 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
       // Generate a unique token
       const token = crypto.randomUUID();
       
-      // Create budget share record
+      // Create budget share record with security settings
       const { data, error } = await supabase
         .from('budget_shares')
         .insert({
           user_id: user.id,
           token,
-          budget_data: budgetData
+          budget_data: budgetData,
+          max_views: maxViews,
+          requires_auth: requiresAuth
         })
         .select()
         .single();
@@ -213,13 +219,53 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
           
           <TabsContent value="link" className="space-y-4">
             {!shareUrl ? (
-              <Button 
-                onClick={generateShareLink} 
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading ? "Generating..." : "Generate Share Link"}
-              </Button>
+              <>
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    <Label className="text-sm font-medium">Security Settings</Label>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="max-views">Maximum Views</Label>
+                      <Select value={maxViews.toString()} onValueChange={(value) => setMaxViews(parseInt(value))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 view</SelectItem>
+                          <SelectItem value="5">5 views</SelectItem>
+                          <SelectItem value="10">10 views</SelectItem>
+                          <SelectItem value="25">25 views</SelectItem>
+                          <SelectItem value="50">50 views</SelectItem>
+                          <SelectItem value="100">100 views</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4" />
+                        <Label htmlFor="requires-auth" className="text-sm">Require login to view</Label>
+                      </div>
+                      <Switch
+                        id="requires-auth"
+                        checked={requiresAuth}
+                        onCheckedChange={setRequiresAuth}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={generateShareLink} 
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  {isLoading ? "Generating..." : "Generate Secure Share Link"}
+                </Button>
+              </>
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="share-url">Share URL</Label>

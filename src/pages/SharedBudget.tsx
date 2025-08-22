@@ -14,6 +14,7 @@ interface BudgetData {
   created_at: string;
   expires_at: string;
   view_count: number;
+  remaining_views?: number;
 }
 
 export default function SharedBudget() {
@@ -37,7 +38,13 @@ export default function SharedBudget() {
 
         if (error) throw error;
 
-        setBudgetData(data.budget_data);
+        setBudgetData({
+          ...data.budget_data,
+          created_at: data.created_at,
+          expires_at: data.expires_at,
+          view_count: data.view_count,
+          remaining_views: data.remaining_views
+        });
       } catch (err) {
         console.error('Error fetching shared budget:', err);
         setError("Budget not found or expired");
@@ -175,6 +182,14 @@ export default function SharedBudget() {
               <span className="text-muted-foreground">Expires:</span>
               <span>{new Date(budgetData.expires_at).toLocaleDateString()}</span>
             </div>
+            {budgetData.remaining_views !== undefined && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Remaining views:</span>
+                <span className={budgetData.remaining_views <= 2 ? "text-orange-600" : ""}>
+                  {budgetData.remaining_views}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
