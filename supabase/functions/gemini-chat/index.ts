@@ -210,8 +210,7 @@ ANALYSIS REQUIREMENTS FOR LONG-TERM DATA:
 AVAILABLE FUNCTIONS:
 1. create_goal: Create financial goals with specific targets and deadlines
 2. update_budget: Create/update comprehensive budget using 24-month historical averages and trends
-3. test_plaid_connection: Test Plaid API connection and generate realistic 24-month sample transaction data
-4. analyze_finances: Provide structured financial analysis with trend insights and long-term recommendations
+3. analyze_finances: Provide structured financial analysis with trend insights and long-term recommendations
 
 CONVERSATION STYLE:
 - Leverage the depth of 24-month data for sophisticated insights
@@ -266,19 +265,6 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
                   categories: { 
                     type: 'string', 
                     description: 'JSON string of budget categories with amounts, e.g. {"food": 500, "rent": 1000}' 
-                  }
-                }
-              }
-            },
-            {
-              name: 'test_plaid_connection',
-              description: 'Test Plaid API connection and generate comprehensive sample transaction data',
-              parameters: {
-                type: 'object',
-                properties: {
-                  generate_sample_data: { 
-                    type: 'boolean', 
-                    description: 'Whether to generate sample transaction data after testing' 
                   }
                 }
               }
@@ -390,229 +376,22 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
           const analysisResult = {
             analysis_type,
             timestamp: new Date().toISOString(),
-            financial_health_score: financialAnalysis.savingsRate > 20 ? 'Excellent' : 
-                                   financialAnalysis.savingsRate > 10 ? 'Good' : 
-                                   financialAnalysis.savingsRate > 0 ? 'Fair' : 'Needs Improvement',
+            financial_health_score: financialAnalysis.savingsRate24Month > 20 ? 'Excellent' : 
+                                   financialAnalysis.savingsRate24Month > 10 ? 'Good' : 
+                                   financialAnalysis.savingsRate24Month > 0 ? 'Fair' : 'Needs Improvement',
             insights: {
-              income: financialAnalysis.totalIncome,
-              expenses: financialAnalysis.totalExpenses,
-              net_flow: financialAnalysis.netCashFlow,
-              savings_rate: `${financialAnalysis.savingsRate}%`,
-              category_spending: financialAnalysis.categorySpending
+              monthly_averages: financialAnalysis.monthlyAverages,
+              savings_rate_24m: `${financialAnalysis.savingsRate24Month}%`,
+              savings_rate_12m: `${financialAnalysis.savingsRateLastYear}%`,
+              total_balance: financialAnalysis.totalBalance,
+              category_spending: financialAnalysis.currentMonth.categorySpending
             },
             recommendations: []
           };
           
-          assistantMessage += `\n\n📊 FINANCIAL ANALYSIS COMPLETE:\n- Health Score: ${analysisResult.financial_health_score}\n- Savings Rate: ${financialAnalysis.savingsRate}%\n- Monthly Net Flow: $${financialAnalysis.netCashFlow.toFixed(2)}`;
+          assistantMessage += `\n\n📊 FINANCIAL ANALYSIS COMPLETE:\n- Health Score: ${analysisResult.financial_health_score}\n- 24-Month Savings Rate: ${financialAnalysis.savingsRate24Month}%\n- Monthly Net Flow (avg): $${financialAnalysis.monthlyAverages.netFlow.toFixed(2)}\n- Total Balance: $${financialAnalysis.totalBalance.toFixed(2)}`;
           
           console.log('Financial analysis generated:', analysisResult);
-        } else if (name === 'test_plaid_connection') {
-          const { generate_sample_data = true } = args;
-          
-          try {
-            // Test Plaid connection
-            const plaidResponse = await fetch(`${supabaseUrl}/functions/v1/plaid-test`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            });
-            
-            const plaidResult = await plaidResponse.json();
-            console.log('Plaid test result:', plaidResult);
-            
-            if (plaidResult.success && generate_sample_data) {
-              // Generate comprehensive 24-month sample transactions for realistic analysis
-              const sampleTransactions = [];
-              const sampleAccounts = [];
-              
-              // Generate transactions for the last 24 months
-              for (let monthsBack = 0; monthsBack < 24; monthsBack++) {
-                const transactionDate = new Date();
-                transactionDate.setMonth(transactionDate.getMonth() - monthsBack);
-                const dateStr = transactionDate.toISOString().split('T')[0];
-                
-                // Monthly salary (with some variation)
-                const salaryVariation = (Math.random() - 0.5) * 200; // ±$100 variation
-                sampleTransactions.push({
-                  user_id: user.id,
-                  description: 'Salary Deposit - ABC Corp',
-                  amount: 4200.00 + salaryVariation,
-                  category: 'Income',
-                  date: dateStr,
-                  transaction_id: `demo_${Date.now()}_salary_${monthsBack}`
-                });
-                
-                // Monthly rent (consistent)
-                sampleTransactions.push({
-                  user_id: user.id,
-                  description: 'Monthly Rent Payment',
-                  amount: -1800.00,
-                  category: 'Housing',
-                  date: dateStr,
-                  transaction_id: `demo_${Date.now()}_rent_${monthsBack}`
-                });
-                
-                // Utilities (seasonal variation)
-                const utilityVariation = monthsBack % 12 < 3 || monthsBack % 12 > 8 ? 50 : 0; // Higher in winter months
-                sampleTransactions.push({
-                  user_id: user.id,
-                  description: 'Electric Bill',
-                  amount: -(125.67 + utilityVariation),
-                  category: 'Utilities',
-                  date: dateStr,
-                  transaction_id: `demo_${Date.now()}_electric_${monthsBack}`
-                });
-                
-                // Groceries (3-4 times per month with variation)
-                for (let i = 0; i < 3 + Math.floor(Math.random() * 2); i++) {
-                  const groceryDate = new Date(transactionDate);
-                  groceryDate.setDate(groceryDate.getDate() - (i * 7));
-                  sampleTransactions.push({
-                    user_id: user.id,
-                    description: ['Whole Foods Market', 'Safeway', 'Trader Joe\'s'][i % 3],
-                    amount: -(80 + Math.random() * 100), // $80-$180 range
-                    category: 'Food',
-                    date: groceryDate.toISOString().split('T')[0],
-                    transaction_id: `demo_${Date.now()}_grocery_${monthsBack}_${i}`
-                  });
-                }
-                
-                // Gas (twice per month)
-                for (let i = 0; i < 2; i++) {
-                  const gasDate = new Date(transactionDate);
-                  gasDate.setDate(gasDate.getDate() - (i * 15));
-                  sampleTransactions.push({
-                    user_id: user.id,
-                    description: 'Gas Station Fill-up',
-                    amount: -(45 + Math.random() * 20), // $45-$65 range
-                    category: 'Transportation',
-                    date: gasDate.toISOString().split('T')[0],
-                    transaction_id: `demo_${Date.now()}_gas_${monthsBack}_${i}`
-                  });
-                }
-                
-                // Entertainment (seasonal - more in summer and holidays)
-                const entertainmentMultiplier = (monthsBack % 12 === 5 || monthsBack % 12 === 6 || monthsBack % 12 === 11) ? 2 : 1;
-                for (let i = 0; i < 2 * entertainmentMultiplier; i++) {
-                  const entDate = new Date(transactionDate);
-                  entDate.setDate(entDate.getDate() - (i * 10));
-                  sampleTransactions.push({
-                    user_id: user.id,
-                    description: ['Netflix Subscription', 'Movie Theater', 'Concert Tickets', 'Restaurant'][i % 4],
-                    amount: -(15 + Math.random() * 85), // $15-$100 range
-                    category: 'Entertainment',
-                    date: entDate.toISOString().split('T')[0],
-                    transaction_id: `demo_${Date.now()}_entertainment_${monthsBack}_${i}`
-                  });
-                }
-                
-                // Healthcare (quarterly)
-                if (monthsBack % 3 === 0) {
-                  sampleTransactions.push({
-                    user_id: user.id,
-                    description: 'Doctor Visit Copay',
-                    amount: -(35 + Math.random() * 65), // $35-$100 range
-                    category: 'Healthcare',
-                    date: dateStr,
-                    transaction_id: `demo_${Date.now()}_healthcare_${monthsBack}`
-                  });
-                }
-                
-                // Shopping (random monthly)
-                for (let i = 0; i < 1 + Math.floor(Math.random() * 3); i++) {
-                  const shopDate = new Date(transactionDate);
-                  shopDate.setDate(shopDate.getDate() - (i * 8));
-                  sampleTransactions.push({
-                    user_id: user.id,
-                    description: ['Amazon Purchase', 'Target', 'Best Buy', 'Department Store'][i % 4],
-                    amount: -(25 + Math.random() * 200), // $25-$225 range
-                    category: 'Shopping',
-                    date: shopDate.toISOString().split('T')[0],
-                    transaction_id: `demo_${Date.now()}_shopping_${monthsBack}_${i}`
-                  });
-                }
-              }
-              
-              // Create sample accounts with realistic balances
-              sampleAccounts.push(
-                {
-                  user_id: user.id,
-                  account_id: 'demo_checking_001',
-                  name: 'Chase Checking',
-                  type: 'checking',
-                  balance: 2845.67 + Math.random() * 2000,
-                  source: 'plaid'
-                },
-                {
-                  user_id: user.id,
-                  account_id: 'demo_savings_001',
-                  name: 'Chase Savings',
-                  type: 'savings',
-                  balance: 15420.00 + Math.random() * 10000,
-                  source: 'plaid'
-                },
-                {
-                  user_id: user.id,
-                  account_id: 'demo_investment_001',
-                  name: 'Investment Account',
-                  type: 'investment',
-                  balance: 25000.00 + Math.random() * 25000,
-                  source: 'plaid'
-                }
-              );
-              
-              await Promise.all([
-                supabase.from('transactions').insert(sampleTransactions),
-                supabase.from('accounts').insert(sampleAccounts)
-              ]);
-              
-              console.log(`Generated ${sampleTransactions.length} sample transactions across 24 months and ${sampleAccounts.length} accounts`);
-              
-              // Calculate totals from generated data
-              const totalIncome = sampleTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
-              const totalExpenses = Math.abs(sampleTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
-              const monthlyAvgIncome = totalIncome / 24;
-              const monthlyAvgExpenses = totalExpenses / 24;
-              
-              assistantMessage += `\n\n🎉 SUCCESS! Generated comprehensive 24-month financial dataset:\n\n📊 **COMPLETE FINANCIAL PICTURE:**\n- **Transaction Count:** ${sampleTransactions.length} transactions\n- **Time Period:** Full 24 months of data\n- **Total Income:** $${totalIncome.toLocaleString()}\n- **Total Expenses:** $${totalExpenses.toLocaleString()}\n- **Net 24-Month Flow:** $${(totalIncome - totalExpenses).toLocaleString()}\n\n📈 **MONTHLY AVERAGES:**\n- **Average Monthly Income:** $${monthlyAvgIncome.toFixed(2)}\n- **Average Monthly Expenses:** $${monthlyAvgExpenses.toFixed(2)}\n- **Average Monthly Savings:** $${(monthlyAvgIncome - monthlyAvgExpenses).toFixed(2)}\n\n💡 **KEY INSIGHTS FROM 24-MONTH DATA:**\n- Excellent long-term financial stability\n- Consistent income with minimal variation\n- Seasonal spending patterns included\n- Strong savings potential identified\n\nNow creating your personalized budget based on 24-month trends...`;
-              
-              // Auto-create sophisticated budget based on 24-month averages
-              const autoCategories = {
-                "Housing": Math.round(monthlyAvgExpenses * 0.42), // Rent + utilities
-                "Food": Math.round(monthlyAvgExpenses * 0.25),
-                "Transportation": Math.round(monthlyAvgExpenses * 0.12),
-                "Entertainment": Math.round(monthlyAvgExpenses * 0.08),
-                "Shopping": Math.round(monthlyAvgExpenses * 0.15),
-                "Healthcare": Math.round(monthlyAvgExpenses * 0.05),
-                "Emergency Fund": Math.round(monthlyAvgIncome * 0.10),
-                "Long-term Savings": Math.round(monthlyAvgIncome * 0.15),
-                "Investment": Math.round(monthlyAvgIncome * 0.10)
-              };
-              
-              const budgetResult = await supabase.from('budget').upsert({
-                user_id: user.id,
-                income: Math.round(monthlyAvgIncome),
-                expenses: Math.round(monthlyAvgExpenses),
-                categories: autoCategories,
-                time_period: 'monthly',
-                status: 'active'
-              }, {
-                onConflict: 'user_id'
-              });
-              
-              
-              if (budgetResult.error) {
-                console.error('Budget creation error:', budgetResult.error);
-                assistantMessage += '\n\n⚠️ Note: Had some difficulty saving the budget, but your 24-month financial analysis is complete.';
-              } else {
-                assistantMessage += `\n\n✅ **PERSONALIZED BUDGET CREATED FROM 24-MONTH DATA!**\n\n📈 **BUDGET BASED ON HISTORICAL AVERAGES:**\n- **Monthly Income:** $${Math.round(monthlyAvgIncome).toLocaleString()}\n- **Monthly Expenses:** $${Math.round(monthlyAvgExpenses).toLocaleString()}\n- **Available for Goals:** $${Math.round(monthlyAvgIncome - monthlyAvgExpenses).toLocaleString()}\n\n🎯 **CATEGORY ALLOCATIONS:**\n${Object.entries(autoCategories).map(([cat, amt]) => `- ${cat}: $${amt.toLocaleString()}`).join('\n')}\n\n🔍 **24-MONTH INSIGHTS:**\n1. **Exceptional Data Depth**: Analysis based on ${sampleTransactions.length} transactions\n2. **Seasonal Patterns**: Budget accounts for spending variations\n3. **Income Stability**: Consistent monthly income demonstrated\n4. **Savings Potential**: Strong capacity for wealth building\n5. **Investment Ready**: Consider diversifying surplus funds\n\n📊 **RECOMMENDATIONS:**\n- Emergency fund target: $${Math.round(monthlyAvgExpenses * 6).toLocaleString()} (6 months expenses)\n- Investment allocation: $${autoCategories['Investment'].toLocaleString()}/month\n- Track seasonal spending patterns for optimization`;
-              }
-            }
-          } catch (error) {
-            console.error('Plaid test error:', error);
-            assistantMessage += `\n\nPlaid Test Error: ${error.message}`;
-          }
         }
       } catch (error) {
         console.error('Function call error:', error);

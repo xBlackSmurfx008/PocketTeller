@@ -1,4 +1,1 @@
 project_id = "dscndbpqvhvylukvcgpq"
-
-[functions.plaid-test]
-verify_jwt = false

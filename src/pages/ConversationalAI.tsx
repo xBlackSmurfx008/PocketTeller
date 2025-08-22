@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Mic, MicOff, Send, TestTube } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Speech Recognition types
@@ -212,97 +212,6 @@ export default function ConversationalAI() {
     }
   };
 
-  const testPlaidConnection = async () => {
-    if (isLoading) return;
-
-    const testMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: 'Test Plaid connection and generate sample data',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, testMessage]);
-    setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('gemini-chat', {
-        body: {
-          message: 'Please test the Plaid connection and generate comprehensive sample transaction data covering multiple categories like housing, food, transportation, entertainment, and income. Then immediately analyze this data to create a detailed personalized budget based on the spending patterns. Provide specific insights about spending habits, savings potential, and actionable recommendations for financial optimization.',
-          conversation_history: messages.map(m => ({
-            role: m.role,
-            content: m.content
-          }))
-        }
-      });
-
-      if (error) throw error;
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.message,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Show success message with more detail
-      toast({
-        title: "Financial Analysis Complete!",
-        description: "Sample data generated, analyzed, and personalized budget created with actionable insights.",
-      });
-
-      // Automatically send a follow-up message to get budget details
-      setTimeout(async () => {
-        try {
-          const followUpMessage: Message = {
-            id: (Date.now() + 2).toString(),
-            role: 'user',
-            content: 'Show me my current budget breakdown and spending analysis',
-            timestamp: new Date()
-          };
-
-          setMessages(prev => [...prev, followUpMessage]);
-          setIsLoading(true);
-
-          const { data: followUpData, error: followUpError } = await supabase.functions.invoke('gemini-chat', {
-            body: {
-              message: 'Now please provide a detailed financial health report including: 1) Budget vs actual spending analysis, 2) Savings rate assessment, 3) Category-wise spending insights, 4) Specific recommendations for optimization, and 5) Suggested financial goals based on my current situation.',
-              conversation_history: [...messages, assistantMessage, followUpMessage].map(m => ({
-                role: m.role,
-                content: m.content
-              }))
-            }
-          });
-
-          if (followUpError) throw followUpError;
-
-          const followUpResponse: Message = {
-            id: (Date.now() + 3).toString(),
-            role: 'assistant',
-            content: followUpData.message,
-            timestamp: new Date()
-          };
-
-          setMessages(prev => [...prev, followUpResponse]);
-        } catch (followUpError) {
-          console.error('Error getting budget details:', followUpError);
-        } finally {
-          setIsLoading(false);
-        }
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error testing Plaid:', error);
-      toast({
-        title: "Test Failed",
-        description: "Failed to test Plaid connection. Please try again.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -382,16 +291,6 @@ export default function ConversationalAI() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={testPlaidConnection}
-                disabled={isLoading}
-                className="text-xs"
-              >
-                <TestTube className="h-3 w-3 mr-1" />
-                Generate Financial Data
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={() => {
                   const analysisMessage = "Please analyze my current financial situation and provide a comprehensive report with budget recommendations.";
                   setInput(analysisMessage);
@@ -402,7 +301,7 @@ export default function ConversationalAI() {
               >
                 📊 Analyze Finances
               </Button>
-              <span className="text-xs text-muted-foreground">Get sample data or analyze current finances</span>
+              <span className="text-xs text-muted-foreground">Analyze your current finances</span>
             </div>
             <div className="flex items-center space-x-2">
               <Button
