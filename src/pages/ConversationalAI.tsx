@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Mic, MicOff, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PlaidLink } from '@/components/PlaidLink';
 
 // Speech Recognition types
 declare global {
@@ -58,6 +59,7 @@ export default function ConversationalAI() {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [hasPlaidToken, setHasPlaidToken] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,8 +101,9 @@ export default function ConversationalAI() {
       setRecognition(recognitionInstance);
     }
 
-    // Load conversation history
+    // Load conversation history and check Plaid connection
     loadConversationHistory();
+    checkPlaidConnection();
   }, [user, loading, navigate, toast]);
 
   useEffect(() => {
@@ -134,6 +137,24 @@ export default function ConversationalAI() {
       setMessages(formattedMessages);
     } catch (error) {
       console.error('Error loading conversation history:', error);
+    }
+  };
+
+  const checkPlaidConnection = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('plaid_access_token')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!error && data?.plaid_access_token) {
+        setHasPlaidToken(true);
+      }
+    } catch (error) {
+      console.error('Error checking Plaid connection:', error);
     }
   };
 
@@ -286,7 +307,15 @@ export default function ConversationalAI() {
             </div>
           </ScrollArea>
 
-          <div className="border-t border-border p-4">
+          <div className="border-t border-border p-4 space-y-4">
+            <PlaidLink 
+              hasPlaidToken={hasPlaidToken} 
+              onConnectionChange={() => {
+                checkPlaidConnection();
+                loadConversationHistory();
+              }} 
+            />
+            
             <div className="flex items-center space-x-2 mb-2">
               <Button
                 variant="outline"
@@ -303,6 +332,7 @@ export default function ConversationalAI() {
               </Button>
               <span className="text-xs text-muted-foreground">Analyze your current finances</span>
             </div>
+            
             <div className="flex items-center space-x-2">
               <Button
                 variant={isListening ? "destructive" : "outline"}
