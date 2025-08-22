@@ -154,28 +154,40 @@ export type Database = {
       }
       budget_shares: {
         Row: {
+          access_logs: Json | null
+          allowed_emails: string[] | null
           budget_data: Json
           created_at: string
           expires_at: string
           id: string
+          max_views: number | null
+          requires_auth: boolean | null
           token: string
           user_id: string
           view_count: number
         }
         Insert: {
+          access_logs?: Json | null
+          allowed_emails?: string[] | null
           budget_data: Json
           created_at?: string
           expires_at?: string
           id?: string
+          max_views?: number | null
+          requires_auth?: boolean | null
           token: string
           user_id: string
           view_count?: number
         }
         Update: {
+          access_logs?: Json | null
+          allowed_emails?: string[] | null
           budget_data?: Json
           created_at?: string
           expires_at?: string
           id?: string
+          max_views?: number | null
+          requires_auth?: boolean | null
           token?: string
           user_id?: string
           view_count?: number
@@ -401,7 +413,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_budget_share_access: {
+        Args: { ip_address?: string; share_id: string; user_agent?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
