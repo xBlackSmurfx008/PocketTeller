@@ -9,9 +9,10 @@ import FinancialHealthSnapshot from '@/components/FinancialHealthSnapshot';
 import RecentTransactions from '@/components/RecentTransactions';
 import UpcomingBills from '@/components/UpcomingBills';
 import { PlaidLink } from '@/components/PlaidLink';
+import { ShareBudgetDialog } from '@/components/ShareBudgetDialog';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Target, MessageSquare } from 'lucide-react';
+import { Settings, Target, MessageSquare, Share2 } from 'lucide-react';
 
 export default function Dashboard() {
   const { signOut, user } = useAuth();
@@ -19,11 +20,13 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [hasPlaidToken, setHasPlaidToken] = useState(false);
+  const [budgetData, setBudgetData] = useState<any>(null);
 
   const showMobileLayout = isMobile && !isDesktopForced;
 
   useEffect(() => {
     checkPlaidConnection();
+    fetchBudgetData();
   }, [user]);
 
   const checkPlaidConnection = async () => {
@@ -41,6 +44,25 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error checking Plaid connection:', error);
+    }
+  };
+
+  const fetchBudgetData = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('budget')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!error && data) {
+        setBudgetData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching budget data:', error);
     }
   };
 
@@ -62,6 +84,13 @@ export default function Dashboard() {
                 <Button variant="ghost" size="icon" onClick={() => navigate('/goals')}>
                   <Target className="h-4 w-4" />
                 </Button>
+                {budgetData && (
+                  <ShareBudgetDialog budgetData={budgetData}>
+                    <Button variant="ghost" size="icon">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </ShareBudgetDialog>
+                )}
                 <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
                   <Settings className="h-4 w-4" />
                 </Button>
@@ -75,6 +104,14 @@ export default function Dashboard() {
                   <Target className="h-4 w-4 mr-2" />
                   Goals
                 </Button>
+                {budgetData && (
+                  <ShareBudgetDialog budgetData={budgetData}>
+                    <Button variant="outline">
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Budget
+                    </Button>
+                  </ShareBudgetDialog>
+                )}
                 <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
                   <Settings className="h-4 w-4" />
                 </Button>

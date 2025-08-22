@@ -119,6 +119,36 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_shares: {
+        Row: {
+          budget_data: Json
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          budget_data: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          budget_data?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           attachments: Json | null
