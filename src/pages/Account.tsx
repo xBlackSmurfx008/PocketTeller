@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { PlaidLink } from '@/components/PlaidLink';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,35 +26,30 @@ export default function Account() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [hasPlaidToken, setHasPlaidToken] = useState(false);
 
-  const handleDisconnectPlaid = async () => {
+  useEffect(() => {
+    checkPlaidConnection();
+  }, [user]);
+
+  const checkPlaidConnection = async () => {
     if (!user) return;
     
-    setIsDisconnecting(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .update({ plaid_access_token: null })
-        .eq('user_id', user.id);
+        .select('plaid_access_token')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
-
-      toast({
-        title: "Bank Disconnected",
-        description: "Your bank account has been disconnected successfully.",
-      });
+      if (!error && data?.plaid_access_token) {
+        setHasPlaidToken(true);
+      }
     } catch (error) {
-      console.error('Error disconnecting bank:', error);
-      toast({
-        title: "Disconnection Failed",
-        description: "Failed to disconnect your bank account. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDisconnecting(false);
+      console.error('Error checking Plaid connection:', error);
     }
   };
+
 
   const handleDeleteAllData = async () => {
     if (!user) return;
@@ -158,16 +154,18 @@ export default function Account() {
         <Card>
           <CardHeader>
             <CardTitle>Bank Connection</CardTitle>
-            <CardDescription>Manage your connected bank accounts</CardDescription>
+            <CardDescription>
+              {hasPlaidToken 
+                ? "Manage your connected bank account - sync data or disconnect."
+                : "Connect your bank account to automatically sync transactions and get personalized insights."
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              variant="outline" 
-              onClick={handleDisconnectPlaid}
-              disabled={isDisconnecting}
-            >
-              {isDisconnecting ? 'Disconnecting...' : 'Disconnect Bank Account'}
-            </Button>
+            <PlaidLink 
+              hasPlaidToken={hasPlaidToken} 
+              onConnectionChange={checkPlaidConnection} 
+            />
           </CardContent>
         </Card>
 

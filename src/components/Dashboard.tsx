@@ -66,24 +66,23 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto p-4 space-y-6">
-        {/* Bank Connection Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Bank Connection</CardTitle>
-            <CardDescription>
-              {hasPlaidToken 
-                ? "Your bank account is connected. You can sync your latest transactions or disconnect if needed."
-                : "Connect your bank account to automatically sync transactions and get personalized insights."
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PlaidLink 
-              hasPlaidToken={hasPlaidToken} 
-              onConnectionChange={checkPlaidConnection} 
-            />
-          </CardContent>
-        </Card>
+        {/* Bank Connection Card - Only show when not connected */}
+        {!hasPlaidToken && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Bank Connection</CardTitle>
+              <CardDescription>
+                Connect your bank account to automatically sync transactions and get personalized insights.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PlaidLink 
+                hasPlaidToken={hasPlaidToken} 
+                onConnectionChange={checkPlaidConnection} 
+              />
+            </CardContent>
+          </Card>
+        )}
 
         <FinancialHealthSnapshot />
         
