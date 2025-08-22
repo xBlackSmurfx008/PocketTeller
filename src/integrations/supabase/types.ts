@@ -158,10 +158,13 @@ export type Database = {
           allowed_emails: string[] | null
           budget_data: Json
           created_at: string
+          created_ip: unknown | null
           expires_at: string
           id: string
+          last_accessed_at: string | null
           max_views: number | null
           requires_auth: boolean | null
+          security_flags: Json | null
           token: string
           user_id: string
           view_count: number
@@ -171,10 +174,13 @@ export type Database = {
           allowed_emails?: string[] | null
           budget_data: Json
           created_at?: string
+          created_ip?: unknown | null
           expires_at?: string
           id?: string
+          last_accessed_at?: string | null
           max_views?: number | null
           requires_auth?: boolean | null
+          security_flags?: Json | null
           token: string
           user_id: string
           view_count?: number
@@ -184,10 +190,13 @@ export type Database = {
           allowed_emails?: string[] | null
           budget_data?: Json
           created_at?: string
+          created_ip?: unknown | null
           expires_at?: string
           id?: string
+          last_accessed_at?: string | null
           max_views?: number | null
           requires_auth?: boolean | null
+          security_flags?: Json | null
           token?: string
           user_id?: string
           view_count?: number
@@ -335,27 +344,36 @@ export type Database = {
         Row: {
           app_id: string | null
           created_at: string
+          encrypted_plaid_token: string | null
           has_connected_voice_ui: boolean
           id: string
+          last_token_rotation: string | null
           plaid_access_token: string | null
+          token_iv: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           app_id?: string | null
           created_at?: string
+          encrypted_plaid_token?: string | null
           has_connected_voice_ui?: boolean
           id?: string
+          last_token_rotation?: string | null
           plaid_access_token?: string | null
+          token_iv?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           app_id?: string | null
           created_at?: string
+          encrypted_plaid_token?: string | null
           has_connected_voice_ui?: boolean
           id?: string
+          last_token_rotation?: string | null
           plaid_access_token?: string | null
+          token_iv?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -413,6 +431,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_secure_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       log_budget_share_access: {
         Args: { ip_address?: string; share_id: string; user_agent?: string }
         Returns: undefined
