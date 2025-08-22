@@ -9,7 +9,7 @@ import UpcomingBills from '@/components/UpcomingBills';
 import { PlaidLink } from '@/components/PlaidLink';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings } from 'lucide-react';
+import { Settings, Target } from 'lucide-react';
 
 export default function Dashboard() {
   const { signOut, user } = useAuth();
@@ -50,6 +50,10 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate('/chat')}>
               Budgeting Assistant
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/goals')}>
+              <Target className="h-4 w-4 mr-2" />
+              Goals
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
               <Settings className="h-4 w-4" />
