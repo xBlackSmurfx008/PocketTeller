@@ -42,124 +42,186 @@ serve(async (req) => {
       throw new Error('Authentication failed');
     }
 
-    // Get user's financial context - expand transactions window for better analysis
+    // Get user's financial context - optimized for 24 months of Plaid data
     const [
       { data: budget },
       { data: goals },
-      { data: transactions },
+      { data: allTransactions },
       { data: accounts },
       { data: recentTransactions }
     ] = await Promise.all([
       supabase.from('budget').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('goals').select('*').eq('user_id', user.id),
-      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(100),
+      // Get all transactions for comprehensive analysis (24 months max)
+      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
       supabase.from('accounts').select('*').eq('user_id', user.id),
-      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(10)
+      // Recent transactions for quick context
+      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20)
     ]);
 
-    // Build context for Gemini
+    // Build context for Gemini with 24-month analysis capability
     const financialContext = {
       budget: budget || null,
       goals: goals || [],
       recent_transactions: recentTransactions || [],
       accounts: accounts || [],
-      all_transactions: transactions || []
+      all_transactions: allTransactions || []
     };
 
-    // Calculate comprehensive financial insights
-    const totalIncome = transactions?.filter(t => t.amount > 0).reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-    const totalExpenses = Math.abs(transactions?.filter(t => t.amount < 0).reduce((sum, t) => sum + Number(t.amount), 0) || 0);
-    const netCashFlow = totalIncome - totalExpenses;
+    // Advanced financial analysis for 24-month period
+    const now = new Date();
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const twoYearsAgo = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
     
-    // Category spending analysis
-    const categorySpending = transactions?.reduce((acc, t) => {
-      if (t.amount < 0) {
-        acc[t.category] = (acc[t.category] || 0) + Math.abs(Number(t.amount));
-      }
-      return acc;
-    }, {} as Record<string, number>) || {};
+    // Filter transactions by time periods
+    const lastMonthTransactions = allTransactions?.filter(t => new Date(t.date) >= oneMonthAgo) || [];
+    const last3MonthsTransactions = allTransactions?.filter(t => new Date(t.date) >= threeMonthsAgo) || [];
+    const last6MonthsTransactions = allTransactions?.filter(t => new Date(t.date) >= sixMonthsAgo) || [];
+    const lastYearTransactions = allTransactions?.filter(t => new Date(t.date) >= oneYearAgo) || [];
+    const last24MonthsTransactions = allTransactions?.filter(t => new Date(t.date) >= twoYearsAgo) || [];
     
-    // Additional insights
+    // Comprehensive income/expense analysis by period
+    const calculatePeriodMetrics = (transactions) => {
+      const income = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + Number(t.amount), 0);
+      const expenses = Math.abs(transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Number(t.amount), 0));
+      const categorySpending = transactions.reduce((acc, t) => {
+        if (t.amount < 0) {
+          acc[t.category] = (acc[t.category] || 0) + Math.abs(Number(t.amount));
+        }
+        return acc;
+      }, {} as Record<string, number>);
+      return { income, expenses, netFlow: income - expenses, categorySpending, transactionCount: transactions.length };
+    };
+    
+    const metrics = {
+      lastMonth: calculatePeriodMetrics(lastMonthTransactions),
+      last3Months: calculatePeriodMetrics(last3MonthsTransactions),
+      last6Months: calculatePeriodMetrics(last6MonthsTransactions),
+      lastYear: calculatePeriodMetrics(lastYearTransactions),
+      last24Months: calculatePeriodMetrics(last24MonthsTransactions)
+    };
+    
+    // Monthly averages for trend analysis
+    const monthlyAverages = {
+      income: metrics.last24Months.income / 24,
+      expenses: metrics.last24Months.expenses / 24,
+      netFlow: metrics.last24Months.netFlow / 24
+    };
+    
+    // Account and overall financial health
     const totalBalance = accounts?.reduce((sum, acc) => sum + Number(acc.balance), 0) || 0;
-    const avgTransactionAmount = transactions?.length ? Math.abs(transactions.reduce((sum, t) => sum + Number(t.amount), 0) / transactions.length) : 0;
-    const transactionCount = transactions?.length || 0;
-    const lastTransactionDate = transactions?.[0]?.date || null;
+    const lastTransactionDate = allTransactions?.[0]?.date || null;
     
-    // Spending trends (last 30 days vs previous period)
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const recentSpending = transactions?.filter(t => t.date >= thirtyDaysAgo && t.amount < 0).reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
-    
-    // Analysis object for Gemini
+    // Advanced analysis object for Gemini
     const financialAnalysis = {
-      totalIncome,
-      totalExpenses,
-      netCashFlow,
+      // Period-based metrics
+      currentMonth: metrics.lastMonth,
+      last3Months: metrics.last3Months,
+      last6Months: metrics.last6Months,
+      lastYear: metrics.lastYear,
+      last24Months: metrics.last24Months,
+      
+      // Averages and trends
+      monthlyAverages,
       totalBalance,
-      categorySpending,
-      avgTransactionAmount,
-      transactionCount,
       lastTransactionDate,
-      recentSpending: recentSpending,
-      savingsRate: totalIncome > 0 ? ((netCashFlow / totalIncome) * 100).toFixed(1) : 0,
-      hasTransactions: transactionCount > 0,
+      totalTransactionCount: allTransactions?.length || 0,
+      
+      // Financial health indicators
+      savingsRate24Month: metrics.last24Months.income > 0 ? ((metrics.last24Months.netFlow / metrics.last24Months.income) * 100).toFixed(1) : 0,
+      savingsRateLastYear: metrics.lastYear.income > 0 ? ((metrics.lastYear.netFlow / metrics.lastYear.income) * 100).toFixed(1) : 0,
+      
+      // Status flags
+      hasTransactions: (allTransactions?.length || 0) > 0,
       hasBudget: !!budget,
-      needsBudget: transactionCount > 0 && !budget
+      needsBudget: (allTransactions?.length || 0) > 0 && !budget,
+      hasLongTermData: (allTransactions?.length || 0) > 50, // Indicates substantial data for analysis
+      
+      // Trend indicators
+      incomeGrowth: metrics.lastYear.income > 0 && metrics.last24Months.income > metrics.lastYear.income ? 
+        (((metrics.last24Months.income - metrics.lastYear.income) / metrics.lastYear.income) * 100).toFixed(1) : 0,
+      expenseGrowth: metrics.lastYear.expenses > 0 && metrics.last24Months.expenses > metrics.lastYear.expenses ? 
+        (((metrics.last24Months.expenses - metrics.lastYear.expenses) / metrics.lastYear.expenses) * 100).toFixed(1) : 0
     };
 
-    // Prepare the conversation for Gemini with enhanced analysis
-    const systemPrompt = `You are a comprehensive financial assistant that provides detailed analysis, reporting, and personalized money management advice. You excel at creating budgets, analyzing spending patterns, and offering actionable financial recommendations.
+    // Enhanced system prompt for 24-month analysis capability
+    const systemPrompt = `You are an advanced financial assistant capable of analyzing up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. You excel at identifying long-term trends, seasonal patterns, and creating sophisticated budgets based on extensive historical data.
 
 CURRENT FINANCIAL CONTEXT:
 - Budget: ${JSON.stringify(financialContext.budget)}
 - Goals: ${JSON.stringify(financialContext.goals)}
-- Recent Transactions (last 10): ${JSON.stringify(financialContext.recent_transactions)}
+- Recent Transactions (last 20): ${JSON.stringify(financialContext.recent_transactions)}
 - Accounts: ${JSON.stringify(financialContext.accounts)}
 
-COMPREHENSIVE FINANCIAL ANALYSIS:
-- Total Income: $${financialAnalysis.totalIncome.toFixed(2)}
-- Total Expenses: $${financialAnalysis.totalExpenses.toFixed(2)}
-- Net Cash Flow: $${financialAnalysis.netCashFlow.toFixed(2)}
+COMPREHENSIVE 24-MONTH FINANCIAL ANALYSIS:
+**CURRENT STATUS:**
 - Total Account Balance: $${financialAnalysis.totalBalance.toFixed(2)}
-- Savings Rate: ${financialAnalysis.savingsRate}%
-- Transaction Count: ${financialAnalysis.transactionCount}
-- Average Transaction: $${financialAnalysis.avgTransactionAmount.toFixed(2)}
-- Recent 30-day Spending: $${financialAnalysis.recentSpending.toFixed(2)}
+- Total Transactions Analyzed: ${financialAnalysis.totalTransactionCount}
 - Last Transaction: ${financialAnalysis.lastTransactionDate}
-- Category Breakdown: ${JSON.stringify(financialAnalysis.categorySpending)}
+- Has Long-term Data: ${financialAnalysis.hasLongTermData}
+
+**MONTHLY AVERAGES (24-month basis):**
+- Average Monthly Income: $${financialAnalysis.monthlyAverages.income.toFixed(2)}
+- Average Monthly Expenses: $${financialAnalysis.monthlyAverages.expenses.toFixed(2)}
+- Average Monthly Net Flow: $${financialAnalysis.monthlyAverages.netFlow.toFixed(2)}
+
+**PERIOD COMPARISONS:**
+- Last Month: Income $${financialAnalysis.currentMonth.income.toFixed(2)}, Expenses $${financialAnalysis.currentMonth.expenses.toFixed(2)}, Net $${financialAnalysis.currentMonth.netFlow.toFixed(2)}
+- Last 3 Months: Income $${financialAnalysis.last3Months.income.toFixed(2)}, Expenses $${financialAnalysis.last3Months.expenses.toFixed(2)}, Net $${financialAnalysis.last3Months.netFlow.toFixed(2)}
+- Last Year: Income $${financialAnalysis.lastYear.income.toFixed(2)}, Expenses $${financialAnalysis.lastYear.expenses.toFixed(2)}, Net $${financialAnalysis.lastYear.netFlow.toFixed(2)}
+- Last 24 Months: Income $${financialAnalysis.last24Months.income.toFixed(2)}, Expenses $${financialAnalysis.last24Months.expenses.toFixed(2)}, Net $${financialAnalysis.last24Months.netFlow.toFixed(2)}
+
+**SAVINGS RATES:**
+- 24-Month Savings Rate: ${financialAnalysis.savingsRate24Month}%
+- 12-Month Savings Rate: ${financialAnalysis.savingsRateLastYear}%
+
+**GROWTH TRENDS:**
+- Income Growth: ${financialAnalysis.incomeGrowth}% year-over-year
+- Expense Growth: ${financialAnalysis.expenseGrowth}% year-over-year
+
+**SPENDING BY CATEGORIES (Recent):**
+${JSON.stringify(financialAnalysis.currentMonth.categorySpending)}
 
 CRITICAL ASSESSMENT:
 - Has Transactions: ${financialAnalysis.hasTransactions}
 - Has Budget: ${financialAnalysis.hasBudget}
 - Needs Budget: ${financialAnalysis.needsBudget}
+- Has Long-term Data: ${financialAnalysis.hasLongTermData}
 
-MANDATORY ACTIONS:
-1. **AUTO-CREATE BUDGET**: If user has transactions but no budget, IMMEDIATELY create one using update_budget function
-2. **COMPREHENSIVE ANALYSIS**: Always provide detailed spending analysis with specific insights
-3. **ACTIONABLE RECOMMENDATIONS**: Give specific, measurable financial advice
-4. **PROACTIVE REPORTING**: When data exists, automatically provide financial health reports
+MANDATORY ACTIONS FOR 24-MONTH DATA:
+1. **COMPREHENSIVE TREND ANALYSIS**: Identify seasonal patterns, growth trends, and spending changes over time
+2. **AUTO-CREATE SOPHISTICATED BUDGET**: If user has substantial data but no budget, create one based on 24-month averages and trends
+3. **SEASONAL INSIGHTS**: Analyze spending patterns by month/season to identify recurring trends
+4. **YEAR-OVER-YEAR COMPARISON**: Compare current vs previous year performance
+5. **PREDICTIVE RECOMMENDATIONS**: Use historical data to suggest future financial strategies
 
-ANALYSIS REQUIREMENTS:
-- Analyze spending by category and identify optimization opportunities  
-- Compare income vs expenses and suggest improvements
-- Identify irregular spending patterns or potential issues
-- Recommend savings strategies based on cash flow
-- Suggest budget adjustments if budget exists
-- Create realistic budgets based on actual spending patterns
+ANALYSIS REQUIREMENTS FOR LONG-TERM DATA:
+- Identify seasonal spending patterns (holiday spending, quarterly patterns, etc.)
+- Calculate spending volatility and consistency metrics
+- Analyze income stability and growth trends
+- Identify category spending growth/decline patterns
+- Recommend budget adjustments based on historical averages
+- Suggest emergency fund targets based on expense history
+- Identify opportunities for expense optimization based on trends
 
 AVAILABLE FUNCTIONS:
 1. create_goal: Create financial goals with specific targets and deadlines
-2. update_budget: Create/update comprehensive budget with income, expenses, and detailed category allocations
-3. test_plaid_connection: Test Plaid API connection and generate realistic sample transaction data
-4. analyze_finances: Provide structured financial analysis and recommendations
+2. update_budget: Create/update comprehensive budget using 24-month historical averages and trends
+3. test_plaid_connection: Test Plaid API connection and generate realistic 24-month sample transaction data
+4. analyze_finances: Provide structured financial analysis with trend insights and long-term recommendations
 
 CONVERSATION STYLE:
-- Be conversational but professional
-- Provide specific numbers and percentages
-- Offer concrete next steps
-- Explain the "why" behind recommendations
-- Use the user's actual data to personalize advice
+- Leverage the depth of 24-month data for sophisticated insights
+- Provide specific trend analysis with percentages and growth rates
+- Offer concrete recommendations based on historical patterns
+- Explain seasonal variations and their impact on budgeting
+- Use year-over-year comparisons to show progress
+- Highlight both positive trends and areas needing attention
 
-CRITICAL: When transactions exist but no budget is present, IMMEDIATELY create a budget automatically using the actual spending data. Don't ask for permission - just do it and explain what you've created.`;
+CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -360,145 +422,126 @@ CRITICAL: When transactions exist but no budget is present, IMMEDIATELY create a
             console.log('Plaid test result:', plaidResult);
             
             if (plaidResult.success && generate_sample_data) {
-              // Generate realistic sample transactions for the past 30 days
-              const sampleTransactions = [
-                // Income
-                {
+              // Generate comprehensive 24-month sample transactions for realistic analysis
+              const sampleTransactions = [];
+              const sampleAccounts = [];
+              
+              // Generate transactions for the last 24 months
+              for (let monthsBack = 0; monthsBack < 24; monthsBack++) {
+                const transactionDate = new Date();
+                transactionDate.setMonth(transactionDate.getMonth() - monthsBack);
+                const dateStr = transactionDate.toISOString().split('T')[0];
+                
+                // Monthly salary (with some variation)
+                const salaryVariation = (Math.random() - 0.5) * 200; // ±$100 variation
+                sampleTransactions.push({
                   user_id: user.id,
                   description: 'Salary Deposit - ABC Corp',
-                  amount: 4200.00,
+                  amount: 4200.00 + salaryVariation,
                   category: 'Income',
-                  date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_salary`
-                },
-                {
+                  date: dateStr,
+                  transaction_id: `demo_${Date.now()}_salary_${monthsBack}`
+                });
+                
+                // Monthly rent (consistent)
+                sampleTransactions.push({
                   user_id: user.id,
-                  description: 'Freelance Payment',
-                  amount: 850.00,
-                  category: 'Income',
-                  date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_freelance`
-                },
-                // Housing
-                {
-                  user_id: user.id,
-                  description: 'Rent Payment',
+                  description: 'Monthly Rent Payment',
                   amount: -1800.00,
                   category: 'Housing',
-                  date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_rent`
-                },
-                {
+                  date: dateStr,
+                  transaction_id: `demo_${Date.now()}_rent_${monthsBack}`
+                });
+                
+                // Utilities (seasonal variation)
+                const utilityVariation = monthsBack % 12 < 3 || monthsBack % 12 > 8 ? 50 : 0; // Higher in winter months
+                sampleTransactions.push({
                   user_id: user.id,
                   description: 'Electric Bill',
-                  amount: -125.67,
+                  amount: -(125.67 + utilityVariation),
                   category: 'Utilities',
-                  date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_electric`
-                },
-                {
-                  user_id: user.id,
-                  description: 'Internet Service',
-                  amount: -79.99,
-                  category: 'Utilities',
-                  date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_internet`
-                },
-                // Food & Dining
-                {
-                  user_id: user.id,
-                  description: 'Whole Foods Market',
-                  amount: -156.43,
-                  category: 'Food',
-                  date: new Date().toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_groceries1`
-                },
-                {
-                  user_id: user.id,
-                  description: 'Safeway Grocery',
-                  amount: -89.21,
-                  category: 'Food',
-                  date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_groceries2`
-                },
-                {
-                  user_id: user.id,
-                  description: 'Starbucks Coffee',
-                  amount: -8.75,
-                  category: 'Food',
-                  date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_coffee`
-                },
-                {
-                  user_id: user.id,
-                  description: 'Pizza Palace',
-                  amount: -24.50,
-                  category: 'Food',
-                  date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_pizza`
-                },
-                // Transportation
-                {
-                  user_id: user.id,
-                  description: 'Gas Station Fill-up',
-                  amount: -52.34,
-                  category: 'Transportation',
-                  date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_gas`
-                },
-                {
-                  user_id: user.id,
-                  description: 'Uber Ride',
-                  amount: -18.90,
-                  category: 'Transportation',
-                  date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_uber`
-                },
-                // Entertainment
-                {
-                  user_id: user.id,
-                  description: 'Netflix Subscription',
-                  amount: -15.99,
-                  category: 'Entertainment',
-                  date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_netflix`
-                },
-                {
-                  user_id: user.id,
-                  description: 'Movie Theater',
-                  amount: -28.50,
-                  category: 'Entertainment',
-                  date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_movies`
-                },
-                // Shopping
-                {
-                  user_id: user.id,
-                  description: 'Amazon Purchase',
-                  amount: -67.89,
-                  category: 'Shopping',
-                  date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_amazon`
-                },
-                // Healthcare
-                {
-                  user_id: user.id,
-                  description: 'Doctor Visit Copay',
-                  amount: -35.00,
-                  category: 'Healthcare',
-                  date: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  transaction_id: `demo_${Date.now()}_doctor`
+                  date: dateStr,
+                  transaction_id: `demo_${Date.now()}_electric_${monthsBack}`
+                });
+                
+                // Groceries (3-4 times per month with variation)
+                for (let i = 0; i < 3 + Math.floor(Math.random() * 2); i++) {
+                  const groceryDate = new Date(transactionDate);
+                  groceryDate.setDate(groceryDate.getDate() - (i * 7));
+                  sampleTransactions.push({
+                    user_id: user.id,
+                    description: ['Whole Foods Market', 'Safeway', 'Trader Joe\'s'][i % 3],
+                    amount: -(80 + Math.random() * 100), // $80-$180 range
+                    category: 'Food',
+                    date: groceryDate.toISOString().split('T')[0],
+                    transaction_id: `demo_${Date.now()}_grocery_${monthsBack}_${i}`
+                  });
                 }
-              ];
+                
+                // Gas (twice per month)
+                for (let i = 0; i < 2; i++) {
+                  const gasDate = new Date(transactionDate);
+                  gasDate.setDate(gasDate.getDate() - (i * 15));
+                  sampleTransactions.push({
+                    user_id: user.id,
+                    description: 'Gas Station Fill-up',
+                    amount: -(45 + Math.random() * 20), // $45-$65 range
+                    category: 'Transportation',
+                    date: gasDate.toISOString().split('T')[0],
+                    transaction_id: `demo_${Date.now()}_gas_${monthsBack}_${i}`
+                  });
+                }
+                
+                // Entertainment (seasonal - more in summer and holidays)
+                const entertainmentMultiplier = (monthsBack % 12 === 5 || monthsBack % 12 === 6 || monthsBack % 12 === 11) ? 2 : 1;
+                for (let i = 0; i < 2 * entertainmentMultiplier; i++) {
+                  const entDate = new Date(transactionDate);
+                  entDate.setDate(entDate.getDate() - (i * 10));
+                  sampleTransactions.push({
+                    user_id: user.id,
+                    description: ['Netflix Subscription', 'Movie Theater', 'Concert Tickets', 'Restaurant'][i % 4],
+                    amount: -(15 + Math.random() * 85), // $15-$100 range
+                    category: 'Entertainment',
+                    date: entDate.toISOString().split('T')[0],
+                    transaction_id: `demo_${Date.now()}_entertainment_${monthsBack}_${i}`
+                  });
+                }
+                
+                // Healthcare (quarterly)
+                if (monthsBack % 3 === 0) {
+                  sampleTransactions.push({
+                    user_id: user.id,
+                    description: 'Doctor Visit Copay',
+                    amount: -(35 + Math.random() * 65), // $35-$100 range
+                    category: 'Healthcare',
+                    date: dateStr,
+                    transaction_id: `demo_${Date.now()}_healthcare_${monthsBack}`
+                  });
+                }
+                
+                // Shopping (random monthly)
+                for (let i = 0; i < 1 + Math.floor(Math.random() * 3); i++) {
+                  const shopDate = new Date(transactionDate);
+                  shopDate.setDate(shopDate.getDate() - (i * 8));
+                  sampleTransactions.push({
+                    user_id: user.id,
+                    description: ['Amazon Purchase', 'Target', 'Best Buy', 'Department Store'][i % 4],
+                    amount: -(25 + Math.random() * 200), // $25-$225 range
+                    category: 'Shopping',
+                    date: shopDate.toISOString().split('T')[0],
+                    transaction_id: `demo_${Date.now()}_shopping_${monthsBack}_${i}`
+                  });
+                }
+              }
               
-              // Also create sample accounts
-              const sampleAccounts = [
+              // Create sample accounts with realistic balances
+              sampleAccounts.push(
                 {
                   user_id: user.id,
                   account_id: 'demo_checking_001',
                   name: 'Chase Checking',
                   type: 'checking',
-                  balance: 2845.67,
+                  balance: 2845.67 + Math.random() * 2000,
                   source: 'plaid'
                 },
                 {
@@ -506,41 +549,51 @@ CRITICAL: When transactions exist but no budget is present, IMMEDIATELY create a
                   account_id: 'demo_savings_001',
                   name: 'Chase Savings',
                   type: 'savings',
-                  balance: 15420.00,
+                  balance: 15420.00 + Math.random() * 10000,
+                  source: 'plaid'
+                },
+                {
+                  user_id: user.id,
+                  account_id: 'demo_investment_001',
+                  name: 'Investment Account',
+                  type: 'investment',
+                  balance: 25000.00 + Math.random() * 25000,
                   source: 'plaid'
                 }
-              ];
+              );
               
               await Promise.all([
                 supabase.from('transactions').insert(sampleTransactions),
                 supabase.from('accounts').insert(sampleAccounts)
               ]);
               
-              console.log('Sample transactions and accounts created');
-            }
-            
-            assistantMessage += `\n\nPlaid Test Results: ${plaidResult.success ? 'SUCCESS' : 'FAILED'}`;
-            if (generate_sample_data && plaidResult.success) {
-              assistantMessage += '\n\n🎉 SUCCESS! I\'ve generated comprehensive sample transaction data and will now provide a complete financial analysis:\n\n📊 **FINANCIAL OVERVIEW:**\n- Monthly Income: $5,050\n- Total Expenses: $2,633\n- Net Cash Flow: $2,417 (48% savings rate!)\n- Account Balances: $18,265\n\n💡 **KEY INSIGHTS:**\n- Excellent savings rate indicates strong financial discipline\n- Housing costs are reasonable at 36% of income\n- Food spending is moderate at $279/month\n- Good emergency fund potential\n\nNow creating your personalized budget based on this data...';
+              console.log(`Generated ${sampleTransactions.length} sample transactions across 24 months and ${sampleAccounts.length} accounts`);
               
-              // Auto-create comprehensive budget based on sample data
+              // Calculate totals from generated data
+              const totalIncome = sampleTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+              const totalExpenses = Math.abs(sampleTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
+              const monthlyAvgIncome = totalIncome / 24;
+              const monthlyAvgExpenses = totalExpenses / 24;
+              
+              assistantMessage += `\n\n🎉 SUCCESS! Generated comprehensive 24-month financial dataset:\n\n📊 **COMPLETE FINANCIAL PICTURE:**\n- **Transaction Count:** ${sampleTransactions.length} transactions\n- **Time Period:** Full 24 months of data\n- **Total Income:** $${totalIncome.toLocaleString()}\n- **Total Expenses:** $${totalExpenses.toLocaleString()}\n- **Net 24-Month Flow:** $${(totalIncome - totalExpenses).toLocaleString()}\n\n📈 **MONTHLY AVERAGES:**\n- **Average Monthly Income:** $${monthlyAvgIncome.toFixed(2)}\n- **Average Monthly Expenses:** $${monthlyAvgExpenses.toFixed(2)}\n- **Average Monthly Savings:** $${(monthlyAvgIncome - monthlyAvgExpenses).toFixed(2)}\n\n💡 **KEY INSIGHTS FROM 24-MONTH DATA:**\n- Excellent long-term financial stability\n- Consistent income with minimal variation\n- Seasonal spending patterns included\n- Strong savings potential identified\n\nNow creating your personalized budget based on 24-month trends...`;
+              
+              // Auto-create sophisticated budget based on 24-month averages
               const autoCategories = {
-                "Housing": 1800,
-                "Utilities": 206,
-                "Food": 279,
-                "Transportation": 71,
-                "Entertainment": 45,
-                "Shopping": 68,
-                "Healthcare": 35,
-                "Emergency Fund": 500,
-                "Long-term Savings": 1000,
-                "Discretionary": 317
+                "Housing": Math.round(monthlyAvgExpenses * 0.42), // Rent + utilities
+                "Food": Math.round(monthlyAvgExpenses * 0.25),
+                "Transportation": Math.round(monthlyAvgExpenses * 0.12),
+                "Entertainment": Math.round(monthlyAvgExpenses * 0.08),
+                "Shopping": Math.round(monthlyAvgExpenses * 0.15),
+                "Healthcare": Math.round(monthlyAvgExpenses * 0.05),
+                "Emergency Fund": Math.round(monthlyAvgIncome * 0.10),
+                "Long-term Savings": Math.round(monthlyAvgIncome * 0.15),
+                "Investment": Math.round(monthlyAvgIncome * 0.10)
               };
               
               const budgetResult = await supabase.from('budget').upsert({
                 user_id: user.id,
-                income: 5050,
-                expenses: 2633,
+                income: Math.round(monthlyAvgIncome),
+                expenses: Math.round(monthlyAvgExpenses),
                 categories: autoCategories,
                 time_period: 'monthly',
                 status: 'active'
@@ -551,9 +604,9 @@ CRITICAL: When transactions exist but no budget is present, IMMEDIATELY create a
               
               if (budgetResult.error) {
                 console.error('Budget creation error:', budgetResult.error);
-                assistantMessage += '\n\n⚠️ Note: Had some difficulty saving the budget, but your financial analysis is complete.';
+                assistantMessage += '\n\n⚠️ Note: Had some difficulty saving the budget, but your 24-month financial analysis is complete.';
               } else {
-                assistantMessage += '\n\n✅ **BUDGET CREATED SUCCESSFULLY!**\n\n📈 **YOUR PERSONALIZED BUDGET:**\n- Housing: $1,800 (36%)\n- Utilities: $206 (4%)\n- Food: $279 (6%)\n- Transportation: $71 (1%)\n- Entertainment: $45 (1%)\n- Healthcare: $35 (1%)\n- Emergency Fund: $500 (10%)\n- Long-term Savings: $1,000 (20%)\n- Discretionary: $317 (6%)\n\n🎯 **RECOMMENDATIONS:**\n1. **Excellent Position**: Your 48% savings rate is outstanding\n2. **Emergency Fund**: Build to 6 months of expenses ($15,798)\n3. **Investment Goals**: Consider investing excess savings\n4. **Optimization**: Look for ways to reduce discretionary spending\n5. **Track Progress**: Monitor monthly to stay on target';
+                assistantMessage += `\n\n✅ **PERSONALIZED BUDGET CREATED FROM 24-MONTH DATA!**\n\n📈 **BUDGET BASED ON HISTORICAL AVERAGES:**\n- **Monthly Income:** $${Math.round(monthlyAvgIncome).toLocaleString()}\n- **Monthly Expenses:** $${Math.round(monthlyAvgExpenses).toLocaleString()}\n- **Available for Goals:** $${Math.round(monthlyAvgIncome - monthlyAvgExpenses).toLocaleString()}\n\n🎯 **CATEGORY ALLOCATIONS:**\n${Object.entries(autoCategories).map(([cat, amt]) => `- ${cat}: $${amt.toLocaleString()}`).join('\n')}\n\n🔍 **24-MONTH INSIGHTS:**\n1. **Exceptional Data Depth**: Analysis based on ${sampleTransactions.length} transactions\n2. **Seasonal Patterns**: Budget accounts for spending variations\n3. **Income Stability**: Consistent monthly income demonstrated\n4. **Savings Potential**: Strong capacity for wealth building\n5. **Investment Ready**: Consider diversifying surplus funds\n\n📊 **RECOMMENDATIONS:**\n- Emergency fund target: $${Math.round(monthlyAvgExpenses * 6).toLocaleString()} (6 months expenses)\n- Investment allocation: $${autoCategories['Investment'].toLocaleString()}/month\n- Track seasonal spending patterns for optimization`;
               }
             }
           } catch (error) {
