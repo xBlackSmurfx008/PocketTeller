@@ -150,6 +150,12 @@ serve(async (req) => {
     // Enhanced system prompt for 24-month analysis capability
     const systemPrompt = `You are an advanced financial assistant capable of analyzing up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. You excel at identifying long-term trends, seasonal patterns, and creating sophisticated budgets based on extensive historical data.
 
+FORMATTING RULES:
+- Use plain text only, no markdown formatting
+- Do not use asterisks (*) for emphasis or bold text
+- Use CAPS for emphasis when needed
+- Use clear, readable plain text formatting
+
 CURRENT FINANCIAL CONTEXT:
 - Budget: ${JSON.stringify(financialContext.budget)}
 - Goals: ${JSON.stringify(financialContext.goals)}
