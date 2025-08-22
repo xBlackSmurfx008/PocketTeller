@@ -42,65 +42,124 @@ serve(async (req) => {
       throw new Error('Authentication failed');
     }
 
-    // Get user's financial context
+    // Get user's financial context - expand transactions window for better analysis
     const [
       { data: budget },
       { data: goals },
       { data: transactions },
-      { data: accounts }
+      { data: accounts },
+      { data: recentTransactions }
     ] = await Promise.all([
       supabase.from('budget').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('goals').select('*').eq('user_id', user.id),
-      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(10),
-      supabase.from('accounts').select('*').eq('user_id', user.id)
+      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(100),
+      supabase.from('accounts').select('*').eq('user_id', user.id),
+      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(10)
     ]);
 
     // Build context for Gemini
     const financialContext = {
       budget: budget || null,
       goals: goals || [],
-      recent_transactions: transactions || [],
-      accounts: accounts || []
+      recent_transactions: recentTransactions || [],
+      accounts: accounts || [],
+      all_transactions: transactions || []
     };
 
-    // Calculate financial insights
+    // Calculate comprehensive financial insights
     const totalIncome = transactions?.filter(t => t.amount > 0).reduce((sum, t) => sum + Number(t.amount), 0) || 0;
     const totalExpenses = Math.abs(transactions?.filter(t => t.amount < 0).reduce((sum, t) => sum + Number(t.amount), 0) || 0);
+    const netCashFlow = totalIncome - totalExpenses;
+    
+    // Category spending analysis
     const categorySpending = transactions?.reduce((acc, t) => {
       if (t.amount < 0) {
         acc[t.category] = (acc[t.category] || 0) + Math.abs(Number(t.amount));
       }
       return acc;
     }, {} as Record<string, number>) || {};
+    
+    // Additional insights
+    const totalBalance = accounts?.reduce((sum, acc) => sum + Number(acc.balance), 0) || 0;
+    const avgTransactionAmount = transactions?.length ? Math.abs(transactions.reduce((sum, t) => sum + Number(t.amount), 0) / transactions.length) : 0;
+    const transactionCount = transactions?.length || 0;
+    const lastTransactionDate = transactions?.[0]?.date || null;
+    
+    // Spending trends (last 30 days vs previous period)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const recentSpending = transactions?.filter(t => t.date >= thirtyDaysAgo && t.amount < 0).reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
+    
+    // Analysis object for Gemini
+    const financialAnalysis = {
+      totalIncome,
+      totalExpenses,
+      netCashFlow,
+      totalBalance,
+      categorySpending,
+      avgTransactionAmount,
+      transactionCount,
+      lastTransactionDate,
+      recentSpending: recentSpending,
+      savingsRate: totalIncome > 0 ? ((netCashFlow / totalIncome) * 100).toFixed(1) : 0,
+      hasTransactions: transactionCount > 0,
+      hasBudget: !!budget,
+      needsBudget: transactionCount > 0 && !budget
+    };
 
-    // Prepare the conversation for Gemini
-    const systemPrompt = `You are a proactive financial assistant that automatically analyzes user data and provides actionable insights. You should be conversational and helpful.
+    // Prepare the conversation for Gemini with enhanced analysis
+    const systemPrompt = `You are a comprehensive financial assistant that provides detailed analysis, reporting, and personalized money management advice. You excel at creating budgets, analyzing spending patterns, and offering actionable financial recommendations.
 
 CURRENT FINANCIAL CONTEXT:
 - Budget: ${JSON.stringify(financialContext.budget)}
 - Goals: ${JSON.stringify(financialContext.goals)}
-- Recent Transactions: ${JSON.stringify(financialContext.recent_transactions)}
+- Recent Transactions (last 10): ${JSON.stringify(financialContext.recent_transactions)}
 - Accounts: ${JSON.stringify(financialContext.accounts)}
 
-FINANCIAL INSIGHTS:
-- Total Income: $${totalIncome.toFixed(2)}
-- Total Expenses: $${totalExpenses.toFixed(2)}
-- Category Spending: ${JSON.stringify(categorySpending)}
-- Net Cash Flow: $${(totalIncome - totalExpenses).toFixed(2)}
+COMPREHENSIVE FINANCIAL ANALYSIS:
+- Total Income: $${financialAnalysis.totalIncome.toFixed(2)}
+- Total Expenses: $${financialAnalysis.totalExpenses.toFixed(2)}
+- Net Cash Flow: $${financialAnalysis.netCashFlow.toFixed(2)}
+- Total Account Balance: $${financialAnalysis.totalBalance.toFixed(2)}
+- Savings Rate: ${financialAnalysis.savingsRate}%
+- Transaction Count: ${financialAnalysis.transactionCount}
+- Average Transaction: $${financialAnalysis.avgTransactionAmount.toFixed(2)}
+- Recent 30-day Spending: $${financialAnalysis.recentSpending.toFixed(2)}
+- Last Transaction: ${financialAnalysis.lastTransactionDate}
+- Category Breakdown: ${JSON.stringify(financialAnalysis.categorySpending)}
 
-PROACTIVE BEHAVIOR:
-- When you detect transaction data but no budget, immediately offer to create a personalized budget
-- Analyze spending patterns and suggest optimizations
-- If Plaid connection is tested successfully, immediately analyze the generated data
-- Always provide specific, actionable financial advice
-- Create budgets automatically based on actual spending patterns
+CRITICAL ASSESSMENT:
+- Has Transactions: ${financialAnalysis.hasTransactions}
+- Has Budget: ${financialAnalysis.hasBudget}
+- Needs Budget: ${financialAnalysis.needsBudget}
+
+MANDATORY ACTIONS:
+1. **AUTO-CREATE BUDGET**: If user has transactions but no budget, IMMEDIATELY create one using update_budget function
+2. **COMPREHENSIVE ANALYSIS**: Always provide detailed spending analysis with specific insights
+3. **ACTIONABLE RECOMMENDATIONS**: Give specific, measurable financial advice
+4. **PROACTIVE REPORTING**: When data exists, automatically provide financial health reports
+
+ANALYSIS REQUIREMENTS:
+- Analyze spending by category and identify optimization opportunities  
+- Compare income vs expenses and suggest improvements
+- Identify irregular spending patterns or potential issues
+- Recommend savings strategies based on cash flow
+- Suggest budget adjustments if budget exists
+- Create realistic budgets based on actual spending patterns
 
 AVAILABLE FUNCTIONS:
-1. create_goal: Create financial goals
-2. update_budget: Create/update budget with income, expenses, and category allocations
-3. test_plaid_connection: Test Plaid API and generate sample data
+1. create_goal: Create financial goals with specific targets and deadlines
+2. update_budget: Create/update comprehensive budget with income, expenses, and detailed category allocations
+3. test_plaid_connection: Test Plaid API connection and generate realistic sample transaction data
+4. analyze_finances: Provide structured financial analysis and recommendations
 
-IMPORTANT: Be proactive! If you see transaction data but no budget, immediately suggest creating one and offer to do it automatically.`;
+CONVERSATION STYLE:
+- Be conversational but professional
+- Provide specific numbers and percentages
+- Offer concrete next steps
+- Explain the "why" behind recommendations
+- Use the user's actual data to personalize advice
+
+CRITICAL: When transactions exist but no budget is present, IMMEDIATELY create a budget automatically using the actual spending data. Don't ask for permission - just do it and explain what you've created.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -151,13 +210,27 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
             },
             {
               name: 'test_plaid_connection',
-              description: 'Test Plaid API connection and generate sample transaction data',
+              description: 'Test Plaid API connection and generate comprehensive sample transaction data',
               parameters: {
                 type: 'object',
                 properties: {
                   generate_sample_data: { 
                     type: 'boolean', 
                     description: 'Whether to generate sample transaction data after testing' 
+                  }
+                }
+              }
+            },
+            {
+              name: 'analyze_finances',
+              description: 'Provide structured financial analysis with detailed insights and recommendations',
+              parameters: {
+                type: 'object',
+                properties: {
+                  analysis_type: {
+                    type: 'string',
+                    description: 'Type of analysis: spending, budget, cashflow, or comprehensive',
+                    enum: ['spending', 'budget', 'cashflow', 'comprehensive']
                   }
                 }
               }
@@ -248,6 +321,29 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
             onConflict: 'user_id'
           });
           console.log('Budget updated:', args);
+        } else if (name === 'analyze_finances') {
+          const { analysis_type = 'comprehensive' } = args;
+          
+          // Provide structured analysis based on current financial data
+          const analysisResult = {
+            analysis_type,
+            timestamp: new Date().toISOString(),
+            financial_health_score: financialAnalysis.savingsRate > 20 ? 'Excellent' : 
+                                   financialAnalysis.savingsRate > 10 ? 'Good' : 
+                                   financialAnalysis.savingsRate > 0 ? 'Fair' : 'Needs Improvement',
+            insights: {
+              income: financialAnalysis.totalIncome,
+              expenses: financialAnalysis.totalExpenses,
+              net_flow: financialAnalysis.netCashFlow,
+              savings_rate: `${financialAnalysis.savingsRate}%`,
+              category_spending: financialAnalysis.categorySpending
+            },
+            recommendations: []
+          };
+          
+          assistantMessage += `\n\n📊 FINANCIAL ANALYSIS COMPLETE:\n- Health Score: ${analysisResult.financial_health_score}\n- Savings Rate: ${financialAnalysis.savingsRate}%\n- Monthly Net Flow: $${financialAnalysis.netCashFlow.toFixed(2)}`;
+          
+          console.log('Financial analysis generated:', analysisResult);
         } else if (name === 'test_plaid_connection') {
           const { generate_sample_data = true } = args;
           
@@ -425,9 +521,9 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
             
             assistantMessage += `\n\nPlaid Test Results: ${plaidResult.success ? 'SUCCESS' : 'FAILED'}`;
             if (generate_sample_data && plaidResult.success) {
-              assistantMessage += '\n\nGreat! I\'ve generated comprehensive sample transaction data that includes:\n- Monthly income: $5,050\n- Total expenses: $2,633\n- Net positive cash flow: $2,417\n\nNow let me automatically create a personalized budget based on your spending patterns...';
+              assistantMessage += '\n\n🎉 SUCCESS! I\'ve generated comprehensive sample transaction data and will now provide a complete financial analysis:\n\n📊 **FINANCIAL OVERVIEW:**\n- Monthly Income: $5,050\n- Total Expenses: $2,633\n- Net Cash Flow: $2,417 (48% savings rate!)\n- Account Balances: $18,265\n\n💡 **KEY INSIGHTS:**\n- Excellent savings rate indicates strong financial discipline\n- Housing costs are reasonable at 36% of income\n- Food spending is moderate at $279/month\n- Good emergency fund potential\n\nNow creating your personalized budget based on this data...';
               
-              // Auto-create budget based on the sample data
+              // Auto-create comprehensive budget based on sample data
               const autoCategories = {
                 "Housing": 1800,
                 "Utilities": 206,
@@ -437,10 +533,11 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
                 "Shopping": 68,
                 "Healthcare": 35,
                 "Emergency Fund": 500,
-                "Savings": 1000
+                "Long-term Savings": 1000,
+                "Discretionary": 317
               };
               
-              await supabase.from('budget').upsert({
+              const budgetResult = await supabase.from('budget').upsert({
                 user_id: user.id,
                 income: 5050,
                 expenses: 2633,
@@ -451,7 +548,13 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
                 onConflict: 'user_id'
               });
               
-              assistantMessage += '\n\n✅ **Budget Created Successfully!**\n\nBased on your transaction data, I\'ve created a personalized monthly budget:\n\n**Income:** $5,050\n**Total Budgeted Expenses:** $2,633\n**Available for Savings/Goals:** $2,417\n\n**Category Breakdown:**\n- 🏠 Housing: $1,800 (36%)\n- ⚡ Utilities: $206 (4%)\n- 🍽️ Food: $279 (6%)\n- 🚗 Transportation: $71 (1%)\n- 🎬 Entertainment: $45 (1%)\n- 🛍️ Shopping: $68 (1%)\n- 🏥 Healthcare: $35 (1%)\n- 🚨 Emergency Fund: $500 (10%)\n- 💰 Savings: $1,000 (20%)\n\n**Key Insights:**\n- You have excellent cash flow with 48% available for savings and goals\n- Your housing costs are reasonable at 36% of income\n- Consider increasing your emergency fund to 3-6 months of expenses\n- You\'re well-positioned to achieve significant financial goals\n\nWould you like me to help you set specific savings goals or adjust any budget categories?';
+              
+              if (budgetResult.error) {
+                console.error('Budget creation error:', budgetResult.error);
+                assistantMessage += '\n\n⚠️ Note: Had some difficulty saving the budget, but your financial analysis is complete.';
+              } else {
+                assistantMessage += '\n\n✅ **BUDGET CREATED SUCCESSFULLY!**\n\n📈 **YOUR PERSONALIZED BUDGET:**\n- Housing: $1,800 (36%)\n- Utilities: $206 (4%)\n- Food: $279 (6%)\n- Transportation: $71 (1%)\n- Entertainment: $45 (1%)\n- Healthcare: $35 (1%)\n- Emergency Fund: $500 (10%)\n- Long-term Savings: $1,000 (20%)\n- Discretionary: $317 (6%)\n\n🎯 **RECOMMENDATIONS:**\n1. **Excellent Position**: Your 48% savings rate is outstanding\n2. **Emergency Fund**: Build to 6 months of expenses ($15,798)\n3. **Investment Goals**: Consider investing excess savings\n4. **Optimization**: Look for ways to reduce discretionary spending\n5. **Track Progress**: Monitor monthly to stay on target';
+              }
             }
           } catch (error) {
             console.error('Plaid test error:', error);

@@ -228,7 +228,7 @@ export default function ConversationalAI() {
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          message: 'Please test the Plaid connection, generate comprehensive sample transaction data, and then immediately analyze this data to create a personalized budget for me based on the spending patterns. After creating the budget, provide specific insights about my spending habits and recommendations for optimization.',
+          message: 'Please test the Plaid connection and generate comprehensive sample transaction data covering multiple categories like housing, food, transportation, entertainment, and income. Then immediately analyze this data to create a detailed personalized budget based on the spending patterns. Provide specific insights about spending habits, savings potential, and actionable recommendations for financial optimization.',
           conversation_history: messages.map(m => ({
             role: m.role,
             content: m.content
@@ -247,10 +247,10 @@ export default function ConversationalAI() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Show success message and indicate next steps
+      // Show success message with more detail
       toast({
-        title: "Plaid Connected & Budget Created!",
-        description: "Your financial data has been analyzed and a personalized budget has been created.",
+        title: "Financial Analysis Complete!",
+        description: "Sample data generated, analyzed, and personalized budget created with actionable insights.",
       });
 
       // Automatically send a follow-up message to get budget details
@@ -268,7 +268,7 @@ export default function ConversationalAI() {
 
           const { data: followUpData, error: followUpError } = await supabase.functions.invoke('gemini-chat', {
             body: {
-              message: 'Please show me a detailed breakdown of my current budget, including category allocations, spending vs budget analysis, and actionable recommendations for improving my financial health.',
+              message: 'Now please provide a detailed financial health report including: 1) Budget vs actual spending analysis, 2) Savings rate assessment, 3) Category-wise spending insights, 4) Specific recommendations for optimization, and 5) Suggested financial goals based on my current situation.',
               conversation_history: [...messages, assistantMessage, followUpMessage].map(m => ({
                 role: m.role,
                 content: m.content
@@ -387,9 +387,22 @@ export default function ConversationalAI() {
                 className="text-xs"
               >
                 <TestTube className="h-3 w-3 mr-1" />
-                Test Plaid
+                Generate Financial Data
               </Button>
-              <span className="text-xs text-muted-foreground">Verify connection & generate sample data</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const analysisMessage = "Please analyze my current financial situation and provide a comprehensive report with budget recommendations.";
+                  setInput(analysisMessage);
+                  sendMessage();
+                }}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                📊 Analyze Finances
+              </Button>
+              <span className="text-xs text-muted-foreground">Get sample data or analyze current finances</span>
             </div>
             <div className="flex items-center space-x-2">
               <Button
