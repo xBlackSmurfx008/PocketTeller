@@ -60,6 +60,18 @@ export default function Account() {
     
     setIsDeleting(true);
     try {
+      // Delete chat uploads from storage
+      const { data: files } = await supabase.storage
+        .from('chat-uploads')
+        .list(user.id);
+      
+      if (files && files.length > 0) {
+        const filePaths = files.map(file => `${user.id}/${file.name}`);
+        await supabase.storage
+          .from('chat-uploads')
+          .remove(filePaths);
+      }
+
       // Delete all user data in correct order due to foreign key constraints
       await Promise.all([
         supabase.from('conversations').delete().eq('user_id', user.id),
@@ -193,6 +205,7 @@ export default function Account() {
                         <li>Goals and targets</li>
                         <li>Bills and reminders</li>
                         <li>Chat conversation history</li>
+                        <li>Uploaded files and documents</li>
                         <li>Bank connection (Plaid token)</li>
                       </ul>
                     </AlertDialogDescription>

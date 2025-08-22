@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Mic, MicOff, Send, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Send, RefreshCw, Plus, X, Download, FileText, Image } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Speech Recognition types
@@ -57,11 +57,20 @@ interface SpeechRecognitionErrorEvent {
   message: string;
 }
 
+interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  attachments?: Attachment[];
 }
 
 export default function ConversationalAI() {
@@ -75,7 +84,10 @@ export default function ConversationalAI() {
   const [isListening, setIsListening] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -146,7 +158,9 @@ export default function ConversationalAI() {
         id: msg.id,
         role: msg.role as 'user' | 'assistant',
         content: msg.message,
-        timestamp: new Date(msg.created_at)
+        timestamp: new Date(msg.created_at),
+        attachments: Array.isArray(msg.attachments) ? 
+          (msg.attachments as unknown as Attachment[]) : []
       }));
 
       setMessages(formattedMessages);
@@ -178,31 +192,115 @@ export default function ConversationalAI() {
     }
   };
 
+  const uploadFile = async (file: File): Promise<Attachment> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${user!.id}/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('chat-uploads')
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('chat-uploads')
+      .getPublicUrl(filePath);
+
+    return {
+      id: Date.now().toString(),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: publicUrl
+    };
+  };
+
+  const handleFileUpload = async (files: FileList) => {
+    if (!files.length || isUploading) return;
+
+    setIsUploading(true);
+    try {
+      const newAttachments: Attachment[] = [];
+      
+      for (const file of Array.from(files)) {
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+          toast({
+            title: "File Too Large",
+            description: `${file.name} is too large. Maximum size is 10MB.`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        // Validate file type
+        const allowedTypes = [
+          'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+          'application/pdf', 'text/plain', 'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+        
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: "Unsupported File Type",
+            description: `${file.name} type is not supported.`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        const attachment = await uploadFile(file);
+        newAttachments.push(attachment);
+      }
+
+      setPendingAttachments(prev => [...prev, ...newAttachments]);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload files. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removePendingAttachment = (attachmentId: string) => {
+    setPendingAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
   const sendMessage = async (messageContent?: string) => {
     const content = messageContent || inputMessage.trim();
-    if (!content || isLoading) return;
+    if ((!content && pendingAttachments.length === 0) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: content,
-      timestamp: new Date()
+      content: content || 'Sent attachments',
+      timestamp: new Date(),
+      attachments: [...pendingAttachments]
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
+    const currentAttachments = [...pendingAttachments];
+    setPendingAttachments([]);
     setIsLoading(true);
 
     try {
       const conversationHistory = messages.map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
+        attachments: msg.attachments
       }));
 
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
           message: content,
-          conversation_history: conversationHistory
+          conversation_history: conversationHistory,
+          attachments: currentAttachments
         }
       });
 
@@ -312,6 +410,36 @@ export default function ConversationalAI() {
                         </p>
                         <div className="prose prose-sm max-w-none">
                           <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
+                          {message.attachments && message.attachments.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {message.attachments.map((attachment) => (
+                                <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                                  {attachment.type.startsWith('image/') ? (
+                                    <div className="flex items-center gap-2">
+                                      <Image className="h-4 w-4" />
+                                      <img 
+                                        src={attachment.url} 
+                                        alt={attachment.name}
+                                        className="max-w-xs max-h-32 object-contain rounded"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-4 w-4" />
+                                      <span className="text-sm truncate">{attachment.name}</span>
+                                    </div>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(attachment.url, '_blank')}
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -369,8 +497,49 @@ export default function ConversationalAI() {
                 )}
               </Button>
             </div>
+
+            {pendingAttachments.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Attachments:</p>
+                <div className="flex flex-wrap gap-2">
+                  {pendingAttachments.map((attachment) => (
+                    <div key={attachment.id} className="flex items-center gap-2 bg-muted p-2 rounded-md">
+                      {attachment.type.startsWith('image/') ? (
+                        <Image className="h-4 w-4" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                      <span className="text-sm truncate max-w-32">{attachment.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePendingAttachment(attachment.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="flex items-center space-x-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.txt,.doc,.docx"
+                onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading || isUploading}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
               <Button
                 variant={isListening ? "destructive" : "outline"}
                 size="icon"
@@ -387,7 +556,10 @@ export default function ConversationalAI() {
                 disabled={isLoading}
                 className="flex-1"
               />
-              <Button onClick={() => sendMessage()} disabled={isLoading || !inputMessage.trim()}>
+              <Button 
+                onClick={() => sendMessage()} 
+                disabled={isLoading || (!inputMessage.trim() && pendingAttachments.length === 0)}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>

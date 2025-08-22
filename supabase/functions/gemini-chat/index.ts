@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversation_history = [] } = await req.json();
+    const { message, conversation_history = [], attachments = [] } = await req.json();
     
     if (!message) {
       throw new Error('Message is required');
@@ -222,10 +222,44 @@ CONVERSATION STYLE:
 
 CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights.`;
 
+    // Process attachments for Gemini
+    let messageContent = message;
+    const geminiParts = [{ text: message }];
+    
+    if (attachments && attachments.length > 0) {
+      messageContent += "\n\nAttached files:";
+      for (const attachment of attachments) {
+        if (attachment.type.startsWith('image/')) {
+          try {
+            // Download image and convert to base64 for Gemini
+            const response = await fetch(attachment.url);
+            const buffer = await response.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            
+            geminiParts.push({
+              inline_data: {
+                mime_type: attachment.type,
+                data: base64
+              }
+            });
+            messageContent += `\n- Image: ${attachment.name}`;
+          } catch (error) {
+            console.error('Error processing image:', error);
+            messageContent += `\n- Image: ${attachment.name} (failed to process)`;
+          }
+        } else {
+          messageContent += `\n- Document: ${attachment.name} (${attachment.type})`;
+        }
+      }
+    }
+
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...conversation_history,
-      { role: 'user', content: message }
+      ...conversation_history.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })),
+      { role: 'user', content: messageContent, parts: geminiParts }
     ];
 
     // Call Gemini API with function calling
@@ -237,7 +271,7 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
       body: JSON.stringify({
         contents: messages.map(msg => ({
           role: msg.role === 'system' ? 'user' : (msg.role === 'assistant' ? 'model' : msg.role),
-          parts: [{ text: msg.content }]
+          parts: msg.parts || [{ text: msg.content }]
         })),
         tools: [{
           function_declarations: [
@@ -403,12 +437,14 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
       supabase.from('conversations').insert({
         user_id: user.id,
         role: 'user',
-        message
+        message: message,
+        attachments: attachments || []
       }),
       supabase.from('conversations').insert({
         user_id: user.id,
         role: 'assistant',
-        message: assistantMessage
+        message: assistantMessage,
+        attachments: []
       })
     ]);
 
