@@ -126,6 +126,19 @@ When users want to set goals or update budgets, use the appropriate function cal
                   }
                 }
               }
+            },
+            {
+              name: 'test_plaid_connection',
+              description: 'Test Plaid API connection and generate sample transaction data',
+              parameters: {
+                type: 'object',
+                properties: {
+                  generate_sample_data: { 
+                    type: 'boolean', 
+                    description: 'Whether to generate sample transaction data after testing' 
+                  }
+                }
+              }
             }
           ]
         }],
@@ -213,6 +226,62 @@ When users want to set goals or update budgets, use the appropriate function cal
             onConflict: 'user_id'
           });
           console.log('Budget updated:', args);
+        } else if (name === 'test_plaid_connection') {
+          const { generate_sample_data = true } = args;
+          
+          try {
+            // Test Plaid connection
+            const plaidResponse = await fetch(`${supabaseUrl}/functions/v1/plaid-test`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            const plaidResult = await plaidResponse.json();
+            console.log('Plaid test result:', plaidResult);
+            
+            if (plaidResult.success && generate_sample_data) {
+              // Generate sample transactions
+              const sampleTransactions = [
+                {
+                  user_id: user.id,
+                  description: 'Grocery Store Purchase',
+                  amount: -85.43,
+                  category: 'Food',
+                  date: new Date().toISOString().split('T')[0],
+                  transaction_id: `demo_${Date.now()}_1`
+                },
+                {
+                  user_id: user.id,
+                  description: 'Salary Deposit',
+                  amount: 3500.00,
+                  category: 'Income',
+                  date: new Date().toISOString().split('T')[0],
+                  transaction_id: `demo_${Date.now()}_2`
+                },
+                {
+                  user_id: user.id,
+                  description: 'Electric Bill',
+                  amount: -125.67,
+                  category: 'Utilities',
+                  date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+                  transaction_id: `demo_${Date.now()}_3`
+                }
+              ];
+              
+              await supabase.from('transactions').insert(sampleTransactions);
+              console.log('Sample transactions created');
+            }
+            
+            assistantMessage += `\n\nPlaid Test Results: ${plaidResult.success ? 'SUCCESS' : 'FAILED'}`;
+            if (generate_sample_data && plaidResult.success) {
+              assistantMessage += '\nSample transaction data has been generated for demonstration.';
+            }
+          } catch (error) {
+            console.error('Plaid test error:', error);
+            assistantMessage += `\n\nPlaid Test Error: ${error.message}`;
+          }
         }
       } catch (error) {
         console.error('Function call error:', error);

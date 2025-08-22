@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Mic, MicOff, Send } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Send, TestTube } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Speech Recognition types
@@ -212,6 +212,57 @@ export default function ConversationalAI() {
     }
   };
 
+  const testPlaidConnection = async () => {
+    if (isLoading) return;
+
+    const testMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: 'Test Plaid connection and generate sample data',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, testMessage]);
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: {
+          message: 'Please test the Plaid connection and generate some sample transaction data for me to see.',
+          conversation_history: messages.map(m => ({
+            role: m.role,
+            content: m.content
+          }))
+        }
+      });
+
+      if (error) throw error;
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      toast({
+        title: "Plaid Test Completed",
+        description: "Check the response for connection status and sample data.",
+      });
+    } catch (error) {
+      console.error('Error testing Plaid:', error);
+      toast({
+        title: "Test Failed",
+        description: "Failed to test Plaid connection. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -286,6 +337,19 @@ export default function ConversationalAI() {
           </ScrollArea>
 
           <div className="border-t border-border p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={testPlaidConnection}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                <TestTube className="h-3 w-3 mr-1" />
+                Test Plaid
+              </Button>
+              <span className="text-xs text-muted-foreground">Verify connection & generate sample data</span>
+            </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant={isListening ? "destructive" : "outline"}
