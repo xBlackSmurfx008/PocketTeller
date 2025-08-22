@@ -362,7 +362,6 @@ export default function ConversationalAI() {
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Budgeting Assistant</h1>
           </div>
-          <span className="text-sm text-muted-foreground">{user?.email}</span>
         </div>
       </header>
 

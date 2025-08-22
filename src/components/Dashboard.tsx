@@ -58,7 +58,6 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
               <Settings className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" onClick={handleSignOut}>
               Sign Out
             </Button>
