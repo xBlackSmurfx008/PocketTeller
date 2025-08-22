@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversation_history = [], attachments = [], thread_id } = await req.json();
+    const { message, conversation_history = [], attachments = [], thread_id, coach_mode = false } = await req.json();
     
     if (!message) {
       throw new Error('Message is required');
@@ -48,7 +48,8 @@ serve(async (req) => {
       { data: goals },
       { data: allTransactions },
       { data: accounts },
-      { data: recentTransactions }
+      { data: recentTransactions },
+      { data: aiGuides }
     ] = await Promise.all([
       supabase.from('budget').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('goals').select('*').eq('user_id', user.id),
@@ -56,7 +57,9 @@ serve(async (req) => {
       supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
       supabase.from('accounts').select('*').eq('user_id', user.id),
       // Recent transactions for quick context
-      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20)
+      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20),
+      // Get AI guides for enhanced coaching
+      supabase.from('ai_guides').select('*').eq('is_active', true)
     ]);
 
     // Build context for Gemini with 24-month analysis capability
@@ -147,8 +150,8 @@ serve(async (req) => {
         (((metrics.last24Months.expenses - metrics.lastYear.expenses) / metrics.lastYear.expenses) * 100).toFixed(1) : 0
     };
 
-    // Enhanced system prompt for 24-month analysis capability
-    const systemPrompt = `You are an advanced financial assistant capable of analyzing up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. You excel at identifying long-term trends, seasonal patterns, and creating sophisticated budgets based on extensive historical data.
+    // Enhanced system prompt with coaching capabilities
+    let systemPrompt = `You are an advanced financial assistant capable of analyzing up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. You excel at identifying long-term trends, seasonal patterns, and creating sophisticated budgets based on extensive historical data.
 
 FORMATTING RULES:
 - Use plain text only, no markdown formatting
@@ -195,7 +198,43 @@ CRITICAL ASSESSMENT:
 - Has Transactions: ${financialAnalysis.hasTransactions}
 - Has Budget: ${financialAnalysis.hasBudget}
 - Needs Budget: ${financialAnalysis.needsBudget}
-- Has Long-term Data: ${financialAnalysis.hasLongTermData}
+- Has Long-term Data: ${financialAnalysis.hasLongTermData}`;
+
+    // Add coaching knowledge base if coach mode is enabled
+    if (coach_mode && aiGuides && aiGuides.length > 0) {
+      const budgetingGuide = aiGuides.find(guide => 
+        guide.tags?.includes('budgeting') || guide.tags?.includes('coach')
+      );
+      
+      if (budgetingGuide) {
+        systemPrompt += `
+
+COACHING MODE ENABLED - ENHANCED BUDGETING KNOWLEDGE:
+
+You now have access to a comprehensive budgeting education guide. Use this knowledge to:
+1. Assess the user's current financial literacy level (beginner/intermediate/advanced)
+2. Provide educational content appropriate to their level
+3. Ask guided questions that help them reflect on their financial habits
+4. Suggest practical exercises to build better money management skills
+5. Offer step-by-step coaching through budgeting challenges
+
+BUDGETING EDUCATION GUIDE:
+${budgetingGuide.content}
+
+COACHING APPROACH:
+- Start by assessing their current knowledge level through gentle questions
+- Provide education before diving into complex analysis
+- Use the key questions from the guide to prompt self-reflection
+- Suggest practical exercises that match their skill level
+- Be encouraging and non-judgmental
+- Guide them through a progressive learning journey
+- Reference specific sections of the guide when relevant
+
+When coach mode is active, prioritize education and skill-building over just providing answers. Help them learn to fish rather than just giving them fish.`;
+      }
+    }
+
+    systemPrompt += `
 
 MANDATORY ACTIONS FOR 24-MONTH DATA:
 1. COMPREHENSIVE TREND ANALYSIS: Identify seasonal patterns, growth trends, and spending changes over time
@@ -225,6 +264,7 @@ CONVERSATION STYLE:
 - Explain seasonal variations and their impact on budgeting
 - Use year-over-year comparisons to show progress
 - Highlight both positive trends and areas needing attention
+${coach_mode ? '- In coach mode: Focus on education, ask guiding questions, and provide step-by-step learning' : ''}
 
 CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights.`;
 

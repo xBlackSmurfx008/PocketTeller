@@ -50,6 +50,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_guides: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          slug: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slug: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slug?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bills: {
         Row: {
           amount: number
