@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import FinancialHealthSnapshot from '@/components/FinancialHealthSnapshot';
 import RecentTransactions from '@/components/RecentTransactions';
 import UpcomingBills from '@/components/UpcomingBills';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
@@ -17,7 +19,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-foreground">Budget AI</h1>
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => window.location.href = '/chat'}>
+            <Button variant="outline" onClick={() => navigate('/chat')}>
               AI Assistant
             </Button>
             <span className="text-sm text-muted-foreground">{user?.email}</span>

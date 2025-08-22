@@ -50,7 +50,7 @@ interface Message {
 }
 
 export default function ConversationalAI() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -61,6 +61,8 @@ export default function ConversationalAI() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (loading) return; // Wait for auth to finish loading
+    
     if (!user) {
       navigate('/auth');
       return;
@@ -99,7 +101,7 @@ export default function ConversationalAI() {
 
     // Load conversation history
     loadConversationHistory();
-  }, [user, navigate, toast]);
+  }, [user, loading, navigate, toast]);
 
   useEffect(() => {
     scrollToBottom();
@@ -110,11 +112,13 @@ export default function ConversationalAI() {
   };
 
   const loadConversationHistory = async () => {
+    if (!user) return; // Don't load if no user
+    
     try {
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .limit(50);
 
@@ -207,6 +211,17 @@ export default function ConversationalAI() {
       sendMessage();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
