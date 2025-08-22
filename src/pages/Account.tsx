@@ -1,0 +1,227 @@
+
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Trash2, AlertTriangle } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+export default function Account() {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  const handleDisconnectPlaid = async () => {
+    if (!user) return;
+    
+    setIsDisconnecting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ plaid_access_token: null })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Bank Disconnected",
+        description: "Your bank account has been disconnected successfully.",
+      });
+    } catch (error) {
+      console.error('Error disconnecting bank:', error);
+      toast({
+        title: "Disconnection Failed",
+        description: "Failed to disconnect your bank account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  const handleDeleteAllData = async () => {
+    if (!user) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete all user data in correct order due to foreign key constraints
+      await Promise.all([
+        supabase.from('conversations').delete().eq('user_id', user.id),
+        supabase.from('transactions').delete().eq('user_id', user.id),
+        supabase.from('bills').delete().eq('user_id', user.id),
+        supabase.from('accounts').delete().eq('user_id', user.id),
+        supabase.from('goals').delete().eq('user_id', user.id),
+        supabase.from('budget').delete().eq('user_id', user.id),
+      ]);
+
+      // Update profile to remove Plaid token
+      await supabase
+        .from('profiles')
+        .update({ plaid_access_token: null })
+        .eq('user_id', user.id);
+
+      toast({
+        title: "Data Deleted",
+        description: "All your financial data has been permanently deleted.",
+      });
+
+      // Navigate back to dashboard
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting data:', error);
+      toast({
+        title: "Deletion Failed",
+        description: "Failed to delete your data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border p-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
+          </div>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto p-4 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+            <CardDescription>Your account details</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <p className="text-sm">{user?.email}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">User ID</label>
+              <p className="text-xs font-mono text-muted-foreground">{user?.id}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>Customize how Budget AI looks for you</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Theme</p>
+                <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
+              </div>
+              <ThemeToggle />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Bank Connection</CardTitle>
+            <CardDescription>Manage your connected bank accounts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              onClick={handleDisconnectPlaid}
+              disabled={isDisconnecting}
+            >
+              {isDisconnecting ? 'Disconnecting...' : 'Disconnect Bank Account'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription>
+              These actions cannot be undone. Please be careful.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full sm:w-auto">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete All My Data
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      Are you absolutely sure?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete all your:
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>Transaction history</li>
+                        <li>Account information</li>
+                        <li>Budget data</li>
+                        <li>Goals and targets</li>
+                        <li>Bills and reminders</li>
+                        <li>Chat conversation history</li>
+                        <li>Bank connection (Plaid token)</li>
+                      </ul>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAllData}
+                      disabled={isDeleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete Everything'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <p className="text-xs text-muted-foreground">
+                This will permanently delete all your financial data from Budget AI.
+              </p>
+            </div>
+
+            <div className="pt-4 border-t">
+              <Button variant="outline" onClick={signOut}>
+                Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}

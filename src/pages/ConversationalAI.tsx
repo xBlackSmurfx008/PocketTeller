@@ -1,20 +1,20 @@
+
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Mic, MicOff, Send } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Mic, MicOff, Send, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PlaidLink } from '@/components/PlaidLink';
 
 // Speech Recognition types
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
 
@@ -24,24 +24,38 @@ interface SpeechRecognition extends EventTarget {
   lang: string;
   start(): void;
   stop(): void;
-  abort(): void;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
 }
 
-interface SpeechRecognitionEvent extends Event {
+interface SpeechRecognitionEvent {
   results: SpeechRecognitionResultList;
+  resultIndex: number;
 }
 
-interface SpeechRecognitionErrorEvent extends Event {
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent {
   error: string;
+  message: string;
 }
-
-declare var SpeechRecognition: {
-  prototype: SpeechRecognition;
-  new(): SpeechRecognition;
-};
 
 interface Message {
   id: string;
@@ -52,18 +66,19 @@ interface Message {
 
 export default function ConversationalAI() {
   const { user, loading } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
-  const [hasPlaidToken, setHasPlaidToken] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (loading) return; // Wait for auth to finish loading
+    if (loading) return;
     
     if (!user) {
       navigate('/auth');
@@ -71,25 +86,26 @@ export default function ConversationalAI() {
     }
 
     // Initialize speech recognition
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
+      
       recognitionInstance.continuous = false;
       recognitionInstance.interimResults = false;
       recognitionInstance.lang = 'en-US';
 
-      recognitionInstance.onresult = (event) => {
+      recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
-        setInput(transcript);
+        setInputMessage(transcript);
         setIsListening(false);
       };
 
-      recognitionInstance.onerror = (event) => {
+      recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         toast({
-          title: "Voice input error",
-          description: "Could not process voice input. Please try again.",
+          title: "Voice Recognition Error",
+          description: "Failed to recognize speech. Please try again.",
           variant: "destructive",
         });
       };
@@ -101,9 +117,8 @@ export default function ConversationalAI() {
       setRecognition(recognitionInstance);
     }
 
-    // Load conversation history and check Plaid connection
+    // Load conversation history
     loadConversationHistory();
-    checkPlaidConnection();
   }, [user, loading, navigate, toast]);
 
   useEffect(() => {
@@ -111,12 +126,12 @@ export default function ConversationalAI() {
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const loadConversationHistory = async () => {
-    if (!user) return; // Don't load if no user
-    
+    if (!user) return;
+
     try {
       const { data, error } = await supabase
         .from('conversations')
@@ -140,60 +155,54 @@ export default function ConversationalAI() {
     }
   };
 
-  const checkPlaidConnection = async () => {
-    if (!user) return;
-    
+  const syncTransactions = async () => {
+    setIsSyncing(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('plaid_access_token')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke('plaid-sync');
+      
+      if (error) throw error;
 
-      if (!error && data?.plaid_access_token) {
-        setHasPlaidToken(true);
-      }
+      toast({
+        title: "Sync Complete", 
+        description: `Updated ${data.accounts || 0} accounts and ${data.transactions || 0} transactions.`,
+      });
     } catch (error) {
-      console.error('Error checking Plaid connection:', error);
+      console.error('Error syncing transactions:', error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync transactions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
-  const startListening = () => {
-    if (recognition && !isListening) {
-      setIsListening(true);
-      recognition.start();
-    }
-  };
-
-  const stopListening = () => {
-    if (recognition && isListening) {
-      recognition.stop();
-      setIsListening(false);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (messageContent?: string) => {
+    const content = messageContent || inputMessage.trim();
+    if (!content || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: content,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setInputMessage('');
     setIsLoading(true);
 
     try {
+      const conversationHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          message: userMessage.content,
-          conversation_history: messages.map(m => ({
-            role: m.role,
-            content: m.content
-          }))
+          message: content,
+          conversation_history: conversationHistory
         }
       });
 
@@ -202,18 +211,11 @@ export default function ConversationalAI() {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.message,
+        content: data.message || 'I apologize, but I encountered an error processing your request.',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-
-      if (data.function_calls && data.function_calls.length > 0) {
-        toast({
-          title: "Action completed",
-          description: "I've updated your financial data based on our conversation.",
-        });
-      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -226,6 +228,25 @@ export default function ConversationalAI() {
     }
   };
 
+  const handleVoiceToggle = () => {
+    if (!recognition) {
+      toast({
+        title: "Voice Recognition Unavailable",
+        description: "Your browser doesn't support voice recognition.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -233,138 +254,146 @@ export default function ConversationalAI() {
     }
   };
 
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background">
       <header className="border-b border-border p-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
-          <h1 className="text-2xl font-bold text-foreground">Financial Assistant</h1>
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Budgeting Assistant</h1>
+          </div>
+          <span className="text-sm text-muted-foreground">{user?.email}</span>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 h-[calc(100vh-80px)] flex flex-col">
-        <Card className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+        <div className="flex-1 flex flex-col min-h-0">
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
-                  <h3 className="text-lg font-medium mb-2">Welcome to your Financial Assistant!</h3>
-                  <p>I can help you with budgeting, setting goals, and analyzing your finances. Try asking me something like:</p>
-                  <ul className="mt-4 space-y-1 text-sm">
-                    <li>"Help me set a savings goal for a vacation"</li>
-                    <li>"I want to increase my grocery budget"</li>
-                    <li>"How am I doing with my spending this month?"</li>
-                  </ul>
-                </div>
+                <Card>
+                  <CardHeader>
+                    <h3 className="text-lg font-semibold">Welcome to your Budgeting Assistant! 🤖💰</h3>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">
+                      I'm here to help you manage your finances, analyze spending patterns, and achieve your financial goals. Here's what I can help you with:
+                    </p>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Analyze your spending patterns and trends</li>
+                      <li>Create and manage budgets based on your transaction history</li>
+                      <li>Set and track financial goals</li>
+                      <li>Provide personalized money-saving recommendations</li>
+                      <li>Answer questions about your financial health</li>
+                    </ul>
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Try asking me something like "How much did I spend on food last month?" or "Help me create a budget"
+                    </p>
+                  </CardContent>
+                </Card>
               )}
               
               {messages.map((message) => (
-                <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-lg p-3 ${
-                    message.role === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-muted text-foreground'
-                  }`}>
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                    <span className="text-xs opacity-70 mt-1 block">
-                      {message.timestamp.toLocaleTimeString()}
-                    </span>
-                  </div>
-                </div>
+                <Card key={message.id} className={message.role === 'user' ? 'ml-12' : 'mr-12'}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                        message.role === 'user' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {message.role === 'user' ? 'U' : 'AI'}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-muted-foreground mb-1">
+                          {message.role === 'user' ? 'You' : 'Budgeting Assistant'}
+                        </p>
+                        <div className="prose prose-sm max-w-none">
+                          <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
               
               {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-pulse flex space-x-1">
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        <div className="w-2 h-2 bg-primary rounded-full animation-delay-200"></div>
-                        <div className="w-2 h-2 bg-primary rounded-full animation-delay-400"></div>
+                <Card className="mr-12">
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                        AI
                       </div>
-                      <span className="text-sm text-muted-foreground">Thinking...</span>
+                      <div className="flex-1">
+                        <p className="text-sm text-muted-foreground mb-1">Budgeting Assistant</p>
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-pulse">Thinking...</div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               )}
-              
-              <div ref={messagesEndRef} />
             </div>
+            <div ref={messagesEndRef} />
           </ScrollArea>
 
           <div className="border-t border-border p-4 space-y-4">
-            <PlaidLink 
-              hasPlaidToken={hasPlaidToken} 
-              onConnectionChange={() => {
-                checkPlaidConnection();
-                loadConversationHistory();
-              }} 
-            />
-            
             <div className="flex items-center space-x-2 mb-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  const analysisMessage = "Please analyze my current financial situation and provide a comprehensive report with budget recommendations.";
-                  setInput(analysisMessage);
-                  sendMessage();
-                }}
+                onClick={() => sendMessage("Analyze my finances and provide insights")}
                 disabled={isLoading}
-                className="text-xs"
               >
                 📊 Analyze Finances
               </Button>
-              <span className="text-xs text-muted-foreground">Analyze your current finances</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={syncTransactions}
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Update Recent Transactions
+                  </>
+                )}
+              </Button>
             </div>
             
             <div className="flex items-center space-x-2">
               <Button
                 variant={isListening ? "destructive" : "outline"}
-                size="sm"
-                onClick={isListening ? stopListening : startListening}
-                disabled={!recognition}
+                size="icon"
+                onClick={handleVoiceToggle}
+                disabled={isLoading}
               >
                 {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
-              
               <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message or use voice input..."
+                placeholder="Ask me about your finances..."
                 disabled={isLoading}
                 className="flex-1"
               />
-              
-              <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="sm">
+              <Button onClick={() => sendMessage()} disabled={isLoading || !inputMessage.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            
-            {isListening && (
-              <p className="text-sm text-muted-foreground mt-2 text-center">
-                Listening... Speak now
-              </p>
-            )}
           </div>
-        </Card>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
