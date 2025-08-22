@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversation_history = [], attachments = [] } = await req.json();
+    const { message, conversation_history = [], attachments = [], thread_id } = await req.json();
     
     if (!message) {
       throw new Error('Message is required');
@@ -442,16 +442,31 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
       }
     }
 
+    // Validate thread ownership if thread_id is provided
+    if (thread_id) {
+      const { data: thread, error: threadError } = await supabase
+        .from('conversation_threads')
+        .select('user_id')
+        .eq('id', thread_id)
+        .single();
+      
+      if (threadError || !thread || thread.user_id !== user.id) {
+        throw new Error('Invalid thread ID or access denied');
+      }
+    }
+
     // Save conversation to database
     await Promise.all([
       supabase.from('conversations').insert({
         user_id: user.id,
+        thread_id: thread_id || null,
         role: 'user',
         message: message,
         attachments: attachments || []
       }),
       supabase.from('conversations').insert({
         user_id: user.id,
+        thread_id: thread_id || null,
         role: 'assistant',
         message: assistantMessage,
         attachments: []

@@ -30,6 +30,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/chat" element={<ConversationalAI />} />
+                <Route path="/chat/:threadId" element={<ConversationalAI />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/share/budget/:token" element={<SharedBudget />} />

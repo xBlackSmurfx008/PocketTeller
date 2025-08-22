@@ -7,8 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Mic, MicOff, Send, RefreshCw, Plus, X, Download, FileText, Image } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Mic, MicOff, Send, RefreshCw, Plus, X, Download, FileText, Image, MessageSquarePlus } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 // Speech Recognition types
 declare global {
@@ -77,7 +77,9 @@ export default function ConversationalAI() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { threadId } = useParams<{ threadId: string }>();
   
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -129,9 +131,9 @@ export default function ConversationalAI() {
       setRecognition(recognitionInstance);
     }
 
-    // Load conversation history
-    loadConversationHistory();
-  }, [user, loading, navigate, toast]);
+    // Handle thread initialization
+    initializeThread();
+  }, [user, loading, navigate, toast, threadId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -141,16 +143,111 @@ export default function ConversationalAI() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const loadConversationHistory = async () => {
+  const initializeThread = async () => {
+    if (!user) return;
+
+    // If we have a threadId in the URL, use it
+    if (threadId) {
+      try {
+        // Verify thread belongs to user
+        const { data: thread, error } = await supabase
+          .from('conversation_threads')
+          .select('*')
+          .eq('id', threadId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !thread) {
+          toast({
+            title: "Thread not found",
+            description: "Redirecting to a new conversation.",
+            variant: "destructive",
+          });
+          navigate('/chat');
+          return;
+        }
+
+        setCurrentThreadId(threadId);
+        loadConversationHistory(threadId);
+      } catch (error) {
+        console.error('Error verifying thread:', error);
+        navigate('/chat');
+      }
+    } else {
+      // No threadId in URL, create a new thread and redirect
+      createNewThread();
+    }
+  };
+
+  const createNewThread = async () => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
+        .from('conversation_threads')
+        .insert({
+          user_id: user.id,
+          title: 'New conversation'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      navigate(`/chat/${data.id}`);
+    } catch (error) {
+      console.error('Error creating thread:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new conversation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createNewConversation = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('conversation_threads')
+        .insert({
+          user_id: user.id,
+          title: 'New conversation'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Open in new tab
+      window.open(`/chat/${data.id}`, '_blank');
+    } catch (error) {
+      console.error('Error creating new conversation:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to create new conversation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadConversationHistory = async (threadId?: string) => {
+    if (!user) return;
+
+    try {
+      let query = supabase
         .from('conversations')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .limit(50);
+
+      if (threadId) {
+        query = query.eq('thread_id', threadId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -300,7 +397,8 @@ export default function ConversationalAI() {
         body: {
           message: content,
           conversation_history: conversationHistory,
-          attachments: currentAttachments
+          attachments: currentAttachments,
+          thread_id: currentThreadId
         }
       });
 
@@ -362,6 +460,15 @@ export default function ConversationalAI() {
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Budgeting Assistant</h1>
           </div>
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={createNewConversation}
+            className="flex items-center gap-2"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+            New Conversation
+          </Button>
         </div>
       </header>
 
