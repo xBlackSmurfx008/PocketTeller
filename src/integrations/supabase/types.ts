@@ -119,10 +119,68 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          created_at: string
+          current_amount: number
+          deadline: string | null
+          goal_name: string
+          id: string
+          target_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          goal_name: string
+          id?: string
+          target_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          goal_name?: string
+          id?: string
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           app_id: string | null
           created_at: string
+          has_connected_voice_ui: boolean
           id: string
           plaid_access_token: string | null
           updated_at: string
@@ -131,6 +189,7 @@ export type Database = {
         Insert: {
           app_id?: string | null
           created_at?: string
+          has_connected_voice_ui?: boolean
           id?: string
           plaid_access_token?: string | null
           updated_at?: string
@@ -139,6 +198,7 @@ export type Database = {
         Update: {
           app_id?: string | null
           created_at?: string
+          has_connected_voice_ui?: boolean
           id?: string
           plaid_access_token?: string | null
           updated_at?: string

@@ -17,6 +17,9 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-foreground">Budget AI</h1>
           <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => window.location.href = '/chat'}>
+              AI Assistant
+            </Button>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" onClick={handleSignOut}>
               Sign Out
