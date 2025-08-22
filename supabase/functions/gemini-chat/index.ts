@@ -263,7 +263,8 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
             const plaidResult = await plaidResponse.json();
             console.log('Plaid test result:', plaidResult);
             
-            if (plaidResult.success && generate_sample_data) {
+            // Generate sample data whether Plaid succeeds or fails if requested
+            if (generate_sample_data) {
               // Generate realistic sample transactions for the past 30 days
               const sampleTransactions = [
                 // Income
@@ -415,16 +416,32 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
                 }
               ];
               
-              await Promise.all([
+              const [transactionResult, accountResult] = await Promise.all([
                 supabase.from('transactions').insert(sampleTransactions),
                 supabase.from('accounts').insert(sampleAccounts)
               ]);
               
-              console.log('Sample transactions and accounts created');
+              if (transactionResult.error) {
+                console.error('Error inserting transactions:', transactionResult.error);
+                throw new Error(`Failed to create sample transactions: ${transactionResult.error.message}`);
+              }
+              
+              if (accountResult.error) {
+                console.error('Error inserting accounts:', accountResult.error);
+                throw new Error(`Failed to create sample accounts: ${accountResult.error.message}`);
+              }
+              
+              console.log('Sample transactions and accounts created successfully');
             }
             
             assistantMessage += `\n\nPlaid Test Results: ${plaidResult.success ? 'SUCCESS' : 'FAILED'}`;
-            if (generate_sample_data && plaidResult.success) {
+            if (plaidResult.success) {
+              assistantMessage += '\n✅ Plaid API credentials are working correctly.';
+            } else {
+              assistantMessage += `\n❌ Plaid test failed: ${plaidResult.error || 'Unknown error'}`;
+            }
+            
+            if (generate_sample_data) {
               assistantMessage += '\n\nGreat! I\'ve generated comprehensive sample transaction data that includes:\n- Monthly income: $5,050\n- Total expenses: $2,633\n- Net positive cash flow: $2,417\n\nNow let me automatically create a personalized budget based on your spending patterns...';
               
               // Auto-create budget based on the sample data
@@ -477,9 +494,24 @@ IMPORTANT: Be proactive! If you see transaction data but no budget, immediately 
       })
     ]);
 
+    // Include Plaid result if test_plaid_connection was called
+    let plaidResult = null;
+    if (functionCalls.some(fc => fc.name === 'test_plaid_connection')) {
+      try {
+        const plaidResponse = await fetch(`${supabaseUrl}/functions/v1/plaid-test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        plaidResult = await plaidResponse.json();
+      } catch (error) {
+        plaidResult = { success: false, error: error.message };
+      }
+    }
+
     return new Response(JSON.stringify({
       message: assistantMessage,
-      function_calls: functionCalls
+      function_calls: functionCalls,
+      plaidResult: plaidResult
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -226,6 +226,50 @@ export default function ConversationalAI() {
     setIsLoading(true);
 
     try {
+      // First test Plaid directly to get real status
+      const { data: plaidData, error: plaidError } = await supabase.functions.invoke('plaid-test', {
+        body: {}
+      });
+
+      if (plaidError) {
+        console.error('Plaid test error:', plaidError);
+        toast({
+          title: "Plaid Test Failed",
+          description: "Plaid credentials not configured. Generating demo data instead.",
+          variant: "destructive",
+        });
+        
+        // Continue with demo data generation
+        const { data, error } = await supabase.functions.invoke('gemini-chat', {
+          body: {
+            message: 'Plaid connection failed, but please generate comprehensive sample transaction data anyway and create a personalized budget based on realistic spending patterns.',
+            conversation_history: messages.map(m => ({
+              role: m.role,
+              content: m.content
+            }))
+          }
+        });
+
+        if (error) throw error;
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+
+        toast({
+          title: "Demo Budget Created!",
+          description: "Generated sample financial data and created a personalized budget.",
+        });
+
+        return;
+      }
+
+      // If Plaid test succeeded, proceed with full flow
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
           message: 'Please test the Plaid connection, generate comprehensive sample transaction data, and then immediately analyze this data to create a personalized budget for me based on the spending patterns. After creating the budget, provide specific insights about my spending habits and recommendations for optimization.',
@@ -247,11 +291,19 @@ export default function ConversationalAI() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Show success message and indicate next steps
-      toast({
-        title: "Plaid Connected & Budget Created!",
-        description: "Your financial data has been analyzed and a personalized budget has been created.",
-      });
+      // Show success based on actual results
+      if (data.plaidResult && data.plaidResult.success) {
+        toast({
+          title: "Plaid Connected & Budget Created!",
+          description: "Your financial data has been analyzed and a personalized budget has been created.",
+        });
+      } else {
+        toast({
+          title: "Demo Budget Created!",
+          description: "Plaid connection failed, but generated sample data and budget anyway.",
+          variant: "destructive",
+        });
+      }
 
       // Automatically send a follow-up message to get budget details
       setTimeout(async () => {
