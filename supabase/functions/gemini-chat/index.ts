@@ -94,7 +94,7 @@ When users want to set goals or update budgets, use the appropriate function cal
       },
       body: JSON.stringify({
         contents: messages.map(msg => ({
-          role: msg.role === 'system' ? 'user' : msg.role,
+          role: msg.role === 'system' ? 'user' : (msg.role === 'assistant' ? 'model' : msg.role),
           parts: [{ text: msg.content }]
         })),
         tools: [{
@@ -120,10 +120,9 @@ When users want to set goals or update budgets, use the appropriate function cal
                 properties: {
                   income: { type: 'number', description: 'Monthly income' },
                   expenses: { type: 'number', description: 'Monthly expenses' },
-                  categories: {
-                    type: 'object',
-                    description: 'Budget categories with amounts',
-                    additionalProperties: { type: 'number' }
+                  categories: { 
+                    type: 'string', 
+                    description: 'JSON string of budget categories with amounts, e.g. {"food": 500, "rent": 1000}' 
                   }
                 }
               }
@@ -142,7 +141,13 @@ When users want to set goals or update budgets, use the appropriate function cal
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+      return new Response(JSON.stringify({ 
+        error: `Gemini API error: ${geminiResponse.status}`,
+        details: errorText
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const geminiData = await geminiResponse.json();
@@ -183,12 +188,25 @@ When users want to set goals or update budgets, use the appropriate function cal
         } else if (name === 'update_budget') {
           const { income, expenses, categories } = args;
           
+          // Parse categories if it's a string
+          let parsedCategories = {};
+          if (typeof categories === 'string') {
+            try {
+              parsedCategories = JSON.parse(categories);
+            } catch (e) {
+              console.error('Failed to parse categories:', e);
+              parsedCategories = {};
+            }
+          } else {
+            parsedCategories = categories || {};
+          }
+          
           // Upsert budget
           await supabase.from('budget').upsert({
             user_id: user.id,
             income: income || 0,
             expenses: expenses || 0,
-            categories: categories || {},
+            categories: parsedCategories,
             time_period: 'monthly',
             status: 'active'
           }, {
