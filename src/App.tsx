@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import ConversationalAI from "./pages/ConversationalAI";
 import Goals from "./pages/Goals";
 import Account from "./pages/Account";
+import Transactions from "./pages/Transactions";
 import SharedBudget from "./pages/SharedBudget";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
                 <Route path="/chat" element={<ConversationalAI />} />
                 <Route path="/chat/:threadId" element={<ConversationalAI />} />
                 <Route path="/goals" element={<Goals />} />
+                <Route path="/transactions" element={<Transactions />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/share/budget/:token" element={<SharedBudget />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

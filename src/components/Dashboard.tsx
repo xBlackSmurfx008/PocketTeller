@@ -6,13 +6,13 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FinancialHealthSnapshot from '@/components/FinancialHealthSnapshot';
-import RecentTransactions from '@/components/RecentTransactions';
+import GoalsOverview from '@/components/GoalsOverview';
 import UpcomingBills from '@/components/UpcomingBills';
 import { PlaidLink } from '@/components/PlaidLink';
 import { ShareBudgetDialog } from '@/components/ShareBudgetDialog';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Target, MessageSquare, Share2 } from 'lucide-react';
+import { Settings, Target, MessageSquare, Share2, Receipt } from 'lucide-react';
 
 export default function Dashboard() {
   const { signOut, user } = useAuth();
@@ -84,6 +84,9 @@ export default function Dashboard() {
                 <Button variant="ghost" size="icon" onClick={() => navigate('/goals')}>
                   <Target className="h-4 w-4" />
                 </Button>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/transactions')}>
+                  <Receipt className="h-4 w-4" />
+                </Button>
                 {budgetData && (
                   <ShareBudgetDialog budgetData={budgetData}>
                     <Button variant="ghost" size="icon">
@@ -103,6 +106,10 @@ export default function Dashboard() {
                 <Button variant="outline" onClick={() => navigate('/goals')}>
                   <Target className="h-4 w-4 mr-2" />
                   Goals
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/transactions')}>
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Transactions
                 </Button>
                 {budgetData && (
                   <ShareBudgetDialog budgetData={budgetData}>
@@ -146,7 +153,7 @@ export default function Dashboard() {
         <FinancialHealthSnapshot />
         
         <div className={`grid grid-cols-1 lg:grid-cols-2 ${showMobileLayout ? 'gap-4' : 'gap-6'}`}>
-          <RecentTransactions />
+          <GoalsOverview />
           <UpcomingBills />
         </div>
       </main>
