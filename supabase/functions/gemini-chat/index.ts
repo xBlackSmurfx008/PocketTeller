@@ -40,12 +40,34 @@ async function retryWithBackoff<T>(
 }
 
 // Enhanced input validation
-function validateInput(data: any): { message: string; conversation_history: any[]; attachments: any[]; thread_id?: string; coach_mode: boolean; stream?: boolean } {
+function validateInput(data: any): { 
+  message: string; 
+  conversation_history: any[]; 
+  attachments: any[]; 
+  thread_id?: string; 
+  coach_mode: boolean; 
+  stream?: boolean;
+  timezone?: string;
+  todayString?: string;
+  nowUserLocal?: string;
+  clientNowISO?: string;
+} {
   if (!data || typeof data !== 'object') {
     throw new Error('Invalid request body');
   }
   
-  const { message, conversation_history = [], attachments = [], thread_id, coach_mode = false, stream = false } = data;
+  const { 
+    message, 
+    conversation_history = [], 
+    attachments = [], 
+    thread_id, 
+    coach_mode = false, 
+    stream = false,
+    timezone,
+    todayString,
+    nowUserLocal,
+    clientNowISO
+  } = data;
   
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
     throw new Error('Message is required and must be a non-empty string');
@@ -67,7 +89,18 @@ function validateInput(data: any): { message: string; conversation_history: any[
     throw new Error('Too many attachments (max 10)');
   }
   
-  return { message: message.trim(), conversation_history, attachments, thread_id, coach_mode: Boolean(coach_mode), stream: Boolean(stream) };
+  return { 
+    message: message.trim(), 
+    conversation_history, 
+    attachments, 
+    thread_id, 
+    coach_mode: Boolean(coach_mode), 
+    stream: Boolean(stream),
+    timezone,
+    todayString,
+    nowUserLocal,
+    clientNowISO
+  };
 }
 
 serve(async (req) => {
@@ -77,7 +110,7 @@ serve(async (req) => {
 
   try {
     const validatedInput = validateInput(await req.json());
-    const { message, conversation_history, attachments, thread_id, coach_mode, stream } = validatedInput;
+    const { message, conversation_history, attachments, thread_id, coach_mode, stream, timezone, todayString, nowUserLocal, clientNowISO } = validatedInput;
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
@@ -100,6 +133,54 @@ serve(async (req) => {
     }
 
     console.log(`Processing request for user ${user.id} with ${attachments.length} attachments, stream: ${stream}`);
+
+    // Resolve effective timezone and compute timezone-aware dates
+    let effectiveTimezone = timezone;
+    if (!effectiveTimezone) {
+      // Fallback to user's saved timezone from profiles_secure
+      try {
+        const { data: profile } = await supabase
+          .from('profiles_secure')
+          .select('timezone')
+          .eq('user_id', user.id)
+          .single();
+        effectiveTimezone = profile?.timezone || 'UTC';
+      } catch (error) {
+        console.warn('Could not fetch user timezone, using UTC:', error);
+        effectiveTimezone = 'UTC';
+      }
+    }
+
+    // Helper to compute dates in user's timezone
+    const getDateInTimezone = (date?: Date): Date => {
+      const targetDate = date || new Date();
+      try {
+        const timezonedString = new Intl.DateTimeFormat('en-CA', {
+          timeZone: effectiveTimezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(targetDate);
+        return new Date(timezonedString + 'T00:00:00.000Z');
+      } catch (error) {
+        console.warn('Invalid timezone, falling back to UTC:', error);
+        return targetDate;
+      }
+    };
+
+    // Compute timezone-aware current time if not provided by client
+    const userToday = todayString || getDateInTimezone().toISOString().slice(0, 10);
+    const userNowFormatted = nowUserLocal || new Intl.DateTimeFormat('en-CA', {
+      timeZone: effectiveTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(new Date()).replace(',', '');
+
+    console.log(`Timezone: ${effectiveTimezone}, User today: ${userToday}, User now: ${userNowFormatted}`);
 
     // Get user's financial context with enhanced error handling
     const fetchFinancialData = async () => {
@@ -142,13 +223,13 @@ serve(async (req) => {
       all_transactions: allTransactions || []
     };
 
-    // Advanced financial analysis for 24-month period
-    const now = new Date();
-    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-    const twoYearsAgo = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+    // Advanced financial analysis for 24-month period using timezone-aware dates
+    const nowInTimezone = getDateInTimezone();
+    const oneMonthAgo = new Date(nowInTimezone.getFullYear(), nowInTimezone.getMonth() - 1, nowInTimezone.getDate());
+    const threeMonthsAgo = new Date(nowInTimezone.getFullYear(), nowInTimezone.getMonth() - 3, nowInTimezone.getDate());
+    const sixMonthsAgo = new Date(nowInTimezone.getFullYear(), nowInTimezone.getMonth() - 6, nowInTimezone.getDate());
+    const oneYearAgo = new Date(nowInTimezone.getFullYear() - 1, nowInTimezone.getMonth(), nowInTimezone.getDate());
+    const twoYearsAgo = new Date(nowInTimezone.getFullYear() - 2, nowInTimezone.getMonth(), nowInTimezone.getDate());
     
     // Filter transactions by time periods
     const lastMonthTransactions = allTransactions?.filter(t => new Date(t.date) >= oneMonthAgo) || [];
@@ -221,7 +302,7 @@ serve(async (req) => {
         (((metrics.last24Months.expenses - metrics.lastYear.expenses) / metrics.lastYear.expenses) * 100).toFixed(1) : 0
     };
 
-    // Enhanced system prompt with Deep Think mode capability
+    // Enhanced system prompt with Deep Think mode capability and timezone awareness
     let systemPrompt = `You are an advanced financial assistant powered by Gemini 2.5 Pro with Deep Think reasoning capabilities. You can analyze up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. Think step-by-step through complex financial problems for the most accurate and helpful responses.
 
 ENHANCED REASONING MODE: 
@@ -232,6 +313,13 @@ FORMATTING RULES:
 - Do not use asterisks (*) for emphasis or bold text
 - Use CAPS for emphasis when needed
 - Use clear, readable plain text formatting
+
+TIMEZONE AWARENESS:
+- User timezone: ${effectiveTimezone}
+- User local now: ${userNowFormatted}
+- User today: ${userToday}
+- Treat "today", "this month", and due dates in this timezone
+- Use the provided userToday and userNowFormatted for all date-based reasoning and calculations
 
 CURRENT FINANCIAL CONTEXT:
 - Budget: ${JSON.stringify(financialContext.budget)}
@@ -634,7 +722,10 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
           processedAttachments: processedAttachments.length,
           processedNames: processedNames,
           skippedAttachments: skippedAttachments.length,
-          attachmentErrors: attachmentErrors.length
+          attachmentErrors: attachmentErrors.length,
+          effectiveTimezone: effectiveTimezone,
+          userToday: userToday,
+          userNowFormatted: userNowFormatted
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTimezone } from "@/hooks/useTimezone";
+import { useDateHelpers } from "@/utils/dateUtils";
 import { toast } from "sonner";
 import { Send, Plus, Upload, X, GraduationCap, Loader2 } from "lucide-react";
 
@@ -64,6 +66,8 @@ const ConversationalAI = () => {
   const { threadId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { timezone } = useTimezone();
+  const dateHelpers = useDateHelpers(timezone);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -132,6 +136,21 @@ const ConversationalAI = () => {
     setIsLoading(true);
 
     try {
+      // Compute timezone-aware time information
+      const todayString = dateHelpers.getTodayString();
+      const now = new Date();
+      const nowUserLocal = timezone ? 
+        new Intl.DateTimeFormat('en-CA', {
+          timeZone: timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).format(now).replace(',', '') :
+        now.toISOString().slice(0, 16).replace('T', ' ');
+
       const { data, error } = await supabase.functions.invoke<GeminiChatResponse>('gemini-chat', {
         body: {
           message: inputMessage,
@@ -141,7 +160,11 @@ const ConversationalAI = () => {
           })),
           attachments: attachments,
           thread_id: threadId,
-          coach_mode: coachMode
+          coach_mode: coachMode,
+          timezone: timezone,
+          todayString: todayString,
+          nowUserLocal: nowUserLocal,
+          clientNowISO: now.toISOString()
         }
       });
 
