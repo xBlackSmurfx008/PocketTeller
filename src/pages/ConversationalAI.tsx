@@ -23,6 +23,7 @@ interface FileAttachment {
   name: string;
   type: string;
   url: string;
+  path?: string;
   status?: 'uploading' | 'ready' | 'failed';
 }
 
@@ -33,6 +34,12 @@ interface GeminiChatResponse {
   timestamp?: string;
   savedToDb?: boolean;  // Optional: if backend saves/enriches data
   error?: string;       // If backend sends errors
+  debug?: {
+    processedAttachments: number;
+    processedNames: string[];
+    skippedAttachments: number;
+    attachmentErrors: number;
+  };
 }
 
 // Helper function to safely convert Json to FileAttachment[]
@@ -143,6 +150,17 @@ const ConversationalAI = () => {
       // Enhanced logging for debugging
       console.log('gemini-chat data:', data);
       console.table(data);
+
+      // Log debug info for attachment processing
+      const debugInfo = data?.debug;
+      if (debugInfo) {
+        console.log('Attachment processing results:', debugInfo);
+        
+        // Show warning if files couldn't be processed
+        if (attachments.length > 0 && debugInfo.processedAttachments === 0) {
+          toast.error("Your file couldn't be processed. Try re-uploading or use a smaller PDF.");
+        }
+      }
 
       // Extract content with fallback and validation
       const content = data?.response ?? data?.message;
@@ -270,10 +288,10 @@ const ConversationalAI = () => {
           .from('chat-uploads')
           .createSignedUrl(filePath, 3600); // 1 hour expiry
 
-        // Update attachment status to ready
+        // Update attachment status to ready with path
         setAttachments(prev => prev.map(attachment => 
           attachment.name === file.name && attachment.status === 'uploading'
-            ? { ...attachment, url: signedUrlData?.signedUrl || filePath, status: 'ready' as const }
+            ? { ...attachment, url: signedUrlData?.signedUrl || filePath, path: filePath, status: 'ready' as const }
             : attachment
         ));
         

@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.3';
 
 const corsHeaders = {
@@ -341,8 +342,12 @@ ${coach_mode ? '- In coach mode: Focus on education, ask guiding questions, and 
 
 CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights. Use Deep Think mode for complex problems - think through multiple steps and scenarios.`;
 
-    // Process attachments for Gemini with enhanced error handling
+    // Process attachments for Gemini with enhanced error handling and observability
     const geminiParts = [];
+    const processedAttachments = [];
+    const processedNames = [];
+    const skippedAttachments = [];
+    const attachmentErrors = [];
     let hasPdf = false;
     
     // Check for PDF attachments to add credit report instruction
@@ -364,21 +369,30 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
       
       for (const attachment of attachments) {
         try {
+          // Skip empty or missing URLs
+          if (!attachment.url || !attachment.url.trim()) {
+            console.log(`Skipping attachment ${attachment.name}: empty URL`);
+            skippedAttachments.push({ name: attachment.name, reason: 'Empty URL' });
+            continue;
+          }
+
           console.log(`Processing attachment: ${attachment.name}, type: ${attachment.type}, url: ${attachment.url}`);
           
-          // Extract file path from URL - handle both signed URLs and direct paths
-          let filePath = attachment.url;
+          // Extract file path - prefer client-provided path, fallback to URL parsing
+          let filePath = attachment.path || attachment.url;
           
-          // If it's a signed URL, extract the path
-          if (attachment.url.includes('/storage/v1/object/sign/chat-uploads/')) {
-            const match = attachment.url.match(/\/storage\/v1\/object\/sign\/chat-uploads\/([^?]+)/);
-            if (match) {
-              filePath = decodeURIComponent(match[1]);
-            }
-          } else if (attachment.url.includes('chat-uploads/')) {
-            const urlParts = attachment.url.split('chat-uploads/');
-            if (urlParts.length > 1) {
-              filePath = urlParts[1].split('?')[0];
+          // If no direct path and it's a signed URL, extract the path
+          if (!attachment.path) {
+            if (attachment.url.includes('/storage/v1/object/sign/chat-uploads/')) {
+              const match = attachment.url.match(/\/storage\/v1\/object\/sign\/chat-uploads\/([^?]+)/);
+              if (match) {
+                filePath = decodeURIComponent(match[1]);
+              }
+            } else if (attachment.url.includes('chat-uploads/')) {
+              const urlParts = attachment.url.split('chat-uploads/');
+              if (urlParts.length > 1) {
+                filePath = urlParts[1].split('?')[0];
+              }
             }
           }
           
@@ -400,30 +414,34 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
           const fileData = await retryWithBackoff(downloadFile);
           
           if (attachment.type.startsWith('image/')) {
-            // Process images for Gemini vision
+            // Process images using robust base64 encoding
             const buffer = await fileData.arrayBuffer();
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            const base64 = base64Encode(new Uint8Array(buffer));
             
             geminiParts.push({
-              inline_data: {
-                mime_type: attachment.type,
+              inlineData: {
+                mimeType: attachment.type,
                 data: base64
               }
             });
-            console.log(`Added image to Gemini parts: ${attachment.name}`);
+            processedAttachments.push(attachment);
+            processedNames.push(attachment.name);
+            console.log(`Added image to Gemini parts: ${attachment.name} (${buffer.byteLength} bytes)`);
             
           } else if (attachment.type === 'application/pdf' || attachment.name.endsWith('.pdf')) {
-            // Process PDF files for Gemini
+            // Process PDF files using robust base64 encoding
             const buffer = await fileData.arrayBuffer();
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            const base64 = base64Encode(new Uint8Array(buffer));
             
             geminiParts.push({
-              inline_data: {
-                mime_type: 'application/pdf',
+              inlineData: {
+                mimeType: 'application/pdf',
                 data: base64
               }
             });
-            console.log(`Added PDF to Gemini parts: ${attachment.name}`);
+            processedAttachments.push(attachment);
+            processedNames.push(attachment.name);
+            console.log(`Added PDF to Gemini parts: ${attachment.name} (${buffer.byteLength} bytes)`);
             
           } else if (attachment.type.startsWith('text/') || 
                      attachment.type === 'application/json' || 
@@ -435,10 +453,16 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
             geminiParts.push({ 
               text: `\n\nFile: ${attachment.name}\nContent:\n${truncatedText}` 
             });
-            console.log(`Added text file to Gemini parts: ${attachment.name}`);
+            processedAttachments.push(attachment);
+            processedNames.push(attachment.name);
+            console.log(`Added text file to Gemini parts: ${attachment.name} (${text.length} characters)`);
+          } else {
+            console.log(`Skipping unsupported file type: ${attachment.type} for ${attachment.name}`);
+            skippedAttachments.push({ name: attachment.name, reason: 'Unsupported file type' });
           }
         } catch (error) {
           console.error(`Error processing attachment ${attachment.name}:`, error);
+          attachmentErrors.push({ name: attachment.name, reason: 'Processing failed' });
           // Continue processing other attachments
         }
       }
@@ -605,7 +629,13 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
         response: assistantMessage,
         model: 'gemini-2.5-pro',
         timestamp: new Date().toISOString(),
-        savedToDb: thread_id ? true : false
+        savedToDb: thread_id ? true : false,
+        debug: {
+          processedAttachments: processedAttachments.length,
+          processedNames: processedNames,
+          skippedAttachments: skippedAttachments.length,
+          attachmentErrors: attachmentErrors.length
+        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
