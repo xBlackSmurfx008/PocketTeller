@@ -26,6 +26,15 @@ interface FileAttachment {
   status?: 'uploading' | 'ready' | 'failed';
 }
 
+interface GeminiChatResponse {
+  response?: string;  // Primary content field from backend
+  message?: string;   // Fallback for backward-compat
+  model?: string;     // e.g., "gemini-2.5-pro"
+  timestamp?: string;
+  savedToDb?: boolean;  // Optional: if backend saves/enriches data
+  error?: string;       // If backend sends errors
+}
+
 // Helper function to safely convert Json to FileAttachment[]
 const parseAttachments = (attachments: any): FileAttachment[] | undefined => {
   if (!attachments || !Array.isArray(attachments)) {
@@ -117,7 +126,7 @@ const ConversationalAI = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+      const { data, error } = await supabase.functions.invoke<GeminiChatResponse>('gemini-chat', {
         body: {
           message: inputMessage,
           conversation_history: messages.map(msg => ({
@@ -132,14 +141,36 @@ const ConversationalAI = () => {
 
       if (error) throw error;
 
+      // Enhanced logging for debugging
+      console.log('gemini-chat data:', data);
+      console.table(data);
+
+      // Extract content with fallback and validation
+      const content = data?.response ?? data?.message;
+      if (!content) {
+        toast.error('AI returned no content');
+        return;
+      }
+
+      // Check for backend error field
+      if (data?.error) {
+        toast.error('AI error: ' + data.error);
+        return;
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.message,
+        content,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Conditional DB re-sync to prevent drift
+      if (data?.savedToDb || true) {
+        await loadConversationHistory();
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message. Please try again.');
