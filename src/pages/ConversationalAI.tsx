@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useDateHelpers } from "@/utils/dateUtils";
 import { toast } from "sonner";
-import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink } from "lucide-react";
+import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink, MessageCircle } from "lucide-react";
 
 interface Message {
   id: string;
@@ -43,6 +43,8 @@ interface GeminiChatResponse {
   timestamp?: string;
   savedToDb?: boolean;  // Optional: if backend saves/enriches data
   educationSuggestions?: EducationSuggestion[];
+  coach_stage?: string;
+  coach_questions?: string[];
   error?: string;       // If backend sends errors
   debug?: {
     processedAttachments: number;
@@ -84,6 +86,9 @@ const ConversationalAI = () => {
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
   const [educationSuggestions, setEducationSuggestions] = useState<EducationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [coachQuestions, setCoachQuestions] = useState<string[]>([]);
+  const [coachStage, setCoachStage] = useState<string>('');
+  const [autoAskQuestions, setAutoAskQuestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -221,6 +226,15 @@ const ConversationalAI = () => {
       if (data?.educationSuggestions && data.educationSuggestions.length > 0) {
         setEducationSuggestions(data.educationSuggestions);
         setShowSuggestions(true);
+      }
+
+      // Handle coaching questions from AI response
+      if (data?.coach_questions) {
+        setCoachQuestions(data.coach_questions);
+      }
+
+      if (data?.coach_stage) {
+        setCoachStage(data.coach_stage);
       }
 
       // Clear attachments after successful response
@@ -389,16 +403,33 @@ const ConversationalAI = () => {
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
             <h1 className="text-3xl font-bold text-foreground">AI Financial Assistant</h1>
-            <div className="flex items-center space-x-2">
-              <GraduationCap className="h-4 w-4 text-muted-foreground" />
-              <Label htmlFor="coach-mode" className="text-sm font-medium">
-                Coach Mode
-              </Label>
-              <Switch
-                id="coach-mode"
-                checked={coachMode}
-                onCheckedChange={setCoachMode}
-              />
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="coach-mode" className="text-sm font-medium">
+                  Coach Mode
+                </Label>
+                <Switch
+                  id="coach-mode"
+                  checked={coachMode}
+                  onCheckedChange={setCoachMode}
+                />
+              </div>
+              
+              {coachMode && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="auto-ask"
+                    checked={autoAskQuestions}
+                    onChange={(e) => setAutoAskQuestions(e.target.checked)}
+                    className="rounded border-border"
+                  />
+                  <Label htmlFor="auto-ask" className="text-sm text-muted-foreground">
+                    Auto-ask coaching questions
+                  </Label>
+                </div>
+              )}
             </div>
           </div>
           <Button 
@@ -613,6 +644,38 @@ const ConversationalAI = () => {
                     <GraduationCap className="h-3 w-3 mr-1" />
                     Suggest Education
                   </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Coaching Questions */}
+            {coachMode && coachQuestions.length > 0 && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm text-primary">Coaching Questions</CardTitle>
+                    {coachStage && <span className="text-xs text-muted-foreground">({coachStage})</span>}
+                  </div>
+                  <CardDescription className="text-xs">
+                    Reflective questions to guide your thinking
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {coachQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setInputMessage(question);
+                        if (autoAskQuestions) {
+                          sendMessage();
+                        }
+                      }}
+                      className="w-full text-left p-2 text-xs bg-muted/50 hover:bg-muted rounded-md transition-colors border border-border/50"
+                    >
+                      {question}
+                    </button>
+                  ))}
                 </CardContent>
               </Card>
             )}

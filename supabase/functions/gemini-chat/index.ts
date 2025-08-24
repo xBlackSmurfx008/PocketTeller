@@ -735,6 +735,120 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
         }
       }
 
+      // Coaching questions bank organized by stages
+      const coachingQuestions = {
+        Assessment: [
+          "What do you make of your current financial situation?",
+          "How do you feel about your spending habits?",
+          "What resonates with you about your financial goals?",
+          "How does your current budget look to you?",
+          "What do you think is the best approach for your finances?"
+        ],
+        Clarification: [
+          "What do you mean when you say you want to be financially secure?",
+          "Can you say more about what financial freedom looks like to you?",
+          "What does 'enough money' feel like to you?",
+          "What part of budgeting is not yet clear to you?",
+          "What do you want most from your money?"
+        ],
+        Exploration: [
+          "What other financial options can you think of?",
+          "What part of your financial situation have you not yet explored?",
+          "What are your other savings options?",
+          "What angles haven't you considered for reducing expenses?",
+          "What's just one more possibility for increasing income?"
+        ],
+        Goals: [
+          "What is exciting to you about reaching this financial goal?",
+          "What would it feel like if your financial plan works out exactly as you want?",
+          "What is the dream outcome for your finances?",
+          "What does your intuition tell you about this financial decision?",
+          "What's possible if you stick to your budget?"
+        ],
+        Planning: [
+          "What kind of financial plan do you need to create?",
+          "How do you suppose you could improve your financial situation?",
+          "What do you plan to do about your debt?",
+          "What is your game plan for saving money?",
+          "How can you make your budget work better?"
+        ],
+        Implementation: [
+          "What is your action plan for this financial goal?",
+          "What support do you need to stick to your budget?",
+          "When will you start implementing these changes?",
+          "What will you do to track your progress?",
+          "How will you hold yourself accountable?"
+        ],
+        Learning: [
+          "What financial lesson did you learn from this experience?",
+          "How can you make sure you remember what you've learned about money?",
+          "What will you take away from this financial discussion?",
+          "If your financial life depended on taking action, what would you do?",
+          "How would you explain your money values to yourself?"
+        ]
+      };
+
+      // Detect conversation stage based on context and message content
+      const detectConversationStage = (userContext: any, messageContent: string, conversationHistory: any[]): string => {
+        const content = messageContent.toLowerCase();
+        const recentMessages = conversationHistory.slice(-3);
+        
+        // Check for planning keywords
+        if (content.includes('plan') || content.includes('how to') || content.includes('strategy') || content.includes('steps')) {
+          return 'Planning';
+        }
+        
+        // Check for goal-related content
+        if (content.includes('goal') || content.includes('dream') || content.includes('want to achieve') || content.includes('aspire')) {
+          return 'Goals';
+        }
+        
+        // Check for implementation/action content
+        if (content.includes('start') || content.includes('begin') || content.includes('implement') || content.includes('action')) {
+          return 'Implementation';
+        }
+        
+        // Check for learning/reflection content
+        if (content.includes('learn') || content.includes('understand') || content.includes('explain') || content.includes('lesson')) {
+          return 'Learning';
+        }
+        
+        // Check for exploration content
+        if (content.includes('options') || content.includes('alternatives') || content.includes('other ways') || content.includes('possibilities')) {
+          return 'Exploration';
+        }
+        
+        // Check for clarification needs
+        if (content.includes('what do you mean') || content.includes('clarify') || content.includes('not sure') || content.includes('confused')) {
+          return 'Clarification';
+        }
+        
+        // Default to Assessment for new conversations or general questions
+        if (conversationHistory.length < 3) {
+          return 'Assessment';
+        }
+        
+        return 'Assessment';
+      };
+
+      // Select relevant coaching questions based on stage and context
+      const selectCoachingQuestions = (stage: string, userContext: any, messageContent: string): string[] => {
+        const stageQuestions = coachingQuestions[stage] || coachingQuestions['Assessment'];
+        
+        // For now, return 2-3 random questions from the appropriate stage
+        const shuffled = [...stageQuestions].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, Math.min(3, shuffled.length));
+      };
+
+      // Generate coaching questions if coach mode is enabled
+      let coachStage = '';
+      let coachQuestions = [];
+      
+      if (coach_mode) {
+        coachStage = detectConversationStage(financialContext, message, conversation_history);
+        coachQuestions = selectCoachingQuestions(coachStage, financialContext, message);
+      }
+
       // Generate education suggestions based on user context
       let educationSuggestions = [];
       
@@ -811,6 +925,8 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
         timestamp: new Date().toISOString(),
         savedToDb: thread_id ? true : false,
         educationSuggestions: educationSuggestions,
+        coach_stage: coachStage,
+        coach_questions: coachQuestions,
         debug: {
           processedAttachments: processedAttachments.length,
           processedNames: processedNames,
