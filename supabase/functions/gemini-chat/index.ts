@@ -182,7 +182,7 @@ serve(async (req) => {
 
     console.log(`Timezone: ${effectiveTimezone}, User today: ${userToday}, User now: ${userNowFormatted}`);
 
-    // Get user's financial context with enhanced error handling
+      // Get user's financial context with enhanced error handling
     const fetchFinancialData = async () => {
       const [
         budgetResult,
@@ -190,14 +190,16 @@ serve(async (req) => {
         allTransactionsResult,
         accountsResult,
         recentTransactionsResult,
-        aiGuidesResult
+        aiGuidesResult,
+        cfpbGuideResult
       ] = await Promise.allSettled([
         supabase.from('budget').select('*').eq('user_id', user.id).maybeSingle(),
         supabase.from('goals').select('*').eq('user_id', user.id),
         supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
         supabase.from('accounts').select('*').eq('user_id', user.id),
         supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20),
-        supabase.from('ai_guides').select('*').eq('is_active', true)
+        supabase.from('ai_guides').select('*').eq('is_active', true),
+        supabase.from('ai_guides').select('content').eq('slug', 'cfpb-financial-coaching-research').eq('is_active', true).maybeSingle()
       ]);
 
       const getData = (result: any) => result.status === 'fulfilled' ? result.value.data : null;
@@ -208,11 +210,12 @@ serve(async (req) => {
         allTransactions: getData(allTransactionsResult),
         accounts: getData(accountsResult),
         recentTransactions: getData(recentTransactionsResult),
-        aiGuides: getData(aiGuidesResult)
+        aiGuides: getData(aiGuidesResult),
+        cfpbGuide: getData(cfpbGuideResult)
       };
     };
 
-    const { budget, goals, allTransactions, accounts, recentTransactions, aiGuides } = await retryWithBackoff(fetchFinancialData);
+    const { budget, goals, allTransactions, accounts, recentTransactions, aiGuides, cfpbGuide } = await retryWithBackoff(fetchFinancialData);
 
     // Build comprehensive financial context
     const financialContext = {
@@ -362,6 +365,25 @@ CRITICAL ASSESSMENT:
 - Needs Budget: ${financialAnalysis.needsBudget}
 - Has Long-term Data: ${financialAnalysis.hasLongTermData}`;
 
+    // Add CFPB evidence-based context when relevant
+    let cfpbEvidenceContext = '';
+    const shouldIncludeCFPB = coach_mode || 
+      message.toLowerCase().includes('coaching') ||
+      message.toLowerCase().includes('behavior') ||
+      message.toLowerCase().includes('goal') ||
+      message.toLowerCase().includes('plan') ||
+      message.toLowerCase().includes('evidence') ||
+      message.toLowerCase().includes('research');
+    
+    if (shouldIncludeCFPB && cfpbGuide?.content) {
+      cfpbEvidenceContext = `
+
+CFPB EVIDENCE-BASED CONTEXT:
+${cfpbGuide.content}
+
+Use this research evidence to inform your responses when relevant. Reference specific findings and proven strategies from this CFPB study when discussing financial coaching approaches, behavior change, or goal achievement.`;
+    }
+
     // Add coaching knowledge base if coach mode is enabled
     if (coach_mode && aiGuides && aiGuides.length > 0) {
       const budgetingGuide = aiGuides.find(guide => 
@@ -396,7 +418,7 @@ When coach mode is active, prioritize education and skill-building over just pro
       }
     }
 
-    systemPrompt += `
+    systemPrompt += cfpbEvidenceContext + `
 
 MANDATORY ACTIONS FOR 24-MONTH DATA:
 1. COMPREHENSIVE TREND ANALYSIS: Identify seasonal patterns, growth trends, and spending changes over time

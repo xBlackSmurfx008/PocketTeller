@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useDateHelpers } from "@/utils/dateUtils";
 import { toast } from "sonner";
-import { Send, Plus, Upload, X, GraduationCap, Loader2 } from "lucide-react";
+import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink } from "lucide-react";
 
 interface Message {
   id: string;
@@ -368,7 +368,7 @@ const ConversationalAI = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="max-w-7xl mx-auto p-4">
         {/* Header with New Conversation and Coach Mode */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
@@ -395,109 +395,176 @@ const ConversationalAI = () => {
           </Button>
         </div>
 
-        {coachMode && (
-          <Card className="mb-4 border-primary/20 bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <GraduationCap className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-primary mb-1">Coach Mode Enabled</h3>
-                  <p className="text-sm text-muted-foreground">
-                    I'll provide educational guidance, ask reflective questions, and help you build better financial habits step-by-step. 
-                    Perfect for learning budgeting fundamentals or advancing your money management skills.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Messages Display */}
-        <Card className="mb-4">
-          <CardContent className="p-4">
-            <ScrollArea className="h-[400px] pr-4">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`mb-2 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`rounded-lg p-3 max-w-[80%] ${msg.role === 'user' ? 'bg-secondary text-secondary-foreground' : 'bg-muted'}`}>
-                    <p className="text-sm whitespace-pre-line">{msg.content}</p>
-                    {msg.attachments && msg.attachments.length > 0 && (
-                      <div className="mt-2">
-                        {msg.attachments.map((attachment, index) => (
-                          <div key={index} className="text-xs text-blue-500 underline">
-                            <a href={attachment.url} target="_blank" rel="noopener noreferrer">{attachment.name}</a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {msg.timestamp.toLocaleTimeString()}
-                  </p>
-                </div>
-              ))}
-              
-              {/* Thinking indicator */}
-              {isLoading && (
-                <div className="mb-2 flex flex-col items-start">
-                  <div className="rounded-lg p-3 max-w-[80%] bg-muted">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <p className="text-sm">Thinking...</p>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Main Chat Area */}
+          <div className="flex-1">
+            {coachMode && (
+              <Card className="mb-4 border-primary/20 bg-primary/5">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <GraduationCap className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <h3 className="font-semibold text-primary mb-1">Coach Mode Enabled</h3>
+                      <p className="text-sm text-muted-foreground">
+                        I'll provide educational guidance, ask reflective questions, and help you build better financial habits step-by-step. 
+                        Perfect for learning budgeting fundamentals or advancing your money management skills.
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Input Area */}
-        <div className="flex items-center gap-2">
-          <Input
-            type="text"
-            placeholder="Type your message..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            className="flex-grow"
-          />
-          <label htmlFor="file-upload" className="cursor-pointer">
-            <Button
-              type="button"
-              variant="secondary"
-              asChild
-              className="flex items-center gap-2"
-            >
-              <span>
-                <Upload className="h-4 w-4" />
-                Attach
-              </span>
-            </Button>
-          </label>
-          <Button
-            onClick={sendMessage}
-            disabled={isLoading || uploadingFiles.size > 0}
-            className="flex items-center gap-2"
-          >
-            <Send className="h-4 w-4" />
-            {uploadingFiles.size > 0 ? `Uploading ${uploadingFiles.size}...` : isLoading ? 'Sending...' : 'Send'}
-          </Button>
-          <input
-            id="file-upload"
-            type="file"
-            multiple
-            accept="image/*,.pdf,.txt,.csv,.json,.md,.log,text/*,audio/*,video/*,.doc,.docx,.xls,.xlsx"
-            onChange={handleFileUpload}
-            className="sr-only"
-            ref={fileInputRef}
-          />
+            {/* Messages Display */}
+            <Card className="mb-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[400px] pr-4">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className={`mb-2 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`rounded-lg p-3 max-w-[80%] ${msg.role === 'user' ? 'bg-secondary text-secondary-foreground' : 'bg-muted'}`}>
+                        <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2">
+                            {msg.attachments.map((attachment, index) => (
+                              <div key={index} className="text-xs text-blue-500 underline">
+                                <a href={attachment.url} target="_blank" rel="noopener noreferrer">{attachment.name}</a>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {msg.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
+                  ))}
+                  
+                  {/* Thinking indicator */}
+                  {isLoading && (
+                    <div className="mb-2 flex flex-col items-start">
+                      <div className="rounded-lg p-3 max-w-[80%] bg-muted">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <p className="text-sm">Thinking...</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Input Area */}
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                placeholder="Type your message..."
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                className="flex-grow"
+              />
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  asChild
+                  className="flex items-center gap-2"
+                >
+                  <span>
+                    <Upload className="h-4 w-4" />
+                    Attach
+                  </span>
+                </Button>
+              </label>
+              <Button
+                onClick={sendMessage}
+                disabled={isLoading || uploadingFiles.size > 0}
+                className="flex items-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                {uploadingFiles.size > 0 ? `Uploading ${uploadingFiles.size}...` : isLoading ? 'Sending...' : 'Send'}
+              </Button>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                accept="image/*,.pdf,.txt,.csv,.json,.md,.log,text/*,audio/*,video/*,.doc,.docx,.xls,.xlsx"
+                onChange={handleFileUpload}
+                className="sr-only"
+                ref={fileInputRef}
+              />
+            </div>
+          </div>
+
+          {/* Right Sidebar - Resources */}
+          <div className="w-full lg:w-80">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  <CardTitle className="text-sm">Financial Resources</CardTitle>
+                </div>
+                <CardDescription className="text-xs">
+                  Evidence-based research and tools
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-muted-foreground">CFPB Research Findings</h4>
+                  <ul className="text-xs space-y-1">
+                    <li className="flex items-start gap-1">
+                      <span className="text-primary">•</span>
+                      <span>Financial coaching increases savings by avg $1,187</span>
+                    </li>
+                    <li className="flex items-start gap-1">
+                      <span className="text-primary">•</span>
+                      <span>Reduces debt by avg $10,644</span>
+                    </li>
+                    <li className="flex items-start gap-1">
+                      <span className="text-primary">•</span>
+                      <span>21-point credit score improvement</span>
+                    </li>
+                    <li className="flex items-start gap-1">
+                      <span className="text-primary">•</span>
+                      <span>Focuses on behavior change over knowledge</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="pt-2 border-t space-y-2">
+                  <h4 className="text-xs font-medium text-muted-foreground">Official Resources</h4>
+                  <div className="space-y-1">
+                    <a 
+                      href="http://www.consumerfinance.gov/adult-financial-education" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between text-xs text-primary hover:underline group"
+                    >
+                      <span>CFPB Financial Education</span>
+                      <ExternalLink className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                    </a>
+                    <a 
+                      href="https://files.consumerfinance.gov/f/documents/cfpb_financial-coaching-research-brief.pdf" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between text-xs text-primary hover:underline group"
+                    >
+                      <span>Coaching Research Study</span>
+                      <ExternalLink className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                    </a>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Attachments Preview */}
