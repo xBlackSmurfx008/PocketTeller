@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Send, Plus, Upload, X, GraduationCap } from "lucide-react";
+import { Send, Plus, Upload, X, GraduationCap, Loader2 } from "lucide-react";
 
 interface Message {
   id: string;
@@ -287,7 +287,7 @@ const ConversationalAI = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages]);
+  }, [messages, isLoading]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -358,6 +358,19 @@ const ConversationalAI = () => {
                   </p>
                 </div>
               ))}
+              
+              {/* Thinking indicator */}
+              {isLoading && (
+                <div className="mb-2 flex flex-col items-start">
+                  <div className="rounded-lg p-3 max-w-[80%] bg-muted">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <p className="text-sm">Thinking...</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
             </ScrollArea>
           </CardContent>
