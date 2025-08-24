@@ -146,20 +146,53 @@ const ConversationalAI = () => {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
     const newAttachments: FileAttachment[] = [];
+    
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const url = URL.createObjectURL(file);
-      newAttachments.push({
-        name: file.name,
-        type: file.type,
-        url: url
-      });
+      
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File ${file.name} is too large. Maximum size is 10MB.`);
+        continue;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/', 'application/pdf', 'text/', 'application/json', 'text/csv'];
+      if (!allowedTypes.some(type => file.type.startsWith(type))) {
+        toast.error(`File type ${file.type} is not supported. Supported types: Images, PDF, Text files, CSV, JSON.`);
+        continue;
+      }
+
+      try {
+        // Upload to Supabase Storage
+        const filePath = `${user?.id}/${Date.now()}-${file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('chat-uploads')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get signed URL for preview
+        const { data: signedUrlData } = await supabase.storage
+          .from('chat-uploads')
+          .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+        newAttachments.push({
+          name: file.name,
+          type: file.type,
+          url: signedUrlData?.signedUrl || filePath // Use signed URL for preview, fallback to path
+        });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        toast.error(`Failed to upload ${file.name}`);
+      }
     }
+    
     setAttachments(prev => [...prev, ...newAttachments]);
   };
 

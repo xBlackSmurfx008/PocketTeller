@@ -275,11 +275,34 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
     if (attachments && attachments.length > 0) {
       messageContent += "\n\nAttached files:";
       for (const attachment of attachments) {
-        if (attachment.type.startsWith('image/')) {
-          try {
-            // Download image and convert to base64 for Gemini
-            const response = await fetch(attachment.url);
-            const buffer = await response.arrayBuffer();
+        try {
+          // Extract file path from URL (handle both signed URLs and direct paths)
+          let filePath = attachment.url;
+          
+          // If it's a signed URL, extract the file path
+          if (attachment.url.includes('chat-uploads/')) {
+            const urlParts = attachment.url.split('chat-uploads/');
+            if (urlParts.length > 1) {
+              filePath = urlParts[1].split('?')[0]; // Remove query parameters
+            }
+          }
+          
+          console.log(`Processing attachment: ${attachment.name}, type: ${attachment.type}, path: ${filePath}`);
+          
+          // Download file from Supabase Storage
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('chat-uploads')
+            .download(filePath);
+            
+          if (downloadError) {
+            console.error('Error downloading file:', downloadError);
+            messageContent += `\n- ${attachment.name} (failed to download)`;
+            continue;
+          }
+          
+          if (attachment.type.startsWith('image/')) {
+            // Process images for Gemini vision
+            const buffer = await fileData.arrayBuffer();
             const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
             
             geminiParts.push({
@@ -288,13 +311,30 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
                 data: base64
               }
             });
-            messageContent += `\n- Image: ${attachment.name}`;
-          } catch (error) {
-            console.error('Error processing image:', error);
-            messageContent += `\n- Image: ${attachment.name} (failed to process)`;
+            messageContent += `\n- Image: ${attachment.name} (processed for analysis)`;
+            
+          } else if (attachment.type === 'application/pdf') {
+            // For PDFs, just mention them (future: could extract text)
+            messageContent += `\n- PDF Document: ${attachment.name} (${(fileData.size / 1024).toFixed(1)}KB)`;
+            
+          } else if (attachment.type.startsWith('text/') || 
+                     attachment.type === 'application/json' || 
+                     attachment.type === 'text/csv') {
+            // Process text-based files
+            const text = await fileData.text();
+            
+            // Limit text content to prevent overwhelming Gemini
+            const truncatedText = text.length > 2000 ? text.substring(0, 2000) + '...' : text;
+            
+            messageContent += `\n- ${attachment.name} Content:\n${truncatedText}`;
+            
+          } else {
+            messageContent += `\n- Document: ${attachment.name} (${attachment.type}, ${(fileData.size / 1024).toFixed(1)}KB)`;
           }
-        } else {
-          messageContent += `\n- Document: ${attachment.name} (${attachment.type})`;
+          
+        } catch (error) {
+          console.error('Error processing attachment:', attachment.name, error);
+          messageContent += `\n- ${attachment.name} (processing failed)`;
         }
       }
     }
