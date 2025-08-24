@@ -364,17 +364,25 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
       
       for (const attachment of attachments) {
         try {
-          // Extract file path from URL
+          console.log(`Processing attachment: ${attachment.name}, type: ${attachment.type}, url: ${attachment.url}`);
+          
+          // Extract file path from URL - handle both signed URLs and direct paths
           let filePath = attachment.url;
           
-          if (attachment.url.includes('chat-uploads/')) {
+          // If it's a signed URL, extract the path
+          if (attachment.url.includes('/storage/v1/object/sign/chat-uploads/')) {
+            const match = attachment.url.match(/\/storage\/v1\/object\/sign\/chat-uploads\/([^?]+)/);
+            if (match) {
+              filePath = decodeURIComponent(match[1]);
+            }
+          } else if (attachment.url.includes('chat-uploads/')) {
             const urlParts = attachment.url.split('chat-uploads/');
             if (urlParts.length > 1) {
               filePath = urlParts[1].split('?')[0];
             }
           }
           
-          console.log(`Processing attachment: ${attachment.name}, type: ${attachment.type}, path: ${filePath}`);
+          console.log(`Extracted file path: ${filePath}`);
           
           // Download file from Supabase Storage with retry
           const downloadFile = async () => {
