@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/use-toast';
 import { Search, Plus } from 'lucide-react';
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ const CATEGORIES = [
 
 export default function RecentTransactions() {
   const { user } = useAuth();
+  const { isDemo, sampleData } = useDemo();
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
@@ -44,10 +46,21 @@ export default function RecentTransactions() {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (isDemo) {
+      const demoTransactions = sampleData.transactions.map(t => ({
+        id: t.id,
+        date: t.date,
+        description: t.name,
+        amount: t.amount,
+        category: t.category[0] || 'Other',
+        account_id: t.account_id
+      }));
+      setTransactions(demoTransactions);
+      setLoading(false);
+    } else if (user) {
       fetchTransactions();
     }
-  }, [user]);
+  }, [user, isDemo, sampleData]);
 
   useEffect(() => {
     filterTransactions();
@@ -136,11 +149,14 @@ export default function RecentTransactions() {
   }
 
   return (
-    <Card>
+    <Card data-tour-id="recent-transactions">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Recent Transactions</CardTitle>
-          <Button onClick={() => setShowAddDialog(true)} size="sm">
+          <Button 
+            onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding transactions disabled in demo" }) : setShowAddDialog(true)} 
+            size="sm"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Transaction
           </Button>

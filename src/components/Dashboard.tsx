@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { useLayoutPreference } from '@/hooks/useLayoutPreference';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { Settings, Target, MessageSquare, Share2, Receipt } from 'lucide-react';
 
 export default function Dashboard() {
   const { signOut, user } = useAuth();
+  const { isDemo, exitDemo } = useDemo();
   const { isDesktopForced } = useLayoutPreference();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -25,9 +27,11 @@ export default function Dashboard() {
   const showMobileLayout = isMobile && !isDesktopForced;
 
   useEffect(() => {
-    checkPlaidConnection();
-    fetchBudgetData();
-  }, [user]);
+    if (!isDemo) {
+      checkPlaidConnection();
+      fetchBudgetData();
+    }
+  }, [user, isDemo]);
 
   const checkPlaidConnection = async () => {
     if (!user) return;
@@ -67,14 +71,21 @@ export default function Dashboard() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    if (isDemo) {
+      exitDemo();
+      navigate('/');
+    } else {
+      await signOut();
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-tour-id="dashboard">
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className={`font-bold text-foreground ${showMobileLayout ? 'text-xl' : 'text-2xl'}`}>Budget AI</h1>
+          <h1 className={`font-bold text-foreground ${showMobileLayout ? 'text-xl' : 'text-2xl'}`}>
+            Budget AI {isDemo && <span className="text-sm font-normal text-muted-foreground">(Demo)</span>}
+          </h1>
           <div className="flex items-center gap-2 sm:gap-4">
             {showMobileLayout ? (
               <>
@@ -100,7 +111,7 @@ export default function Dashboard() {
               </>
             ) : (
               <>
-                <Button variant="outline" onClick={() => navigate('/chat')}>
+                <Button variant="outline" onClick={() => navigate('/chat')} data-tour-id="ai-chat-button">
                   Budgeting Assistant
                 </Button>
                 <Button variant="outline" onClick={() => navigate('/goals')}>
@@ -123,7 +134,7 @@ export default function Dashboard() {
                   <Settings className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" onClick={handleSignOut}>
-                  Sign Out
+                  {isDemo ? 'Exit Demo' : 'Sign Out'}
                 </Button>
               </>
             )}
@@ -132,8 +143,8 @@ export default function Dashboard() {
       </header>
 
       <main className={`max-w-7xl mx-auto space-y-4 sm:space-y-6 ${showMobileLayout ? 'p-3' : 'p-4'}`}>
-        {/* Bank Connection Card - Only show when not connected */}
-        {!hasPlaidToken && (
+        {/* Bank Connection Card - Only show when not connected and not in demo */}
+        {!hasPlaidToken && !isDemo && (
           <Card>
             <CardHeader>
               <CardTitle>Bank Connection</CardTitle>
@@ -150,11 +161,17 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <FinancialHealthSnapshot />
+        <div data-tour-id="financial-snapshot">
+          <FinancialHealthSnapshot />
+        </div>
         
         <div className={`grid grid-cols-1 lg:grid-cols-2 ${showMobileLayout ? 'gap-4' : 'gap-6'}`}>
-          <GoalsOverview />
-          <UpcomingBills />
+          <div data-tour-id="goals-overview">
+            <GoalsOverview />
+          </div>
+          <div data-tour-id="upcoming-bills">
+            <UpcomingBills />
+          </div>
         </div>
       </main>
     </div>

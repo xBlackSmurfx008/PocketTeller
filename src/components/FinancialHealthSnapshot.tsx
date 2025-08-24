@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface FinancialData {
@@ -13,6 +14,7 @@ interface FinancialData {
 
 export default function FinancialHealthSnapshot() {
   const { user } = useAuth();
+  const { isDemo, sampleData } = useDemo();
   const [data, setData] = useState<FinancialData>({
     totalBalance: 0,
     monthlyIncome: 0,
@@ -21,10 +23,18 @@ export default function FinancialHealthSnapshot() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (isDemo) {
+      const totalBalance = sampleData.accounts.reduce((sum, account) => sum + account.balance, 0);
+      setData({
+        totalBalance,
+        monthlyIncome: 2500,
+        monthlyExpenses: 1850,
+      });
+      setLoading(false);
+    } else if (user) {
       fetchFinancialData();
     }
-  }, [user]);
+  }, [user, isDemo, sampleData]);
 
   const fetchFinancialData = async () => {
     try {

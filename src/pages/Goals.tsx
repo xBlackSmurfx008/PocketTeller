@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -39,6 +40,7 @@ interface GoalTask {
 
 export default function Goals() {
   const { user } = useAuth();
+  const { isDemo, sampleData } = useDemo();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -50,11 +52,15 @@ export default function Goals() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (isDemo) {
+      setGoals(sampleData.goals as Goal[]);
+      setTasks([]);
+      setLoading(false);
+    } else if (user) {
       fetchGoals();
       fetchTasks();
     }
-  }, [user]);
+  }, [user, isDemo, sampleData]);
 
   const fetchGoals = async () => {
     try {
@@ -195,7 +201,7 @@ export default function Goals() {
             <h1 className="text-2xl font-bold text-foreground">Financial Goals</h1>
           </div>
           <div className="flex items-center gap-4">
-            <Button onClick={() => setIsAddGoalOpen(true)}>
+            <Button onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Goal
             </Button>
@@ -224,7 +230,7 @@ export default function Goals() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" data-tour-id="goals-list">
             {goals.map((goal) => {
               const financialProgress = getGoalProgress(goal);
               const taskProgress = getTaskProgress(goal.id);

@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemo } from "@/hooks/useDemo";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useDateHelpers } from "@/utils/dateUtils";
 import { toast } from "sonner";
@@ -76,6 +77,7 @@ const ConversationalAI = () => {
   const { threadId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isDemo, usePrompt, promptsUsed, maxPrompts } = useDemo();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -137,6 +139,11 @@ const ConversationalAI = () => {
 
   const sendMessage = async () => {
     if (!inputMessage.trim() && attachments.length === 0) return;
+    
+    if (isDemo && !usePrompt()) {
+      toast.error(`Demo limit reached! You've used all ${maxPrompts} messages.`);
+      return;
+    }
     
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -507,7 +514,7 @@ const ConversationalAI = () => {
             <div className="flex items-center gap-2">
               <Input
                 type="text"
-                placeholder="Type your message..."
+                placeholder={isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => {
@@ -517,6 +524,7 @@ const ConversationalAI = () => {
                   }
                 }}
                 className="flex-grow"
+                data-tour-id="chat-input"
               />
               <label htmlFor="file-upload" className="cursor-pointer">
                 <Button

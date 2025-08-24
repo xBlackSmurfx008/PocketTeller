@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import Dashboard from '@/components/Dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { isDemo } = useDemo();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,7 +28,7 @@ const Index = () => {
     );
   }
 
-  if (user) {
+  if (user || isDemo) {
     return <Dashboard />;
   }
 
@@ -54,13 +56,23 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">Never miss a payment with our bill reminder system</p>
             </div>
           </div>
-          <Button 
-            onClick={() => navigate('/auth')} 
-            className="w-full"
-            size="lg"
-          >
-            Get Started
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => navigate('/auth')} 
+              className="w-full"
+              size="lg"
+            >
+              Get Started
+            </Button>
+            <Button 
+              onClick={() => navigate('/demo')} 
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
+              Try a 5-message demo
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

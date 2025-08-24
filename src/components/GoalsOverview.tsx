@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useDateHelpers } from '@/utils/dateUtils';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +24,7 @@ interface Goal {
 
 export default function GoalsOverview() {
   const { user } = useAuth();
+  const { isDemo, sampleData } = useDemo();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const navigate = useNavigate();
@@ -30,10 +32,13 @@ export default function GoalsOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (isDemo) {
+      setGoals(sampleData.goals as Goal[]);
+      setLoading(false);
+    } else if (user) {
       fetchGoals();
     }
-  }, [user]);
+  }, [user, isDemo, sampleData]);
 
   const fetchGoals = async () => {
     try {

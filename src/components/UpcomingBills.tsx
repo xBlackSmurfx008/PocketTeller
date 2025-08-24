@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useDateHelpers } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,7 @@ interface Bill {
 
 export default function UpcomingBills() {
   const { user } = useAuth();
+  const { isDemo, sampleData } = useDemo();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const { toast } = useToast();
@@ -31,10 +33,13 @@ export default function UpcomingBills() {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (isDemo) {
+      setBills(sampleData.bills.map(bill => ({ ...bill, is_paid: false })) as Bill[]);
+      setLoading(false);
+    } else if (user) {
       fetchBills();
     }
-  }, [user]);
+  }, [user, isDemo, sampleData]);
 
   const fetchBills = async () => {
     try {
@@ -59,6 +64,19 @@ export default function UpcomingBills() {
   };
 
   const updateBillStatus = async (billId: string, isPaid: boolean) => {
+    if (isDemo) {
+      setBills(prev =>
+        prev.map(bill =>
+          bill.id === billId ? { ...bill, is_paid: isPaid } : bill
+        )
+      );
+      toast({
+        title: "Demo Mode",
+        description: `Bill marked as ${isPaid ? 'paid' : 'unpaid'} (demo only)`,
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('bills')
@@ -127,7 +145,10 @@ export default function UpcomingBills() {
             <Calendar className="h-5 w-5" />
             Upcoming Bills
           </CardTitle>
-          <Button onClick={() => setShowAddDialog(true)} size="sm">
+          <Button 
+            onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding bills disabled in demo" }) : setShowAddDialog(true)} 
+            size="sm"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Bill
           </Button>
