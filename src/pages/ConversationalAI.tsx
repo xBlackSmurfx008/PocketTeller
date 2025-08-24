@@ -122,7 +122,6 @@ const ConversationalAI = () => {
 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
-    setAttachments([]);
     setIsLoading(true);
 
     try {
