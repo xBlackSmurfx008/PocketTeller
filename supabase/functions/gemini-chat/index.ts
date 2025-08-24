@@ -115,10 +115,41 @@ function getRelevantQuestions(stage: string, userMessage: string): string[] {
   }
 }
 
-// Memory retrieval function
-async function retrieveUserMemories(supabase: any, userId: string): Promise<UserMemory[]> {
+// Memory configuration
+const MEMORY_CONFIG = {
+  MAX_TOTAL_MEMORIES: 100,
+  MAX_PINNED: 30,
+  MAX_RECENT: 120,
+  MAX_PER_CATEGORY: 12,
+  TOKEN_BUDGET: 3000 // Approximate token budget for memory context
+};
+
+// Calculate relevance score based on keyword overlap
+function calculateRelevanceScore(memory: UserMemory, userMessage: string): number {
+  const memoryText = memory.value.text.toLowerCase();
+  const messageWords = userMessage.toLowerCase().split(/\s+/);
+  
+  let matches = 0;
+  for (const word of messageWords) {
+    if (word.length > 3 && memoryText.includes(word)) {
+      matches++;
+    }
+  }
+  
+  return matches / Math.max(messageWords.length, 1);
+}
+
+// Enhanced memory retrieval function
+async function retrieveUserMemories(
+  supabase: any, 
+  userId: string, 
+  userMessage: string = '',
+  maxMemories?: number
+): Promise<UserMemory[]> {
   try {
-    // Get pinned memories + recent non-expired memories
+    const effectiveMaxMemories = maxMemories || MEMORY_CONFIG.MAX_TOTAL_MEMORIES;
+    
+    // Get pinned memories
     const { data: pinnedMemories, error: pinnedError } = await supabase
       .from('user_memories')
       .select('*')
@@ -126,12 +157,13 @@ async function retrieveUserMemories(supabase: any, userId: string): Promise<User
       .eq('is_pinned', true)
       .eq('is_deleted', false)
       .order('importance', { ascending: false })
-      .limit(10);
+      .limit(MEMORY_CONFIG.MAX_PINNED);
 
     if (pinnedError) {
       console.error('Error fetching pinned memories:', pinnedError);
     }
 
+    // Get recent non-pinned memories
     const { data: recentMemories, error: recentError } = await supabase
       .from('user_memories')
       .select('*')
@@ -140,7 +172,7 @@ async function retrieveUserMemories(supabase: any, userId: string): Promise<User
       .eq('is_deleted', false)
       .or('expires_at.is.null,expires_at.gt.now()')
       .order('updated_at', { ascending: false })
-      .limit(15);
+      .limit(MEMORY_CONFIG.MAX_RECENT);
 
     if (recentError) {
       console.error('Error fetching recent memories:', recentError);
@@ -157,7 +189,34 @@ async function retrieveUserMemories(supabase: any, userId: string): Promise<User
       self.findIndex(m => m.id === memory.id) === index
     );
 
-    return uniqueMemories.slice(0, 20); // Cap at 20 total memories
+    // Apply relevance scoring if user message provided
+    let scoredMemories = uniqueMemories;
+    if (userMessage.trim()) {
+      scoredMemories = uniqueMemories.map(memory => ({
+        ...memory,
+        relevanceScore: calculateRelevanceScore(memory, userMessage)
+      }));
+      
+      // Sort by: pinned status first, then relevance + importance, then recency
+      scoredMemories.sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return b.is_pinned ? 1 : -1;
+        
+        const scoreA = (a.relevanceScore || 0) * 0.4 + a.importance * 0.6;
+        const scoreB = (b.relevanceScore || 0) * 0.4 + b.importance * 0.6;
+        
+        if (Math.abs(scoreA - scoreB) > 0.1) return scoreB - scoreA;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+    } else {
+      // Default sort: pinned first, then importance, then recency
+      scoredMemories.sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return b.is_pinned ? 1 : -1;
+        if (Math.abs(a.importance - b.importance) > 0.5) return b.importance - a.importance;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+    }
+
+    return scoredMemories.slice(0, effectiveMaxMemories);
   } catch (error) {
     console.error('Error retrieving user memories:', error);
     return [];
@@ -309,7 +368,7 @@ Return JSON array or empty array if nothing to remember:`;
   }
 }
 
-// Build memory context for system prompt
+// Enhanced memory context builder with token budget management
 function buildMemoryContext(memories: UserMemory[]): string {
   if (memories.length === 0) {
     return '';
@@ -324,18 +383,65 @@ function buildMemoryContext(memories: UserMemory[]): string {
   }, {} as Record<string, UserMemory[]>);
 
   let context = '\n\n=== USER MEMORY SUMMARY ===\n';
+  let currentTokens = 0;
+  const maxTokens = MEMORY_CONFIG.TOKEN_BUDGET;
   
-  Object.entries(memoryByCategory).forEach(([category, categoryMemories]) => {
-    context += `\n${category.toUpperCase()}:\n`;
-    categoryMemories
-      .sort((a, b) => b.importance - a.importance)
-      .slice(0, 5) // Max 5 per category
-      .forEach(memory => {
-        const pinned = memory.is_pinned ? ' [PINNED]' : '';
-        const confidence = memory.confidence < 0.8 ? ` (${Math.round(memory.confidence * 100)}% confident)` : '';
-        context += `• ${memory.value.text}${pinned}${confidence}\n`;
-      });
+  // Sort categories by importance (pinned items first, then by max importance in category)
+  const sortedCategories = Object.entries(memoryByCategory).sort(([, a], [, b]) => {
+    const aPinned = a.some(m => m.is_pinned);
+    const bPinned = b.some(m => m.is_pinned);
+    if (aPinned !== bPinned) return bPinned ? 1 : -1;
+    
+    const aMaxImportance = Math.max(...a.map(m => m.importance));
+    const bMaxImportance = Math.max(...b.map(m => m.importance));
+    return bMaxImportance - aMaxImportance;
   });
+
+  for (const [category, categoryMemories] of sortedCategories) {
+    const categoryHeader = `\n${category.toUpperCase()}:\n`;
+    const categoryHeaderTokens = Math.ceil(categoryHeader.length / 4); // Rough token estimate
+    
+    if (currentTokens + categoryHeaderTokens > maxTokens) break;
+    
+    context += categoryHeader;
+    currentTokens += categoryHeaderTokens;
+    
+    const sortedMemories = categoryMemories
+      .sort((a, b) => {
+        // Pinned first, then by relevance score if available, then importance, then recency
+        if (a.is_pinned !== b.is_pinned) return b.is_pinned ? 1 : -1;
+        
+        const aScore = (a as any).relevanceScore || 0;
+        const bScore = (b as any).relevanceScore || 0;
+        if (Math.abs(aScore - bScore) > 0.1) return bScore - aScore;
+        
+        if (Math.abs(a.importance - b.importance) > 0.5) return b.importance - a.importance;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      })
+      .slice(0, MEMORY_CONFIG.MAX_PER_CATEGORY);
+
+    let categoryCount = 0;
+    for (const memory of sortedMemories) {
+      const pinned = memory.is_pinned ? ' [PINNED]' : '';
+      const confidence = memory.confidence < 0.8 ? ` (${Math.round(memory.confidence * 100)}% confident)` : '';
+      const memoryLine = `• ${memory.value.text}${pinned}${confidence}\n`;
+      const memoryTokens = Math.ceil(memoryLine.length / 4);
+      
+      if (currentTokens + memoryTokens > maxTokens) break;
+      
+      context += memoryLine;
+      currentTokens += memoryTokens;
+      categoryCount++;
+    }
+    
+    // If we couldn't fit any memories from this category, remove the header
+    if (categoryCount === 0) {
+      context = context.slice(0, -categoryHeader.length);
+      currentTokens -= categoryHeaderTokens;
+    }
+    
+    if (currentTokens >= maxTokens * 0.9) break; // Leave some buffer
+  }
 
   context += '\nUse this context to provide personalized, relevant responses. Reference memories naturally when appropriate.\n';
   
@@ -395,8 +501,8 @@ Deno.serve(async (req) => {
     let memoryContext = '';
     
     if (!memory_extraction_mode) {
-      // Retrieve user memories
-      memories = await retrieveUserMemories(supabase, user.id);
+      // Retrieve user memories with message context for relevance scoring
+      memories = await retrieveUserMemories(supabase, user.id, message);
       memoryContext = buildMemoryContext(memories);
       console.log(`Retrieved ${memories.length} user memories for context`);
     }
