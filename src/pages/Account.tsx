@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, AlertTriangle, Monitor, Smartphone } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlaidLink } from '@/components/PlaidLink';
+import { PlaidSecuritySettings } from '@/components/PlaidSecuritySettings';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -196,6 +197,10 @@ export default function Account() {
             />
           </CardContent>
         </Card>
+
+        {hasPlaidToken && (
+          <PlaidSecuritySettings />
+        )}
 
         <Card className="border-destructive">
           <CardHeader>

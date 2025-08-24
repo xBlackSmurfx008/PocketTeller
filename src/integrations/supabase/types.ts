@@ -340,6 +340,42 @@ export type Database = {
         }
         Relationships: []
       }
+      plaid_token_audit_log: {
+        Row: {
+          access_type: string
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          ip_address: unknown | null
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_type: string
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           app_id: string | null
@@ -347,8 +383,11 @@ export type Database = {
           encrypted_plaid_token: string | null
           has_connected_voice_ui: boolean
           id: string
+          last_suspicious_access_at: string | null
           last_token_rotation: string | null
           plaid_access_token: string | null
+          security_alerts_enabled: boolean | null
+          token_access_count: number | null
           token_iv: string | null
           updated_at: string
           user_id: string
@@ -359,8 +398,11 @@ export type Database = {
           encrypted_plaid_token?: string | null
           has_connected_voice_ui?: boolean
           id?: string
+          last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
           plaid_access_token?: string | null
+          security_alerts_enabled?: boolean | null
+          token_access_count?: number | null
           token_iv?: string | null
           updated_at?: string
           user_id: string
@@ -371,8 +413,11 @@ export type Database = {
           encrypted_plaid_token?: string | null
           has_connected_voice_ui?: boolean
           id?: string
+          last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
           plaid_access_token?: string | null
+          security_alerts_enabled?: boolean | null
+          token_access_count?: number | null
           token_iv?: string | null
           updated_at?: string
           user_id?: string
@@ -431,8 +476,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_token_access_rate: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       decrypt_plaid_token: {
         Args: { encrypted_data: Json; encryption_key: string }
+        Returns: string
+      }
+      decrypt_plaid_token_with_audit: {
+        Args: {
+          encrypted_data: Json
+          encryption_key: string
+          function_name?: string
+          ip_address?: string
+          user_agent?: string
+        }
         Returns: string
       }
       encrypt_plaid_token: {
@@ -446,6 +505,10 @@ export type Database = {
       log_budget_share_access: {
         Args: { ip_address?: string; share_id: string; user_agent?: string }
         Returns: undefined
+      }
+      rotate_plaid_token: {
+        Args: { target_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

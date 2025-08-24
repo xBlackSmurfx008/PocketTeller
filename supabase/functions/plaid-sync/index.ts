@@ -45,19 +45,44 @@ serve(async (req) => {
       throw new Error('No Plaid access token found');
     }
 
-    // Decrypt the access token
+    // Check rate limiting before proceeding
+    const { data: rateLimitCheck, error: rateLimitError } = await supabase
+      .rpc('check_token_access_rate', { target_user_id: user.id });
+
+    if (rateLimitError || !rateLimitCheck) {
+      console.error('Rate limit exceeded for user:', user.id);
+      throw new Error('Too many token access attempts. Please try again later.');
+    }
+
+    // Set user context for audit logging
+    await supabase.rpc('set_config', {
+      parameter: 'app.current_user_id',
+      value: user.id
+    });
+
+    // Get client IP and User-Agent for audit logging
+    const clientIP = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Get encryption key
     const encryptionKey = Deno.env.get('PLAID_ENCRYPTION_KEY');
     if (!encryptionKey) {
       throw new Error('Encryption key not configured');
     }
 
+    // Decrypt the access token with audit logging
     const { data: decryptedToken, error: decryptError } = await supabase
-      .rpc('decrypt_plaid_token', {
+      .rpc('decrypt_plaid_token_with_audit', {
         encrypted_data: {
           encrypted_token: profile.encrypted_plaid_token,
           iv: profile.token_iv
         },
-        encryption_key: encryptionKey
+        encryption_key: encryptionKey,
+        function_name: 'plaid-sync',
+        ip_address: clientIP,
+        user_agent: userAgent
       });
 
     if (decryptError || !decryptedToken) {

@@ -92,6 +92,28 @@ serve(async (req) => {
       throw new Error('Failed to store access token');
     }
 
+    // Get client IP and User-Agent for audit logging
+    const clientIP = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Log the encryption in audit trail
+    const { error: auditError } = await supabase
+      .from('plaid_token_audit_log')
+      .insert({
+        user_id: user.id,
+        access_type: 'encrypt',
+        function_name: 'plaid-link-exchange',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        success: true
+      });
+
+    if (auditError) {
+      console.error('Failed to log audit entry:', auditError);
+    }
+
     console.log('Successfully exchanged token for user:', user.id);
 
     return new Response(JSON.stringify({ success: true }), {
