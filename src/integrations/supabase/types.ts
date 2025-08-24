@@ -594,6 +594,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      clear_user_audit_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       decrypt_plaid_token: {
         Args: { encrypted_data: Json; encryption_key: string }
         Returns: string
@@ -638,6 +642,10 @@ export type Database = {
       }
       rotate_plaid_token: {
         Args: { target_user_id: string }
+        Returns: boolean
+      }
+      validate_email_content: {
+        Args: { content: string }
         Returns: boolean
       }
     }

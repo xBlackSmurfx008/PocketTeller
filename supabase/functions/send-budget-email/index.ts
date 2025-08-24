@@ -55,6 +55,33 @@ serve(async (req) => {
 
     const { recipientEmail, shareUrl, senderName, message }: EmailRequest = await req.json();
 
+    // Validate email content for security
+    if (message) {
+      const { data: isValid, error: validationError } = await supabase
+        .rpc('validate_email_content', { content: message });
+      
+      if (validationError || !isValid) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid content in message' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
+    // Sanitize inputs to prevent HTML injection
+    const sanitizeHtml = (input: string) => input
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+
+    const safeSenderName = senderName ? sanitizeHtml(senderName) : null;
+    const safeMessage = message ? sanitizeHtml(message) : null;
+
     // Validate share URL ownership
     const shareToken = shareUrl.split('/').pop();
     if (shareToken) {
@@ -87,8 +114,8 @@ serve(async (req) => {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Budget Plan Shared</h2>
-        ${senderName ? `<p>Hi! ${senderName} has shared a budget plan with you.</p>` : '<p>Someone has shared a budget plan with you.</p>'}
-        ${message ? `<p style="background: #f5f5f5; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;"><em>"${message}"</em></p>` : ''}
+        ${safeSenderName ? `<p>Hi! ${safeSenderName} has shared a budget plan with you.</p>` : '<p>Someone has shared a budget plan with you.</p>'}
+        ${safeMessage ? `<p style="background: #f5f5f5; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;"><em>"${safeMessage}"</em></p>` : ''}
         <p>Click the link below to view the budget plan:</p>
         <a href="${shareUrl}" style="display: inline-block; background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Budget Plan</a>
         <p style="color: #666; font-size: 12px;">This link will expire in 7 days.</p>
@@ -100,7 +127,7 @@ serve(async (req) => {
     const emailResponse = await resend.emails.send({
       from: "Budget AI <noreply@resend.dev>",
       to: [recipientEmail],
-      subject: `${senderName ? senderName + ' shared' : 'Shared'} a Budget Plan with you`,
+      subject: `${safeSenderName ? safeSenderName + ' shared' : 'Shared'} a Budget Plan with you`,
       html: emailHtml,
     });
 

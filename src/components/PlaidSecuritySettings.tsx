@@ -122,13 +122,7 @@ export const PlaidSecuritySettings = () => {
 
   const clearAuditLogs = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { error } = await supabase
-        .from('plaid_token_audit_log')
-        .delete()
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('clear_user_audit_logs');
 
       if (error) throw error;
 

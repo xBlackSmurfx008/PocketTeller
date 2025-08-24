@@ -317,16 +317,26 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message (optional)</Label>
-                  <Textarea
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Add a personal message..."
-                    rows={3}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message (optional)</Label>
+                    <Textarea
+                      id="message"
+                      value={message}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Basic input sanitization for security
+                        if (value.length <= 1000 && !/<script|javascript:|data:|vbscript:|on\w+\s*=/i.test(value)) {
+                          setMessage(value);
+                        }
+                      }}
+                      placeholder="Add a personal message..."
+                      rows={3}
+                      maxLength={1000}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      HTML and script content is not allowed
+                    </p>
+                  </div>
                 
                 <div className="space-y-3">
                   <div className="space-y-2">
