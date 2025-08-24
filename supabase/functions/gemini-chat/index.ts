@@ -269,11 +269,11 @@ ${coach_mode ? '- In coach mode: Focus on education, ask guiding questions, and 
 CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights.`;
 
     // Process attachments for Gemini
-    let messageContent = message;
     const geminiParts = [{ text: message }];
     
     if (attachments && attachments.length > 0) {
-      messageContent += "\n\nAttached files:";
+      console.log(`Processing ${attachments.length} attachments`);
+      
       for (const attachment of attachments) {
         try {
           // Extract file path from URL (handle both signed URLs and direct paths)
@@ -296,7 +296,6 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
             
           if (downloadError) {
             console.error('Error downloading file:', downloadError);
-            messageContent += `\n- ${attachment.name} (failed to download)`;
             continue;
           }
           
@@ -311,30 +310,66 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
                 data: base64
               }
             });
-            messageContent += `\n- Image: ${attachment.name} (processed for analysis)`;
+            console.log(`Added image to Gemini parts: ${attachment.name}`);
             
           } else if (attachment.type === 'application/pdf') {
-            // For PDFs, just mention them (future: could extract text)
-            messageContent += `\n- PDF Document: ${attachment.name} (${(fileData.size / 1024).toFixed(1)}KB)`;
+            // Upload PDF to Gemini Files API for processing
+            const buffer = await fileData.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            
+            const uploadResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/files?key=${geminiApiKey}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                file: {
+                  display_name: attachment.name,
+                  mime_type: attachment.type
+                }
+              })
+            });
+            
+            const uploadResult = await uploadResponse.json();
+            
+            if (uploadResult.file?.uri) {
+              // Upload the actual file content
+              const contentResponse = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files/${uploadResult.file.name}?key=${geminiApiKey}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': attachment.type,
+                },
+                body: buffer
+              });
+              
+              if (contentResponse.ok) {
+                geminiParts.push({
+                  file_data: {
+                    mime_type: attachment.type,
+                    file_uri: uploadResult.file.uri
+                  }
+                });
+                console.log(`Added PDF to Gemini parts: ${attachment.name}`);
+              }
+            }
             
           } else if (attachment.type.startsWith('text/') || 
                      attachment.type === 'application/json' || 
                      attachment.type === 'text/csv') {
-            // Process text-based files
+            // Process text-based files by adding content directly to message
             const text = await fileData.text();
             
             // Limit text content to prevent overwhelming Gemini
             const truncatedText = text.length > 2000 ? text.substring(0, 2000) + '...' : text;
             
-            messageContent += `\n- ${attachment.name} Content:\n${truncatedText}`;
-            
-          } else {
-            messageContent += `\n- Document: ${attachment.name} (${attachment.type}, ${(fileData.size / 1024).toFixed(1)}KB)`;
+            geminiParts.push({
+              text: `\n\nFile: ${attachment.name}\nContent:\n${truncatedText}`
+            });
+            console.log(`Added text file to Gemini parts: ${attachment.name}`);
           }
           
         } catch (error) {
           console.error('Error processing attachment:', attachment.name, error);
-          messageContent += `\n- ${attachment.name} (processing failed)`;
         }
       }
     }
@@ -345,7 +380,7 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
         role: msg.role,
         content: msg.content
       })),
-      { role: 'user', content: messageContent, parts: geminiParts }
+      { role: 'user', content: message, parts: geminiParts }
     ];
 
     // Call Gemini API with function calling
