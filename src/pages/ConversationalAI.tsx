@@ -147,13 +147,27 @@ const ConversationalAI = () => {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File upload triggered');
+    
     const files = event.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) {
+      console.log('No files selected');
+      return;
+    }
+
+    console.log(`Selected ${files.length} files`);
+
+    // Check if user is authenticated
+    if (!user) {
+      toast.error('Please log in to upload files');
+      return;
+    }
 
     const newAttachments: FileAttachment[] = [];
     
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
       
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
@@ -170,12 +184,19 @@ const ConversationalAI = () => {
 
       try {
         // Upload to Supabase Storage
-        const filePath = `${user?.id}/${Date.now()}-${file.name}`;
+        const filePath = `${user.id}/${Date.now()}-${file.name}`;
+        console.log(`Uploading to path: ${filePath}`);
+        
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('chat-uploads')
           .upload(filePath, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
+
+        console.log('Upload successful:', uploadData);
 
         // Get signed URL for preview
         const { data: signedUrlData } = await supabase.storage
@@ -187,6 +208,9 @@ const ConversationalAI = () => {
           type: file.type,
           url: signedUrlData?.signedUrl || filePath // Use signed URL for preview, fallback to path
         });
+        
+        console.log(`File processed successfully: ${file.name}`);
+        toast.success(`Uploaded ${file.name}`);
       } catch (error) {
         console.error('Error uploading file:', error);
         toast.error(`Failed to upload ${file.name}`);
@@ -194,6 +218,11 @@ const ConversationalAI = () => {
     }
     
     setAttachments(prev => [...prev, ...newAttachments]);
+    
+    // Clear the input value to allow re-selecting the same file
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const handleRemoveAttachment = (index: number) => {
@@ -305,15 +334,19 @@ const ConversationalAI = () => {
             }}
             className="flex-grow"
           />
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={triggerFileInput}
-            className="flex items-center gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            Attach
-          </Button>
+          <label htmlFor="file-upload" className="cursor-pointer">
+            <Button
+              type="button"
+              variant="secondary"
+              asChild
+              className="flex items-center gap-2"
+            >
+              <span>
+                <Upload className="h-4 w-4" />
+                Attach
+              </span>
+            </Button>
+          </label>
           <Button
             onClick={sendMessage}
             disabled={isLoading}
@@ -323,10 +356,12 @@ const ConversationalAI = () => {
             {isLoading ? 'Sending...' : 'Send'}
           </Button>
           <input
+            id="file-upload"
             type="file"
             multiple
+            accept="image/*,.pdf,.txt,.csv,.json,text/*"
             onChange={handleFileUpload}
-            className="hidden"
+            className="sr-only"
             ref={fileInputRef}
           />
         </div>
