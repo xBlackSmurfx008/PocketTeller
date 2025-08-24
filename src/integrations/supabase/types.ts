@@ -386,6 +386,7 @@ export type Database = {
           last_suspicious_access_at: string | null
           last_token_rotation: string | null
           security_alerts_enabled: boolean | null
+          timezone: string | null
           token_access_count: number | null
           token_iv: string | null
           updated_at: string
@@ -400,6 +401,7 @@ export type Database = {
           last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
           security_alerts_enabled?: boolean | null
+          timezone?: string | null
           token_access_count?: number | null
           token_iv?: string | null
           updated_at?: string
@@ -414,6 +416,7 @@ export type Database = {
           last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
           security_alerts_enabled?: boolean | null
+          timezone?: string | null
           token_access_count?: number | null
           token_iv?: string | null
           updated_at?: string
@@ -479,6 +482,7 @@ export type Database = {
           last_suspicious_access_at: string | null
           last_token_rotation: string | null
           security_alerts_enabled: boolean | null
+          timezone: string | null
           token_access_count: number | null
           updated_at: string | null
           user_id: string | null
@@ -491,6 +495,7 @@ export type Database = {
           last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
           security_alerts_enabled?: boolean | null
+          timezone?: string | null
           token_access_count?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -503,6 +508,7 @@ export type Database = {
           last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
           security_alerts_enabled?: boolean | null
+          timezone?: string | null
           token_access_count?: number | null
           updated_at?: string | null
           user_id?: string | null

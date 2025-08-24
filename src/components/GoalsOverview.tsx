@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -5,9 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTimezone } from '@/hooks/useTimezone';
+import { useDateHelpers } from '@/utils/dateUtils';
 import { useNavigate } from 'react-router-dom';
 import { Target, TrendingUp, Calendar } from 'lucide-react';
-import { format, differenceInDays, isPast } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 
 interface Goal {
   id: string;
@@ -20,6 +23,8 @@ interface Goal {
 
 export default function GoalsOverview() {
   const { user } = useAuth();
+  const { timezone } = useTimezone();
+  const dateHelpers = useDateHelpers(timezone);
   const navigate = useNavigate();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +42,7 @@ export default function GoalsOverview() {
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
-        .limit(3); // Show only the 3 most recent goals
+        .limit(3);
 
       if (error) throw error;
       setGoals(data || []);
@@ -61,6 +66,22 @@ export default function GoalsOverview() {
     const expectedProgress = totalDays > 0 ? (daysPassed / totalDays) * 100 : 0;
     
     return progress >= expectedProgress;
+  };
+
+  const getDeadlineInfo = (goal: Goal) => {
+    if (!goal.deadline) return null;
+    
+    const daysUntil = dateHelpers.getDaysUntil(goal.deadline);
+    
+    if (daysUntil < 0) {
+      return { text: `${Math.abs(daysUntil)} days overdue`, variant: 'destructive' as const };
+    } else if (daysUntil === 0) {
+      return { text: 'Due today', variant: 'secondary' as const };
+    } else if (daysUntil <= 7) {
+      return { text: `${daysUntil} days left`, variant: 'outline' as const };
+    } else {
+      return { text: format(new Date(goal.deadline), 'MMM dd'), variant: 'outline' as const };
+    }
   };
 
   if (loading) {
@@ -105,6 +126,7 @@ export default function GoalsOverview() {
           goals.map((goal) => {
             const progress = getGoalProgress(goal);
             const onTrack = isGoalOnTrack(goal);
+            const deadlineInfo = getDeadlineInfo(goal);
             
             return (
               <div key={goal.id} className="border border-border rounded-lg p-4 space-y-3">
@@ -117,10 +139,12 @@ export default function GoalsOverview() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {goal.deadline && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    {deadlineInfo && (
+                      <div className="flex items-center gap-1 text-sm">
                         <Calendar className="h-4 w-4" />
-                        <span>{format(new Date(goal.deadline), 'MMM dd')}</span>
+                        <Badge variant={deadlineInfo.variant} className="text-xs">
+                          {deadlineInfo.text}
+                        </Badge>
                       </div>
                     )}
                     <Badge variant={onTrack ? "default" : "destructive"}>

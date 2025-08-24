@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTimezone } from '@/hooks/useTimezone';
+import { useDateHelpers } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
@@ -20,6 +23,8 @@ interface Bill {
 
 export default function UpcomingBills() {
   const { user } = useAuth();
+  const { timezone } = useTimezone();
+  const dateHelpers = useDateHelpers(timezone);
   const { toast } = useToast();
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,12 +88,22 @@ export default function UpcomingBills() {
     }
   };
 
-  const isOverdue = (dueDate: string) => {
-    return new Date(dueDate) < new Date() && new Date(dueDate).toDateString() !== new Date().toDateString();
-  };
+  const getBillStatusBadge = (bill: Bill) => {
+    if (bill.is_paid) {
+      return <Badge variant="default" className="text-xs">Paid</Badge>;
+    }
 
-  const isDueToday = (dueDate: string) => {
-    return new Date(dueDate).toDateString() === new Date().toDateString();
+    const daysUntil = dateHelpers.getDaysUntil(bill.due_date);
+    
+    if (dateHelpers.isOverdue(bill.due_date)) {
+      return <Badge variant="destructive" className="text-xs">Overdue</Badge>;
+    } else if (dateHelpers.isDueToday(bill.due_date)) {
+      return <Badge variant="secondary" className="text-xs">Due Today</Badge>;
+    } else if (daysUntil <= 3 && daysUntil > 0) {
+      return <Badge variant="outline" className="text-xs">Due in {daysUntil} day{daysUntil > 1 ? 's' : ''}</Badge>;
+    }
+    
+    return null;
   };
 
   if (loading) {
@@ -136,12 +151,7 @@ export default function UpcomingBills() {
                     <div className="font-medium">{bill.name}</div>
                     <div className="text-sm text-muted-foreground flex items-center gap-2">
                       <span>Due: {format(new Date(bill.due_date), 'MMM dd, yyyy')}</span>
-                      {isOverdue(bill.due_date) && !bill.is_paid && (
-                        <Badge variant="destructive" className="text-xs">Overdue</Badge>
-                      )}
-                      {isDueToday(bill.due_date) && !bill.is_paid && (
-                        <Badge variant="secondary" className="text-xs">Due Today</Badge>
-                      )}
+                      {getBillStatusBadge(bill)}
                     </div>
                   </div>
                 </div>
@@ -149,9 +159,6 @@ export default function UpcomingBills() {
                   <div className="font-semibold">
                     ${bill.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </div>
-                  {bill.is_paid && (
-                    <Badge variant="default" className="text-xs">Paid</Badge>
-                  )}
                 </div>
               </div>
             ))
