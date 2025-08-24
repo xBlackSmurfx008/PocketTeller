@@ -167,8 +167,11 @@ const ConversationalAI = () => {
 
       setMessages(prev => [...prev, assistantMessage]);
 
+      // Clear attachments after successful response
+      setAttachments([]);
+      
       // Conditional DB re-sync to prevent drift
-      if (data?.savedToDb || true) {
+      if (data?.savedToDb === true) {
         await loadConversationHistory();
       }
     } catch (error) {

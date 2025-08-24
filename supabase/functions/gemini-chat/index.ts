@@ -342,7 +342,22 @@ ${coach_mode ? '- In coach mode: Focus on education, ask guiding questions, and 
 CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights. Use Deep Think mode for complex problems - think through multiple steps and scenarios.`;
 
     // Process attachments for Gemini with enhanced error handling
-    const geminiParts = [{ text: message }];
+    const geminiParts = [];
+    let hasPdf = false;
+    
+    // Check for PDF attachments to add credit report instruction
+    if (attachments && attachments.length > 0) {
+      hasPdf = attachments.some(att => att.type === 'application/pdf' || att.name.endsWith('.pdf'));
+    }
+    
+    // Prepend credit report analysis instruction if PDF present
+    let fullPrompt = message;
+    if (hasPdf) {
+      const creditInstruction = `First, extract and assess key drivers from the attached credit report: payment history, utilization (overall and by card), age of accounts, inquiries, derogatories, and credit mix. Then, provide a prioritized 30/60/90-day action plan to improve the score.`;
+      fullPrompt = `${creditInstruction}\n\nUser query: ${message}`;
+    }
+    
+    geminiParts.push({ text: fullPrompt });
     
     if (attachments && attachments.length > 0) {
       console.log(`Processing ${attachments.length} attachments`);
@@ -388,6 +403,19 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
               }
             });
             console.log(`Added image to Gemini parts: ${attachment.name}`);
+            
+          } else if (attachment.type === 'application/pdf' || attachment.name.endsWith('.pdf')) {
+            // Process PDF files for Gemini
+            const buffer = await fileData.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            
+            geminiParts.push({
+              inline_data: {
+                mime_type: 'application/pdf',
+                data: base64
+              }
+            });
+            console.log(`Added PDF to Gemini parts: ${attachment.name}`);
             
           } else if (attachment.type.startsWith('text/') || 
                      attachment.type === 'application/json' || 
@@ -568,7 +596,8 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
       return new Response(JSON.stringify({ 
         response: assistantMessage,
         model: 'gemini-2.5-pro',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        savedToDb: thread_id ? true : false
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
