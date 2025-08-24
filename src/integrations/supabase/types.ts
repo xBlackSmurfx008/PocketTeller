@@ -577,6 +577,15 @@ export type Database = {
       }
     }
     Functions: {
+      check_auth_security_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          current_status: string
+          recommended_status: string
+          security_impact: string
+          setting_name: string
+        }[]
+      }
       check_budget_share_rate_limit: {
         Args: { ip_address: string; share_id: string }
         Returns: boolean
