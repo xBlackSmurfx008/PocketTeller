@@ -471,6 +471,66 @@ export type Database = {
           },
         ]
       }
+      user_memories: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          importance: number
+          is_deleted: boolean
+          is_pinned: boolean
+          key: string | null
+          last_reinforced_at: string | null
+          occurrences: number
+          source: string | null
+          tags: string[]
+          thread_id: string | null
+          updated_at: string
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          importance?: number
+          is_deleted?: boolean
+          is_pinned?: boolean
+          key?: string | null
+          last_reinforced_at?: string | null
+          occurrences?: number
+          source?: string | null
+          tags?: string[]
+          thread_id?: string | null
+          updated_at?: string
+          user_id: string
+          value: Json
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          importance?: number
+          is_deleted?: boolean
+          is_pinned?: boolean
+          key?: string | null
+          last_reinforced_at?: string | null
+          occurrences?: number
+          source?: string | null
+          tags?: string[]
+          thread_id?: string | null
+          updated_at?: string
+          user_id?: string
+          value?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       profiles_secure: {

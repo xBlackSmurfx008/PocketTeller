@@ -1,982 +1,589 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encodeBase64 as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.3';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+
+import { Configuration, OpenAIApi } from "https://esm.sh/openai@3";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY')
+
+const assessmentQuestions = [
+  "What are your current financial goals?",
+  "What is your biggest financial challenge right now?",
+  "How would you describe your current financial situation?",
+  "What are your biggest concerns about your finances?",
+  "What are your priorities when it comes to managing your money?"
+];
+
+const clarificationQuestions = [
+  "Can you tell me more about your income and expenses?",
+  "What kind of debts do you have, and what are the interest rates?",
+  "What are your assets, and how are they allocated?",
+  "What are your insurance coverage details?",
+  "What are your retirement plans, and how much have you saved so far?"
+];
+
+const explorationQuestions = [
+  "What have you tried in the past to address your financial challenges?",
+  "What worked well, and what didn't?",
+  "What resources have you used to learn about personal finance?",
+  "What are your beliefs about money and wealth?",
+  "What are your biggest fears about your financial future?"
+];
+
+const planningQuestions = [
+  "What steps can you take to improve your financial situation?",
+  "What are your short-term and long-term financial goals?",
+  "How can you create a budget that works for you?",
+  "What are some strategies for reducing debt and increasing savings?",
+  "How can you invest your money wisely to achieve your financial goals?"
+];
+
+const commitmentQuestions = [
+  "What specific actions will you take in the next week to improve your finances?",
+  "How will you hold yourself accountable for achieving your goals?",
+  "What support do you need to stay on track?",
+  "What obstacles might you encounter, and how will you overcome them?",
+  "How will you reward yourself for making progress?"
+];
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const supabaseUrl = "https://dscndbpqvhvylukvcgpq.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzY25kYnBxdmh2eWx1a3ZjZ3BxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4Mjg1NzksImV4cCI6MjA3MTQwNDU3OX0.GYh0VhUqTpVfwG2mh8WwW8GSBJPvpFAZSFJy7oWbnL0";
-
-// Enhanced retry logic with exponential backoff
-async function retryWithBackoff<T>(
-  operation: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000
-): Promise<T> {
-  let lastError: Error;
-  
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-      console.log(`Attempt ${attempt + 1} failed:`, error.message);
-      
-      if (attempt === maxRetries) {
-        throw lastError;
-      }
-      
-      // Exponential backoff with jitter
-      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  throw lastError!;
 }
 
-// Enhanced input validation
-function validateInput(data: any): { 
-  message: string; 
-  conversation_history: any[]; 
-  attachments: any[]; 
-  thread_id?: string; 
-  coach_mode: boolean; 
-  stream?: boolean;
-  timezone?: string;
-  todayString?: string;
-  nowUserLocal?: string;
-  clientNowISO?: string;
-} {
-  if (!data || typeof data !== 'object') {
-    throw new Error('Invalid request body');
-  }
-  
-  const { 
-    message, 
-    conversation_history = [], 
-    attachments = [], 
-    thread_id, 
-    coach_mode = false, 
-    stream = false,
-    timezone,
-    todayString,
-    nowUserLocal,
-    clientNowISO
-  } = data;
-  
-  if (!message || typeof message !== 'string' || message.trim().length === 0) {
-    throw new Error('Message is required and must be a non-empty string');
-  }
-  
-  if (message.length > 50000) {
-    throw new Error('Message too long (max 50,000 characters)');
-  }
-  
-  if (!Array.isArray(conversation_history)) {
-    throw new Error('Conversation history must be an array');
-  }
-  
-  if (!Array.isArray(attachments)) {
-    throw new Error('Attachments must be an array');
-  }
-  
-  if (attachments.length > 10) {
-    throw new Error('Too many attachments (max 10)');
-  }
-  
-  return { 
-    message: message.trim(), 
-    conversation_history, 
-    attachments, 
-    thread_id, 
-    coach_mode: Boolean(coach_mode), 
-    stream: Boolean(stream),
-    timezone,
-    todayString,
-    nowUserLocal,
-    clientNowISO
+interface UserMemory {
+  id: string;
+  category: string;
+  key?: string;
+  value: {
+    text: string;
+    details?: any;
   };
+  importance: number;
+  confidence: number;
+  occurrences: number;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+  last_reinforced_at?: string;
 }
 
-serve(async (req) => {
+interface MemoryCandidate {
+  category: string;
+  key?: string;
+  text: string;
+  importance: number;
+  confidence: number;
+  source: string;
+}
+
+function detectConversationStage(userMessage: string, conversationHistory: { role: string; content: string; }[]): string {
+  // Combine the user's message and the conversation history into a single text
+  const combinedText = userMessage + " " + conversationHistory.map(msg => msg.content).join(" ");
+
+  // Check for keywords or phrases that indicate the conversation stage
+  if (combinedText.match(/(financial goals|current financial situation|biggest financial challenge)/i)) {
+    return "Assessment";
+  } else if (combinedText.match(/(income and expenses|debts|assets|insurance|retirement plans)/i)) {
+    return "Clarification";
+  } else if (combinedText.match(/(tried in the past|worked well|resources used|beliefs about money|fears about financial future)/i)) {
+    return "Exploration";
+  } else if (combinedText.match(/(steps to improve|short-term and long-term goals|create a budget|strategies for reducing debt|invest your money wisely)/i)) {
+    return "Planning";
+  } else if (combinedText.match(/(specific actions|hold yourself accountable|support needed|obstacles|reward yourself)/i)) {
+    return "Commitment";
+  } else {
+    return "General";
+  }
+}
+
+function getRelevantQuestions(stage: string, userMessage: string): string[] {
+  // Filter questions based on the conversation stage
+  switch (stage) {
+    case "Assessment":
+      return assessmentQuestions.filter(q => !userMessage.includes(q));
+    case "Clarification":
+      return clarificationQuestions.filter(q => !userMessage.includes(q));
+    case "Exploration":
+      return explorationQuestions.filter(q => !userMessage.includes(q));
+    case "Planning":
+      return planningQuestions.filter(q => !userMessage.includes(q));
+    case "Commitment":
+      return commitmentQuestions.filter(q => !userMessage.includes(q));
+    default:
+      return [];
+  }
+}
+
+// Memory retrieval function
+async function retrieveUserMemories(supabase: any, userId: string): Promise<UserMemory[]> {
+  try {
+    // Get pinned memories + recent non-expired memories
+    const { data: pinnedMemories, error: pinnedError } = await supabase
+      .from('user_memories')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_pinned', true)
+      .eq('is_deleted', false)
+      .order('importance', { ascending: false })
+      .limit(10);
+
+    if (pinnedError) {
+      console.error('Error fetching pinned memories:', pinnedError);
+    }
+
+    const { data: recentMemories, error: recentError } = await supabase
+      .from('user_memories')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_pinned', false)
+      .eq('is_deleted', false)
+      .or('expires_at.is.null,expires_at.gt.now()')
+      .order('updated_at', { ascending: false })
+      .limit(15);
+
+    if (recentError) {
+      console.error('Error fetching recent memories:', recentError);
+    }
+
+    // Combine and deduplicate
+    const allMemories = [
+      ...(pinnedMemories || []),
+      ...(recentMemories || [])
+    ];
+    
+    // Remove duplicates by id
+    const uniqueMemories = allMemories.filter((memory, index, self) => 
+      self.findIndex(m => m.id === memory.id) === index
+    );
+
+    return uniqueMemories.slice(0, 20); // Cap at 20 total memories
+  } catch (error) {
+    console.error('Error retrieving user memories:', error);
+    return [];
+  }
+}
+
+// Memory extraction function
+async function extractAndUpsertMemories(
+  supabase: any, 
+  userId: string, 
+  userMessage: string, 
+  assistantResponse: string,
+  threadId?: string
+): Promise<{ upsertedCount: number }> {
+  try {
+    // Ask Gemini to extract memory candidates
+    const memoryExtractionPrompt = `
+You are a memory extraction system. Analyze the following conversation exchange and extract important facts, preferences, goals, constraints, or habits that should be remembered about the user for future conversations.
+
+USER MESSAGE: "${userMessage}"
+ASSISTANT RESPONSE: "${assistantResponse}"
+
+Extract memory candidates as JSON array. Each item should have:
+- category: one of 'preference', 'goal', 'constraint', 'habit', 'profile', 'fact', 'note'
+- key: optional unique identifier for deduplication (e.g., 'budgeting_style', 'monthly_income')
+- text: clear description of what to remember
+- importance: 1-5 (1=low, 5=critical)
+- confidence: 0.0-1.0 (how confident you are this is accurate)
+- source: 'ai_extracted' or 'user_declared'
+
+Only extract meaningful, lasting information. Don't extract temporary states or one-off comments.
+
+Return JSON array or empty array if nothing to remember:`;
+
+    const { data: geminiData, error: geminiError } = await supabase.functions.invoke('gemini-chat', {
+      body: {
+        message: memoryExtractionPrompt,
+        conversation_history: [],
+        coach_mode: false,
+        memory_extraction_mode: true
+      }
+    });
+
+    if (geminiError) {
+      console.error('Error in memory extraction call:', geminiError);
+      return { upsertedCount: 0 };
+    }
+
+    let memoryCandidates: MemoryCandidate[] = [];
+    try {
+      // Try to parse JSON from the response
+      const responseText = geminiData?.response || geminiData?.message || '';
+      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        memoryCandidates = JSON.parse(jsonMatch[0]);
+      }
+    } catch (parseError) {
+      console.error('Error parsing memory extraction response:', parseError);
+      return { upsertedCount: 0 };
+    }
+
+    let upsertedCount = 0;
+
+    // Process each memory candidate
+    for (const candidate of memoryCandidates) {
+      try {
+        if (!candidate.category || !candidate.text) continue;
+
+        const memoryValue = {
+          text: candidate.text,
+          details: {}
+        };
+
+        if (candidate.key) {
+          // Check if memory with same key exists
+          const { data: existing } = await supabase
+            .from('user_memories')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('category', candidate.category)
+            .eq('key', candidate.key)
+            .eq('is_deleted', false)
+            .maybeSingle();
+
+          if (existing) {
+            // Update existing memory
+            const { error: updateError } = await supabase
+              .from('user_memories')
+              .update({
+                value: memoryValue,
+                importance: Math.max(existing.importance, candidate.importance),
+                confidence: Math.max(existing.confidence, candidate.confidence),
+                occurrences: existing.occurrences + 1,
+                last_reinforced_at: new Date().toISOString(),
+                source: candidate.source,
+                thread_id: threadId
+              })
+              .eq('id', existing.id);
+
+            if (!updateError) {
+              upsertedCount++;
+            }
+          } else {
+            // Insert new memory
+            const { error: insertError } = await supabase
+              .from('user_memories')
+              .insert({
+                user_id: userId,
+                category: candidate.category,
+                key: candidate.key,
+                value: memoryValue,
+                importance: candidate.importance,
+                confidence: candidate.confidence,
+                source: candidate.source,
+                thread_id: threadId
+              });
+
+            if (!insertError) {
+              upsertedCount++;
+            }
+          }
+        } else {
+          // Insert new memory without key (no deduplication)
+          const { error: insertError } = await supabase
+            .from('user_memories')
+            .insert({
+              user_id: userId,
+              category: candidate.category,
+              value: memoryValue,
+              importance: candidate.importance,
+              confidence: candidate.confidence,
+              source: candidate.source,
+              thread_id: threadId
+            });
+
+          if (!insertError) {
+            upsertedCount++;
+          }
+        }
+      } catch (memoryError) {
+        console.error('Error processing memory candidate:', memoryError);
+      }
+    }
+
+    return { upsertedCount };
+  } catch (error) {
+    console.error('Error in memory extraction and upsert:', error);
+    return { upsertedCount: 0 };
+  }
+}
+
+// Build memory context for system prompt
+function buildMemoryContext(memories: UserMemory[]): string {
+  if (memories.length === 0) {
+    return '';
+  }
+
+  const memoryByCategory = memories.reduce((acc, memory) => {
+    if (!acc[memory.category]) {
+      acc[memory.category] = [];
+    }
+    acc[memory.category].push(memory);
+    return acc;
+  }, {} as Record<string, UserMemory[]>);
+
+  let context = '\n\n=== USER MEMORY SUMMARY ===\n';
+  
+  Object.entries(memoryByCategory).forEach(([category, categoryMemories]) => {
+    context += `\n${category.toUpperCase()}:\n`;
+    categoryMemories
+      .sort((a, b) => b.importance - a.importance)
+      .slice(0, 5) // Max 5 per category
+      .forEach(memory => {
+        const pinned = memory.is_pinned ? ' [PINNED]' : '';
+        const confidence = memory.confidence < 0.8 ? ` (${Math.round(memory.confidence * 100)}% confident)` : '';
+        context += `• ${memory.value.text}${pinned}${confidence}\n`;
+      });
+  });
+
+  context += '\nUse this context to provide personalized, relevant responses. Reference memories naturally when appropriate.\n';
+  
+  return context;
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const validatedInput = validateInput(await req.json());
-    const { message, conversation_history, attachments, thread_id, coach_mode, stream, timezone, todayString, nowUserLocal, clientNowISO } = validatedInput;
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      throw new Error('Gemini API key not configured');
-    }
-
-    // Get user from auth header with enhanced validation
+    // Get the authorization header
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Invalid authorization header format');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
+    // Verify the JWT token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (userError || !user) {
+      throw new Error('Invalid or expired token');
+    }
+
+    const { 
+      message, 
+      conversation_history, 
+      attachments, 
+      thread_id, 
+      coach_mode,
+      memory_extraction_mode = false,
+      timezone,
+      todayString,
+      nowUserLocal,
+      clientNowISO
+    } = await req.json();
+
+    console.log('Gemini chat request received:', { 
+      userId: user.id, 
+      messageLength: message?.length, 
+      hasAttachments: !!attachments?.length,
+      coachMode: coach_mode,
+      memoryExtractionMode: memory_extraction_mode
     });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error(`Authentication failed: ${authError?.message || 'Unknown error'}`);
+    // Skip memory operations for memory extraction calls to avoid recursion
+    let memories: UserMemory[] = [];
+    let memoryContext = '';
+    
+    if (!memory_extraction_mode) {
+      // Retrieve user memories
+      memories = await retrieveUserMemories(supabase, user.id);
+      memoryContext = buildMemoryContext(memories);
+      console.log(`Retrieved ${memories.length} user memories for context`);
     }
 
-    console.log(`Processing request for user ${user.id} with ${attachments.length} attachments, stream: ${stream}`);
+    let processedAttachments: { name: string; type: string; url: string; }[] = [];
+    let attachmentErrors = 0;
 
-    // Resolve effective timezone and compute timezone-aware dates
-    let effectiveTimezone = timezone;
-    if (!effectiveTimezone) {
-      // Fallback to user's saved timezone from profiles_secure
-      try {
-        const { data: profile } = await supabase
-          .from('profiles_secure')
-          .select('timezone')
-          .eq('user_id', user.id)
-          .single();
-        effectiveTimezone = profile?.timezone || 'UTC';
-      } catch (error) {
-        console.warn('Could not fetch user timezone, using UTC:', error);
-        effectiveTimezone = 'UTC';
-      }
-    }
-
-    // Helper to compute dates in user's timezone
-    const getDateInTimezone = (date?: Date): Date => {
-      const targetDate = date || new Date();
-      try {
-        const timezonedString = new Intl.DateTimeFormat('en-CA', {
-          timeZone: effectiveTimezone,
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        }).format(targetDate);
-        return new Date(timezonedString + 'T00:00:00.000Z');
-      } catch (error) {
-        console.warn('Invalid timezone, falling back to UTC:', error);
-        return targetDate;
-      }
-    };
-
-    // Compute timezone-aware current time if not provided by client
-    const userToday = todayString || getDateInTimezone().toISOString().slice(0, 10);
-    const userNowFormatted = nowUserLocal || new Intl.DateTimeFormat('en-CA', {
-      timeZone: effectiveTimezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    }).format(new Date()).replace(',', '');
-
-    console.log(`Timezone: ${effectiveTimezone}, User today: ${userToday}, User now: ${userNowFormatted}`);
-
-      // Get user's financial context with enhanced error handling
-    const fetchFinancialData = async () => {
-      const [
-        budgetResult,
-        goalsResult,
-        allTransactionsResult,
-        accountsResult,
-        recentTransactionsResult,
-        aiGuidesResult,
-        cfpbGuideResult
-      ] = await Promise.allSettled([
-        supabase.from('budget').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('goals').select('*').eq('user_id', user.id),
-        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
-        supabase.from('accounts').select('*').eq('user_id', user.id),
-        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20),
-        supabase.from('ai_guides').select('*').eq('is_active', true),
-        supabase.from('ai_guides').select('content').eq('slug', 'cfpb-financial-coaching-research').eq('is_active', true).maybeSingle()
-      ]);
-
-      const getData = (result: any) => result.status === 'fulfilled' ? result.value.data : null;
-
-      return {
-        budget: getData(budgetResult),
-        goals: getData(goalsResult),
-        allTransactions: getData(allTransactionsResult),
-        accounts: getData(accountsResult),
-        recentTransactions: getData(recentTransactionsResult),
-        aiGuides: getData(aiGuidesResult),
-        cfpbGuide: getData(cfpbGuideResult)
-      };
-    };
-
-    const { budget, goals, allTransactions, accounts, recentTransactions, aiGuides, cfpbGuide } = await retryWithBackoff(fetchFinancialData);
-
-    // Build comprehensive financial context
-    const financialContext = {
-      budget: budget || null,
-      goals: goals || [],
-      recent_transactions: recentTransactions || [],
-      accounts: accounts || [],
-      all_transactions: allTransactions || []
-    };
-
-    // Advanced financial analysis for 24-month period using timezone-aware dates
-    const nowInTimezone = getDateInTimezone();
-    const oneMonthAgo = new Date(nowInTimezone.getFullYear(), nowInTimezone.getMonth() - 1, nowInTimezone.getDate());
-    const threeMonthsAgo = new Date(nowInTimezone.getFullYear(), nowInTimezone.getMonth() - 3, nowInTimezone.getDate());
-    const sixMonthsAgo = new Date(nowInTimezone.getFullYear(), nowInTimezone.getMonth() - 6, nowInTimezone.getDate());
-    const oneYearAgo = new Date(nowInTimezone.getFullYear() - 1, nowInTimezone.getMonth(), nowInTimezone.getDate());
-    const twoYearsAgo = new Date(nowInTimezone.getFullYear() - 2, nowInTimezone.getMonth(), nowInTimezone.getDate());
-    
-    // Filter transactions by time periods
-    const lastMonthTransactions = allTransactions?.filter(t => new Date(t.date) >= oneMonthAgo) || [];
-    const last3MonthsTransactions = allTransactions?.filter(t => new Date(t.date) >= threeMonthsAgo) || [];
-    const last6MonthsTransactions = allTransactions?.filter(t => new Date(t.date) >= sixMonthsAgo) || [];
-    const lastYearTransactions = allTransactions?.filter(t => new Date(t.date) >= oneYearAgo) || [];
-    const last24MonthsTransactions = allTransactions?.filter(t => new Date(t.date) >= twoYearsAgo) || [];
-    
-    // Comprehensive income/expense analysis by period
-    const calculatePeriodMetrics = (transactions: any[]) => {
-      const income = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + Number(t.amount), 0);
-      const expenses = Math.abs(transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Number(t.amount), 0));
-      const categorySpending = transactions.reduce((acc, t) => {
-        if (t.amount < 0) {
-          acc[t.category] = (acc[t.category] || 0) + Math.abs(Number(t.amount));
-        }
-        return acc;
-      }, {} as Record<string, number>);
-      return { income, expenses, netFlow: income - expenses, categorySpending, transactionCount: transactions.length };
-    };
-    
-    const metrics = {
-      lastMonth: calculatePeriodMetrics(lastMonthTransactions),
-      last3Months: calculatePeriodMetrics(last3MonthsTransactions),
-      last6Months: calculatePeriodMetrics(last6MonthsTransactions),
-      lastYear: calculatePeriodMetrics(lastYearTransactions),
-      last24Months: calculatePeriodMetrics(last24MonthsTransactions)
-    };
-    
-    // Monthly averages for trend analysis
-    const monthlyAverages = {
-      income: metrics.last24Months.income / 24,
-      expenses: metrics.last24Months.expenses / 24,
-      netFlow: metrics.last24Months.netFlow / 24
-    };
-    
-    // Account and overall financial health
-    const totalBalance = accounts?.reduce((sum, acc) => sum + Number(acc.balance), 0) || 0;
-    const lastTransactionDate = allTransactions?.[0]?.date || null;
-    
-    // Advanced analysis object for Gemini
-    const financialAnalysis = {
-      // Period-based metrics
-      currentMonth: metrics.lastMonth,
-      last3Months: metrics.last3Months,
-      last6Months: metrics.last6Months,
-      lastYear: metrics.lastYear,
-      last24Months: metrics.last24Months,
-      
-      // Averages and trends
-      monthlyAverages,
-      totalBalance,
-      lastTransactionDate,
-      totalTransactionCount: allTransactions?.length || 0,
-      
-      // Financial health indicators
-      savingsRate24Month: metrics.last24Months.income > 0 ? ((metrics.last24Months.netFlow / metrics.last24Months.income) * 100).toFixed(1) : 0,
-      savingsRateLastYear: metrics.lastYear.income > 0 ? ((metrics.lastYear.netFlow / metrics.lastYear.income) * 100).toFixed(1) : 0,
-      
-      // Status flags
-      hasTransactions: (allTransactions?.length || 0) > 0,
-      hasBudget: !!budget,
-      needsBudget: (allTransactions?.length || 0) > 0 && !budget,
-      hasLongTermData: (allTransactions?.length || 0) > 50,
-      
-      // Trend indicators
-      incomeGrowth: metrics.lastYear.income > 0 && metrics.last24Months.income > metrics.lastYear.income ? 
-        (((metrics.last24Months.income - metrics.lastYear.income) / metrics.lastYear.income) * 100).toFixed(1) : 0,
-      expenseGrowth: metrics.lastYear.expenses > 0 && metrics.last24Months.expenses > metrics.lastYear.expenses ? 
-        (((metrics.last24Months.expenses - metrics.lastYear.expenses) / metrics.lastYear.expenses) * 100).toFixed(1) : 0
-    };
-
-    // Enhanced system prompt with Deep Think mode capability and timezone awareness
-    let systemPrompt = `You are an advanced financial assistant powered by Gemini 2.5 Pro with Deep Think reasoning capabilities. You can analyze up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. Think step-by-step through complex financial problems for the most accurate and helpful responses.
-
-ENHANCED REASONING MODE: 
-Use Deep Think approach for complex financial analysis - break down problems step-by-step, consider multiple perspectives, analyze long-term implications, and provide detailed reasoning for all recommendations.
-
-FORMATTING RULES:
-- Use plain text only, no markdown formatting
-- Do not use asterisks (*) for emphasis or bold text
-- Use CAPS for emphasis when needed
-- Use clear, readable plain text formatting
-
-TIMEZONE AWARENESS:
-- User timezone: ${effectiveTimezone}
-- User local now: ${userNowFormatted}
-- User today: ${userToday}
-- Treat "today", "this month", and due dates in this timezone
-- Use the provided userToday and userNowFormatted for all date-based reasoning and calculations
-
-CURRENT FINANCIAL CONTEXT:
-- Budget: ${JSON.stringify(financialContext.budget)}
-- Goals: ${JSON.stringify(financialContext.goals)}
-- Recent Transactions (last 20): ${JSON.stringify(financialContext.recent_transactions)}
-- Accounts: ${JSON.stringify(financialContext.accounts)}
-
-COMPREHENSIVE 24-MONTH FINANCIAL ANALYSIS:
-CURRENT STATUS:
-- Total Account Balance: $${financialAnalysis.totalBalance.toFixed(2)}
-- Total Transactions Analyzed: ${financialAnalysis.totalTransactionCount}
-- Last Transaction: ${financialAnalysis.lastTransactionDate}
-- Has Long-term Data: ${financialAnalysis.hasLongTermData}
-
-MONTHLY AVERAGES (24-month basis):
-- Average Monthly Income: $${financialAnalysis.monthlyAverages.income.toFixed(2)}
-- Average Monthly Expenses: $${financialAnalysis.monthlyAverages.expenses.toFixed(2)}
-- Average Monthly Net Flow: $${financialAnalysis.monthlyAverages.netFlow.toFixed(2)}
-
-PERIOD COMPARISONS:
-- Last Month: Income $${financialAnalysis.currentMonth.income.toFixed(2)}, Expenses $${financialAnalysis.currentMonth.expenses.toFixed(2)}, Net $${financialAnalysis.currentMonth.netFlow.toFixed(2)}
-- Last 3 Months: Income $${financialAnalysis.last3Months.income.toFixed(2)}, Expenses $${financialAnalysis.last3Months.expenses.toFixed(2)}, Net $${financialAnalysis.last3Months.netFlow.toFixed(2)}
-- Last Year: Income $${financialAnalysis.lastYear.income.toFixed(2)}, Expenses $${financialAnalysis.lastYear.expenses.toFixed(2)}, Net $${financialAnalysis.lastYear.netFlow.toFixed(2)}
-- Last 24 Months: Income $${financialAnalysis.last24Months.income.toFixed(2)}, Expenses $${financialAnalysis.last24Months.expenses.toFixed(2)}, Net $${financialAnalysis.last24Months.netFlow.toFixed(2)}
-
-SAVINGS RATES:
-- 24-Month Savings Rate: ${financialAnalysis.savingsRate24Month}%
-- 12-Month Savings Rate: ${financialAnalysis.savingsRateLastYear}%
-
-GROWTH TRENDS:
-- Income Growth: ${financialAnalysis.incomeGrowth}% year-over-year
-- Expense Growth: ${financialAnalysis.expenseGrowth}% year-over-year
-
-SPENDING BY CATEGORIES (Recent):
-${JSON.stringify(financialAnalysis.currentMonth.categorySpending)}
-
-CRITICAL ASSESSMENT:
-- Has Transactions: ${financialAnalysis.hasTransactions}
-- Has Budget: ${financialAnalysis.hasBudget}
-- Needs Budget: ${financialAnalysis.needsBudget}
-- Has Long-term Data: ${financialAnalysis.hasLongTermData}`;
-
-    // Add CFPB evidence-based context when relevant
-    let cfpbEvidenceContext = '';
-    const shouldIncludeCFPB = coach_mode || 
-      message.toLowerCase().includes('coaching') ||
-      message.toLowerCase().includes('behavior') ||
-      message.toLowerCase().includes('goal') ||
-      message.toLowerCase().includes('plan') ||
-      message.toLowerCase().includes('evidence') ||
-      message.toLowerCase().includes('research');
-    
-    if (shouldIncludeCFPB && cfpbGuide?.content) {
-      cfpbEvidenceContext = `
-
-CFPB EVIDENCE-BASED CONTEXT:
-${cfpbGuide.content}
-
-Use this research evidence to inform your responses when relevant. Reference specific findings and proven strategies from this CFPB study when discussing financial coaching approaches, behavior change, or goal achievement.`;
-    }
-
-    // Add coaching knowledge base if coach mode is enabled
-    if (coach_mode && aiGuides && aiGuides.length > 0) {
-      const budgetingGuide = aiGuides.find(guide => 
-        guide.tags?.includes('budgeting') || guide.tags?.includes('coach')
-      );
-      
-      if (budgetingGuide) {
-        systemPrompt += `
-
-COACHING MODE ENABLED - ENHANCED BUDGETING KNOWLEDGE:
-
-You now have access to a comprehensive budgeting education guide. Use Deep Think reasoning to:
-1. Assess the user's current financial literacy level (beginner/intermediate/advanced)
-2. Provide educational content appropriate to their level
-3. Ask guided questions that help them reflect on their financial habits
-4. Suggest practical exercises to build better money management skills
-5. Offer step-by-step coaching through budgeting challenges
-
-BUDGETING EDUCATION GUIDE:
-${budgetingGuide.content}
-
-COACHING APPROACH:
-- Start by assessing their current knowledge level through gentle questions
-- Provide education before diving into complex analysis
-- Use the key questions from the guide to prompt self-reflection
-- Suggest practical exercises that match their skill level
-- Be encouraging and non-judgmental
-- Guide them through a progressive learning journey
-- Reference specific sections of the guide when relevant
-
-When coach mode is active, prioritize education and skill-building over just providing answers. Help them learn to fish rather than just giving them fish.`;
-      }
-    }
-
-    systemPrompt += cfpbEvidenceContext + `
-
-MANDATORY ACTIONS FOR 24-MONTH DATA:
-1. COMPREHENSIVE TREND ANALYSIS: Identify seasonal patterns, growth trends, and spending changes over time
-2. AUTO-CREATE SOPHISTICATED BUDGET: If user has substantial data but no budget, create one based on 24-month averages and trends
-3. SEASONAL INSIGHTS: Analyze spending patterns by month/season to identify recurring trends
-4. YEAR-OVER-YEAR COMPARISON: Compare current vs previous year performance
-5. PREDICTIVE RECOMMENDATIONS: Use historical data to suggest future financial strategies
-
-DEEP THINK ANALYSIS REQUIREMENTS:
-- Break down complex financial problems into logical steps
-- Consider multiple scenarios and their implications
-- Analyze cause-and-effect relationships in spending patterns
-- Evaluate short-term vs long-term financial impacts
-- Provide detailed reasoning for all recommendations
-- Consider psychological and behavioral factors in financial decisions
-
-AVAILABLE FUNCTIONS:
-1. create_goal: Create financial goals with specific targets and deadlines
-2. update_budget: Create/update comprehensive budget using 24-month historical averages and trends
-3. analyze_finances: Provide structured financial analysis with trend insights and long-term recommendations
-
-CONVERSATION STYLE:
-- Leverage the depth of 24-month data for sophisticated insights
-- Provide specific trend analysis with percentages and growth rates
-- Offer concrete recommendations based on historical patterns
-- Explain seasonal variations and their impact on budgeting
-- Use year-over-year comparisons to show progress
-- Highlight both positive trends and areas needing attention
-- Use Deep Think reasoning for complex financial questions
-${coach_mode ? '- In coach mode: Focus on education, ask guiding questions, and provide step-by-step learning' : ''}
-
-CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights. Use Deep Think mode for complex problems - think through multiple steps and scenarios.`;
-
-    // Process attachments for Gemini with enhanced error handling and observability
-    const geminiParts = [];
-    const processedAttachments = [];
-    const processedNames = [];
-    const skippedAttachments = [];
-    const attachmentErrors = [];
-    let hasPdf = false;
-    
-    // Check for PDF attachments to add credit report instruction
-    if (attachments && attachments.length > 0) {
-      hasPdf = attachments.some(att => att.type === 'application/pdf' || att.name.endsWith('.pdf'));
-    }
-    
-    // Prepend credit report analysis instruction if PDF present
-    let fullPrompt = message;
-    if (hasPdf) {
-      const creditInstruction = `First, extract and assess key drivers from the attached credit report: payment history, utilization (overall and by card), age of accounts, inquiries, derogatories, and credit mix. Then, provide a prioritized 30/60/90-day action plan to improve the score.`;
-      fullPrompt = `${creditInstruction}\n\nUser query: ${message}`;
-    }
-    
-    geminiParts.push({ text: fullPrompt });
-    
     if (attachments && attachments.length > 0) {
       console.log(`Processing ${attachments.length} attachments`);
-      
+
       for (const attachment of attachments) {
         try {
-          // Skip empty or missing URLs
-          if (!attachment.url || !attachment.url.trim()) {
-            console.log(`Skipping attachment ${attachment.name}: empty URL`);
-            skippedAttachments.push({ name: attachment.name, reason: 'Empty URL' });
+          // Validate attachment properties
+          if (!attachment.name || !attachment.type || !attachment.url) {
+            console.warn('Skipping invalid attachment:', attachment);
+            attachmentErrors++;
             continue;
           }
 
-          console.log(`Processing attachment: ${attachment.name}, type: ${attachment.type}, url: ${attachment.url}`);
-          
-          // Extract file path - prefer client-provided path, fallback to URL parsing
-          let filePath = attachment.path || attachment.url;
-          
-          // If no direct path and it's a signed URL, extract the path
-          if (!attachment.path) {
-            if (attachment.url.includes('/storage/v1/object/sign/chat-uploads/')) {
-              const match = attachment.url.match(/\/storage\/v1\/object\/sign\/chat-uploads\/([^?]+)/);
-              if (match) {
-                filePath = decodeURIComponent(match[1]);
-              }
-            } else if (attachment.url.includes('chat-uploads/')) {
-              const urlParts = attachment.url.split('chat-uploads/');
-              if (urlParts.length > 1) {
-                filePath = urlParts[1].split('?')[0];
-              }
-            }
+          // Basic type check (enhance as needed)
+          if (!attachment.type.startsWith('image/') && !attachment.type.startsWith('text/') && !attachment.type.startsWith('application/pdf')) {
+            console.warn('Skipping attachment with unsupported type:', attachment);
+            attachmentErrors++;
+            continue;
           }
-          
-          console.log(`Extracted file path: ${filePath}`);
-          
-          // Download file from Supabase Storage with retry
-          const downloadFile = async () => {
-            const { data: fileData, error: downloadError } = await supabase.storage
-              .from('chat-uploads')
-              .download(filePath);
-              
-            if (downloadError) {
-              throw new Error(`Failed to download ${attachment.name}: ${downloadError.message}`);
-            }
-            
-            return fileData;
-          };
 
-          const fileData = await retryWithBackoff(downloadFile);
-          
-          if (attachment.type.startsWith('image/')) {
-            // Process images using robust base64 encoding
-            const buffer = await fileData.arrayBuffer();
-            const base64 = base64Encode(new Uint8Array(buffer));
-            
-            geminiParts.push({
-              inlineData: {
-                mimeType: attachment.type,
-                data: base64
-              }
-            });
-            processedAttachments.push(attachment);
-            processedNames.push(attachment.name);
-            console.log(`Added image to Gemini parts: ${attachment.name} (${buffer.byteLength} bytes)`);
-            
-          } else if (attachment.type === 'application/pdf' || attachment.name.endsWith('.pdf')) {
-            // Process PDF files using robust base64 encoding
-            const buffer = await fileData.arrayBuffer();
-            const base64 = base64Encode(new Uint8Array(buffer));
-            
-            geminiParts.push({
-              inlineData: {
-                mimeType: 'application/pdf',
-                data: base64
-              }
-            });
-            processedAttachments.push(attachment);
-            processedNames.push(attachment.name);
-            console.log(`Added PDF to Gemini parts: ${attachment.name} (${buffer.byteLength} bytes)`);
-            
-          } else if (attachment.type.startsWith('text/') || 
-                     attachment.type === 'application/json' || 
-                     attachment.type === 'text/csv') {
-            // Process text-based files
-            const text = await fileData.text();
-            const truncatedText = text.length > 2000 ? text.substring(0, 2000) + '...' : text;
-            
-            geminiParts.push({ 
-              text: `\n\nFile: ${attachment.name}\nContent:\n${truncatedText}` 
-            });
-            processedAttachments.push(attachment);
-            processedNames.push(attachment.name);
-            console.log(`Added text file to Gemini parts: ${attachment.name} (${text.length} characters)`);
-          } else {
-            console.log(`Skipping unsupported file type: ${attachment.type} for ${attachment.name}`);
-            skippedAttachments.push({ name: attachment.name, reason: 'Unsupported file type' });
-          }
-        } catch (error) {
-          console.error(`Error processing attachment ${attachment.name}:`, error);
-          attachmentErrors.push({ name: attachment.name, reason: 'Processing failed' });
-          // Continue processing other attachments
+          processedAttachments.push({
+            name: attachment.name,
+            type: attachment.type,
+            url: attachment.url
+          });
+        } catch (attachmentError) {
+          console.error('Error processing attachment:', attachment, attachmentError);
+          attachmentErrors++;
         }
       }
+
+      console.log(`Processed ${processedAttachments.length} attachments, ${attachmentErrors} errors`);
     }
 
-    // Build conversation history for Gemini
-    const history = conversation_history.map((msg: any) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.message || msg.content || '' }]
-    }));
+    // Construct the system prompt with memory context
+    let systemPrompt = `You are a helpful AI financial assistant. You provide personalized advice on budgeting, saving, investing, and financial planning.
 
-    // Enhanced Gemini API call with streaming support
-    const callGeminiAPI = async () => {
-      const apiUrl = stream 
-        ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?key=${geminiApiKey}`
-        : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiApiKey}`;
+Current date/time context:
+- User's timezone: ${timezone || 'Unknown'}
+- Today's date: ${todayString || 'Unknown'}
+- Current local time: ${nowUserLocal || 'Unknown'}
+- Client timestamp: ${clientNowISO || 'Unknown'}
 
-      const requestBody = {
+${memoryContext}`;
+
+    if (processedAttachments.length > 0) {
+      systemPrompt += `\n\nThe user has provided the following attachments. Use them to provide more accurate and relevant advice:\n`;
+      processedAttachments.forEach(attachment => {
+        systemPrompt += `- ${attachment.name} (${attachment.type}): ${attachment.url}\n`;
+      });
+    }
+
+    if (coach_mode) {
+      systemPrompt += `
+
+COACHING MODE: You are in educational coaching mode. Focus on:
+1. Teaching financial concepts step-by-step
+2. Asking reflective questions to guide learning
+3. Encouraging good financial habits
+4. Providing evidence-based guidance
+5. Suggesting relevant educational resources
+
+Based on the conversation stage, provide 2-3 relevant coaching questions that help the user reflect and learn. Choose from categories like Assessment, Clarification, Exploration, Planning, etc.`;
+    }
+
+    // Call Gemini API
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         contents: [
           {
             role: 'user',
-            parts: geminiParts
+            parts: [{ text: systemPrompt + '\n\nUser: ' + message }]
           }
         ],
-        systemInstruction: {
-          parts: [{ text: systemPrompt }]
-        },
         generationConfig: {
-          temperature: 0.3, // Lower for more factual, detailed outputs
+          temperature: 0.7,
           topK: 40,
-          topP: 0.8,
-          maxOutputTokens: 8192, // Higher for longer responses
-          candidateCount: 1,
-          stopSequences: [],
-          responseMimeType: "text/plain"
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH", 
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      };
-
-      console.log(`Making Gemini API call with streaming: ${stream}`);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API error response:', errorText);
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      }
-
-      return response;
-    };
-
-    const geminiResponse = await retryWithBackoff(callGeminiAPI);
-
-    // Handle streaming vs non-streaming responses
-    if (stream) {
-      console.log('Setting up streaming response');
-      
-      // Create a transform stream for processing chunks
-      const transformStream = new TransformStream({
-        transform(chunk, controller) {
-          const decoder = new TextDecoder();
-          const text = decoder.decode(chunk);
-          
-          // Parse streaming response chunks
-          const lines = text.split('\n').filter(line => line.trim());
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                  const content = data.candidates[0].content.parts[0].text;
-                  if (content) {
-                    controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content })}\n\n`));
-                  }
-                }
-              } catch (e) {
-                console.error('Error parsing streaming chunk:', e);
-              }
-            }
-          }
+          topP: 0.95,
+          maxOutputTokens: 2048,
         }
-      });
+      }),
+    });
 
-      return new Response(geminiResponse.body?.pipeThrough(transformStream), {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive'
-        }
-      });
-    } else {
-      // Handle non-streaming response
-      const result = await geminiResponse.json();
-      console.log('Gemini response received');
-
-      if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
-        throw new Error('Invalid response format from Gemini API');
-      }
-
-      const assistantMessage = result.candidates[0].content.parts[0].text;
-
-      // Save conversation to database with enhanced error handling
-      if (thread_id) {
-        try {
-          await retryWithBackoff(async () => {
-            const { error: userMsgError } = await supabase
-              .from('conversations')
-              .insert({
-                user_id: user.id,
-                thread_id: thread_id,
-                role: 'user',
-                message: message,
-                attachments: attachments
-              });
-
-            if (userMsgError) throw userMsgError;
-
-            const { error: assistantMsgError } = await supabase
-              .from('conversations')
-              .insert({
-                user_id: user.id,
-                thread_id: thread_id,
-                role: 'assistant',
-                message: assistantMessage
-              });
-
-            if (assistantMsgError) throw assistantMsgError;
-          });
-          
-          console.log('Conversation saved to database');
-        } catch (error) {
-          console.error('Error saving conversation:', error);
-          // Don't fail the whole request if conversation saving fails
-        }
-      }
-
-      // Coaching questions bank organized by stages
-      const coachingQuestions = {
-        Assessment: [
-          "What do you make of your current financial situation?",
-          "How do you feel about your spending habits?",
-          "What resonates with you about your financial goals?",
-          "How does your current budget look to you?",
-          "What do you think is the best approach for your finances?"
-        ],
-        Clarification: [
-          "What do you mean when you say you want to be financially secure?",
-          "Can you say more about what financial freedom looks like to you?",
-          "What does 'enough money' feel like to you?",
-          "What part of budgeting is not yet clear to you?",
-          "What do you want most from your money?"
-        ],
-        Exploration: [
-          "What other financial options can you think of?",
-          "What part of your financial situation have you not yet explored?",
-          "What are your other savings options?",
-          "What angles haven't you considered for reducing expenses?",
-          "What's just one more possibility for increasing income?"
-        ],
-        Goals: [
-          "What is exciting to you about reaching this financial goal?",
-          "What would it feel like if your financial plan works out exactly as you want?",
-          "What is the dream outcome for your finances?",
-          "What does your intuition tell you about this financial decision?",
-          "What's possible if you stick to your budget?"
-        ],
-        Planning: [
-          "What kind of financial plan do you need to create?",
-          "How do you suppose you could improve your financial situation?",
-          "What do you plan to do about your debt?",
-          "What is your game plan for saving money?",
-          "How can you make your budget work better?"
-        ],
-        Implementation: [
-          "What is your action plan for this financial goal?",
-          "What support do you need to stick to your budget?",
-          "When will you start implementing these changes?",
-          "What will you do to track your progress?",
-          "How will you hold yourself accountable?"
-        ],
-        Learning: [
-          "What financial lesson did you learn from this experience?",
-          "How can you make sure you remember what you've learned about money?",
-          "What will you take away from this financial discussion?",
-          "If your financial life depended on taking action, what would you do?",
-          "How would you explain your money values to yourself?"
-        ]
-      };
-
-      // Detect conversation stage based on context and message content
-      const detectConversationStage = (userContext: any, messageContent: string, conversationHistory: any[]): string => {
-        const content = messageContent.toLowerCase();
-        const recentMessages = conversationHistory.slice(-3);
-        
-        // Check for planning keywords
-        if (content.includes('plan') || content.includes('how to') || content.includes('strategy') || content.includes('steps')) {
-          return 'Planning';
-        }
-        
-        // Check for goal-related content
-        if (content.includes('goal') || content.includes('dream') || content.includes('want to achieve') || content.includes('aspire')) {
-          return 'Goals';
-        }
-        
-        // Check for implementation/action content
-        if (content.includes('start') || content.includes('begin') || content.includes('implement') || content.includes('action')) {
-          return 'Implementation';
-        }
-        
-        // Check for learning/reflection content
-        if (content.includes('learn') || content.includes('understand') || content.includes('explain') || content.includes('lesson')) {
-          return 'Learning';
-        }
-        
-        // Check for exploration content
-        if (content.includes('options') || content.includes('alternatives') || content.includes('other ways') || content.includes('possibilities')) {
-          return 'Exploration';
-        }
-        
-        // Check for clarification needs
-        if (content.includes('what do you mean') || content.includes('clarify') || content.includes('not sure') || content.includes('confused')) {
-          return 'Clarification';
-        }
-        
-        // Default to Assessment for new conversations or general questions
-        if (conversationHistory.length < 3) {
-          return 'Assessment';
-        }
-        
-        return 'Assessment';
-      };
-
-      // Select relevant coaching questions based on stage and context
-      const selectCoachingQuestions = (stage: string, userContext: any, messageContent: string): string[] => {
-        const stageQuestions = coachingQuestions[stage] || coachingQuestions['Assessment'];
-        
-        // For now, return 2-3 random questions from the appropriate stage
-        const shuffled = [...stageQuestions].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, Math.min(3, shuffled.length));
-      };
-
-      // Generate coaching questions if coach mode is enabled
-      let coachStage = '';
-      let coachQuestions = [];
-      
-      if (coach_mode) {
-        coachStage = detectConversationStage(financialContext, message, conversation_history);
-        coachQuestions = selectCoachingQuestions(coachStage, financialContext, message);
-      }
-
-      // Generate education suggestions based on user context
-      let educationSuggestions = [];
-      
-      // Analyze user's financial context for education suggestions
-      if (budget || goals?.length || allTransactions?.length) {
-        const suggestions = [];
-        
-        // Budget-based suggestions
-        if (budget && financialAnalysis.currentMonth.expenses > (budget.amount * 0.8)) {
-          suggestions.push({
-            title: "Managing Your Budget",
-            description: "Learn strategies to stay within your budget and track spending effectively",
-            category: "budgeting",
-            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/budgeting/"
-          });
-        }
-        
-        // Goal-based suggestions
-        if (goals?.some(g => g.target_date && new Date(g.target_date) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000))) {
-          suggestions.push({
-            title: "Achieving Financial Goals",
-            description: "Practical tips for reaching your financial milestones",
-            category: "goal-setting",
-            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/saving/"
-          });
-        }
-        
-        // Transaction-based suggestions
-        if (allTransactions?.filter(t => t.amount < 0).length > 10) {
-          suggestions.push({
-            title: "Smart Spending Habits",
-            description: "Build better spending habits and make informed financial decisions",
-            category: "spending",
-            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/spending/"
-          });
-        }
-        
-        // Message context suggestions
-        const messageLower = message.toLowerCase();
-        if (messageLower.includes('debt') || messageLower.includes('credit') || messageLower.includes('loan')) {
-          suggestions.push({
-            title: "Managing Debt & Credit",
-            description: "Learn about credit scores, debt management, and loan options",
-            category: "credit-debt",
-            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/credit/"
-          });
-        }
-        
-        if (messageLower.includes('emergency') || messageLower.includes('save') || messageLower.includes('saving')) {
-          suggestions.push({
-            title: "Building an Emergency Fund",
-            description: "Steps to build and maintain your financial safety net",
-            category: "emergency-fund",
-            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/saving/"
-          });
-        }
-        
-        if (messageLower.includes('invest') || messageLower.includes('retirement') || messageLower.includes('401k')) {
-          suggestions.push({
-            title: "Investment & Retirement Planning",
-            description: "Understanding investments and planning for your future",
-            category: "investing",
-            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/investing/"
-          });
-        }
-        
-        // Limit to 3 most relevant suggestions
-        educationSuggestions = suggestions.slice(0, 3);
-      }
-
-      return new Response(JSON.stringify({ 
-        response: assistantMessage,
-        model: 'gemini-2.5-pro',
-        timestamp: new Date().toISOString(),
-        savedToDb: thread_id ? true : false,
-        educationSuggestions: educationSuggestions,
-        coach_stage: coachStage,
-        coach_questions: coachQuestions,
-        debug: {
-          processedAttachments: processedAttachments.length,
-          processedNames: processedNames,
-          skippedAttachments: skippedAttachments.length,
-          attachmentErrors: attachmentErrors.length,
-          effectiveTimezone: effectiveTimezone,
-          userToday: userToday,
-          userNowFormatted: userNowFormatted
-        }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', errorText);
+      throw new Error(`Gemini API error: ${response.status} ${errorText}`);
     }
+
+    const data = await response.json();
+    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!aiResponse) {
+      throw new Error('No response from Gemini API');
+    }
+
+    let coachStage = '';
+    let coachQuestions: string[] = [];
+    
+    if (coach_mode) {
+      const stage = detectConversationStage(message, conversation_history);
+      coachStage = stage;
+      coachQuestions = getRelevantQuestions(stage, message);
+      console.log(`Coach mode: detected stage "${stage}", providing ${coachQuestions.length} questions`);
+    }
+
+    // Extract and upsert memories (background operation)
+    let memoryUpsertedCount = 0;
+    if (!memory_extraction_mode && message && aiResponse) {
+      try {
+        const memoryResult = await extractAndUpsertMemories(
+          supabase, 
+          user.id, 
+          message, 
+          aiResponse, 
+          thread_id
+        );
+        memoryUpsertedCount = memoryResult.upsertedCount;
+        console.log(`Memory extraction: upserted ${memoryUpsertedCount} memories`);
+      } catch (memoryError) {
+        console.error('Memory extraction failed (non-blocking):', memoryError);
+      }
+    }
+
+    // Store conversation in database if thread_id is provided
+    if (thread_id && !memory_extraction_mode) {
+      try {
+        // Store user message
+        await supabase.from('conversations').insert({
+          thread_id: thread_id,
+          user_id: user.id,
+          role: 'user',
+          message: message,
+          attachments: processedAttachments.length > 0 ? processedAttachments : null
+        });
+
+        // Store assistant message
+        await supabase.from('conversations').insert({
+          thread_id: thread_id,
+          user_id: user.id,
+          role: 'assistant',
+          message: aiResponse
+        });
+
+        console.log('Conversation stored successfully');
+      } catch (dbError) {
+        console.error('Error storing conversation:', dbError);
+      }
+    }
+
+    return new Response(JSON.stringify({
+      response: aiResponse,
+      model: 'gemini-1.5-pro',
+      timestamp: new Date().toISOString(),
+      savedToDb: !!thread_id && !memory_extraction_mode,
+      coach_stage: coachStage,
+      coach_questions: coachQuestions,
+      debug: {
+        processedAttachments: processedAttachments.length,
+        processedNames: processedAttachments.map(a => a.name),
+        skippedAttachments: (attachments?.length || 0) - processedAttachments.length,
+        attachmentErrors: attachmentErrors,
+        memoryUsedCount: memories.length,
+        memoryUpsertedCount: memoryUpsertedCount
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('Error in gemini-chat function:', error);
-    
-    // Enhanced error responses
-    let errorMessage = 'An unexpected error occurred';
-    let statusCode = 500;
-    
-    if (error.message.includes('Authentication failed')) {
-      errorMessage = 'Authentication failed. Please log in again.';
-      statusCode = 401;
-    } else if (error.message.includes('Invalid request body')) {
-      errorMessage = 'Invalid request format. Please check your input.';
-      statusCode = 400;
-    } else if (error.message.includes('Message too long')) {
-      errorMessage = 'Message is too long. Please shorten your message.';
-      statusCode = 400;
-    } else if (error.message.includes('Too many attachments')) {
-      errorMessage = 'Too many attachments. Maximum 10 attachments allowed.';
-      statusCode = 400;
-    } else if (error.message.includes('Gemini API error')) {
-      errorMessage = 'AI service temporarily unavailable. Please try again.';
-      statusCode = 503;
-    } else if (error.message.includes('API key not configured')) {
-      errorMessage = 'AI service not properly configured.';
-      statusCode = 500;
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    return new Response(JSON.stringify({ 
-      error: errorMessage,
-      timestamp: new Date().toISOString(),
-      code: statusCode
+    return new Response(JSON.stringify({
+      error: error.message,
+      timestamp: new Date().toISOString()
     }), {
-      status: statusCode,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
