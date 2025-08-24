@@ -165,6 +165,9 @@ const ConversationalAI = () => {
       return;
     }
 
+    // Generate consistent timestamp for this batch
+    const batchTs = Date.now();
+
     // Add optimistic attachments immediately
     const optimisticAttachments: FileAttachment[] = [];
     for (let i = 0; i < files.length; i++) {
@@ -192,7 +195,7 @@ const ConversationalAI = () => {
       }
 
       // Add optimistic attachment
-      const fileId = `${Date.now()}-${file.name}`;
+      const fileId = `${batchTs}-${i}-${file.name}`;
       optimisticAttachments.push({
         name: file.name,
         type: file.type,
@@ -208,14 +211,14 @@ const ConversationalAI = () => {
     // Process uploads
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const fileId = `${Date.now()}-${file.name}`;
+      const fileId = `${batchTs}-${i}-${file.name}`;
       
       // Skip if validation failed
       if (!optimisticAttachments.find(a => a.name === file.name)) continue;
 
       try {
         // Upload to Supabase Storage
-        const filePath = `${user.id}/${Date.now()}-${file.name}`;
+        const filePath = `${user.id}/${batchTs}-${file.name}`;
         console.log(`Uploading to path: ${filePath}`);
         
         const { data: uploadData, error: uploadError } = await supabase.storage
