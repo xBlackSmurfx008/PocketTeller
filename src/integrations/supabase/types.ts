@@ -431,6 +431,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrypt_plaid_token: {
+        Args: { encrypted_data: Json; encryption_key: string }
+        Returns: string
+      }
+      encrypt_plaid_token: {
+        Args: { encryption_key?: string; token: string }
+        Returns: Json
+      }
       generate_secure_token: {
         Args: Record<PropertyKey, never>
         Returns: string
