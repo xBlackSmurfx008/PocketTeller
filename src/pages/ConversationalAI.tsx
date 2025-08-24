@@ -29,12 +29,20 @@ interface FileAttachment {
   status?: 'uploading' | 'ready' | 'failed';
 }
 
+interface EducationSuggestion {
+  title: string;
+  description: string;
+  category: string;
+  url: string;
+}
+
 interface GeminiChatResponse {
   response?: string;  // Primary content field from backend
   message?: string;   // Fallback for backward-compat
   model?: string;     // e.g., "gemini-2.5-pro"
   timestamp?: string;
   savedToDb?: boolean;  // Optional: if backend saves/enriches data
+  educationSuggestions?: EducationSuggestion[];
   error?: string;       // If backend sends errors
   debug?: {
     processedAttachments: number;
@@ -74,6 +82,8 @@ const ConversationalAI = () => {
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [coachMode, setCoachMode] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+  const [educationSuggestions, setEducationSuggestions] = useState<EducationSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -206,6 +216,12 @@ const ConversationalAI = () => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Handle education suggestions from AI response
+      if (data?.educationSuggestions && data.educationSuggestions.length > 0) {
+        setEducationSuggestions(data.educationSuggestions);
+        setShowSuggestions(true);
+      }
 
       // Clear attachments after successful response
       setAttachments([]);
@@ -505,7 +521,103 @@ const ConversationalAI = () => {
           </div>
 
           {/* Right Sidebar - Resources */}
-          <div className="w-full lg:w-80">
+          <div className="w-full lg:w-80 space-y-4">
+            {/* Education Suggestions */}
+            {showSuggestions && educationSuggestions.length > 0 && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-sm text-primary">Suggested Learning</CardTitle>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSuggestions(false)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Based on your financial profile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {educationSuggestions.map((suggestion, index) => (
+                    <div key={index} className="space-y-1">
+                      <a 
+                        href={suggestion.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between text-xs text-primary hover:underline group"
+                      >
+                        <span className="font-medium">{suggestion.title}</span>
+                        <ExternalLink className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                      </a>
+                      <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        window.open('https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/', '_blank');
+                      }}
+                      className="w-full text-xs h-8"
+                    >
+                      <BookOpen className="h-3 w-3 mr-1" />
+                      Explore All Resources
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Manual Suggest Education Button */}
+            {!showSuggestions && (
+              <Card>
+                <CardContent className="p-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Generate contextual suggestions
+                      const defaultSuggestions: EducationSuggestion[] = [
+                        {
+                          title: "Budgeting Basics",
+                          description: "Learn fundamental budgeting strategies and tools",
+                          category: "budgeting",
+                          url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/budgeting/"
+                        },
+                        {
+                          title: "Building Credit",
+                          description: "Understand credit scores and how to improve them",
+                          category: "credit",
+                          url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/credit/"
+                        },
+                        {
+                          title: "Emergency Savings",
+                          description: "Steps to build and maintain your financial safety net",
+                          category: "saving",
+                          url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/saving/"
+                        }
+                      ];
+                      setEducationSuggestions(defaultSuggestions);
+                      setShowSuggestions(true);
+                    }}
+                    className="w-full text-xs h-8"
+                  >
+                    <GraduationCap className="h-3 w-3 mr-1" />
+                    Suggest Education
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Financial Resources */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">

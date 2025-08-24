@@ -735,11 +735,82 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
         }
       }
 
+      // Generate education suggestions based on user context
+      let educationSuggestions = [];
+      
+      // Analyze user's financial context for education suggestions
+      if (budget || goals?.length || allTransactions?.length) {
+        const suggestions = [];
+        
+        // Budget-based suggestions
+        if (budget && financialAnalysis.currentMonth.expenses > (budget.amount * 0.8)) {
+          suggestions.push({
+            title: "Managing Your Budget",
+            description: "Learn strategies to stay within your budget and track spending effectively",
+            category: "budgeting",
+            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/budgeting/"
+          });
+        }
+        
+        // Goal-based suggestions
+        if (goals?.some(g => g.target_date && new Date(g.target_date) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000))) {
+          suggestions.push({
+            title: "Achieving Financial Goals",
+            description: "Practical tips for reaching your financial milestones",
+            category: "goal-setting",
+            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/saving/"
+          });
+        }
+        
+        // Transaction-based suggestions
+        if (allTransactions?.filter(t => t.amount < 0).length > 10) {
+          suggestions.push({
+            title: "Smart Spending Habits",
+            description: "Build better spending habits and make informed financial decisions",
+            category: "spending",
+            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/spending/"
+          });
+        }
+        
+        // Message context suggestions
+        const messageLower = message.toLowerCase();
+        if (messageLower.includes('debt') || messageLower.includes('credit') || messageLower.includes('loan')) {
+          suggestions.push({
+            title: "Managing Debt & Credit",
+            description: "Learn about credit scores, debt management, and loan options",
+            category: "credit-debt",
+            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/credit/"
+          });
+        }
+        
+        if (messageLower.includes('emergency') || messageLower.includes('save') || messageLower.includes('saving')) {
+          suggestions.push({
+            title: "Building an Emergency Fund",
+            description: "Steps to build and maintain your financial safety net",
+            category: "emergency-fund",
+            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/saving/"
+          });
+        }
+        
+        if (messageLower.includes('invest') || messageLower.includes('retirement') || messageLower.includes('401k')) {
+          suggestions.push({
+            title: "Investment & Retirement Planning",
+            description: "Understanding investments and planning for your future",
+            category: "investing",
+            url: "https://www.consumerfinance.gov/consumer-tools/educator-tools/adult-financial-education/library/investing/"
+          });
+        }
+        
+        // Limit to 3 most relevant suggestions
+        educationSuggestions = suggestions.slice(0, 3);
+      }
+
       return new Response(JSON.stringify({ 
         response: assistantMessage,
         model: 'gemini-2.5-pro',
         timestamp: new Date().toISOString(),
         savedToDb: thread_id ? true : false,
+        educationSuggestions: educationSuggestions,
         debug: {
           processedAttachments: processedAttachments.length,
           processedNames: processedNames,
