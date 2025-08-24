@@ -312,45 +312,57 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
             });
             console.log(`Added image to Gemini parts: ${attachment.name}`);
             
-          } else if (attachment.type === 'application/pdf') {
-            // Upload PDF to Gemini Files API for processing
+          } else if (attachment.type === 'application/pdf' || attachment.type.startsWith('audio/') || attachment.type.startsWith('video/') || 
+                     attachment.type.includes('document') || attachment.type.includes('sheet') || attachment.type.includes('word')) {
+            // Upload large files to Gemini Files API for processing
             const buffer = await fileData.arrayBuffer();
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
             
-            const uploadResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/files?key=${geminiApiKey}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                file: {
-                  display_name: attachment.name,
-                  mime_type: attachment.type
-                }
-              })
-            });
-            
-            const uploadResult = await uploadResponse.json();
-            
-            if (uploadResult.file?.uri) {
-              // Upload the actual file content
-              const contentResponse = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files/${uploadResult.file.name}?key=${geminiApiKey}`, {
-                method: 'PATCH',
+            try {
+              // Create upload session
+              const uploadResponse = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiApiKey}`, {
+                method: 'POST',
                 headers: {
-                  'Content-Type': attachment.type,
+                  'X-Goog-Upload-Protocol': 'resumable',
+                  'X-Goog-Upload-Command': 'start',
+                  'X-Goog-Upload-Header-Content-Length': buffer.byteLength.toString(),
+                  'X-Goog-Upload-Header-Content-Type': attachment.type,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  file: {
+                    display_name: attachment.name,
+                    mime_type: attachment.type
+                  }
+                })
+              });
+              
+              const uploadUrl = uploadResponse.headers.get('X-Goog-Upload-URL');
+              
+              if (uploadUrl) {
+                // Upload file content
+                const contentResponse = await fetch(uploadUrl, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Length': buffer.byteLength.toString(),
+                    'X-Goog-Upload-Offset': '0',
+                    'X-Goog-Upload-Command': 'upload, finalize',
                 },
                 body: buffer
               });
               
-              if (contentResponse.ok) {
-                geminiParts.push({
-                  file_data: {
-                    mime_type: attachment.type,
-                    file_uri: uploadResult.file.uri
-                  }
-                });
-                console.log(`Added PDF to Gemini parts: ${attachment.name}`);
+                if (contentResponse.ok) {
+                  const result = await contentResponse.json();
+                  geminiParts.push({
+                    file_data: {
+                      mime_type: attachment.type,
+                      file_uri: result.file.uri
+                    }
+                  });
+                  console.log(`Added file to Gemini parts: ${attachment.name}`);
+                }
               }
+            } catch (error) {
+              console.error('Error uploading file to Gemini:', error);
             }
             
           } else if (attachment.type.startsWith('text/') || 

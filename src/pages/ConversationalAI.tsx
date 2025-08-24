@@ -23,6 +23,7 @@ interface FileAttachment {
   name: string;
   type: string;
   url: string;
+  status?: 'uploading' | 'ready' | 'failed';
 }
 
 // Helper function to safely convert Json to FileAttachment[]
@@ -52,6 +53,7 @@ const ConversationalAI = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [coachMode, setCoachMode] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -163,8 +165,8 @@ const ConversationalAI = () => {
       return;
     }
 
-    const newAttachments: FileAttachment[] = [];
-    
+    // Add optimistic attachments immediately
+    const optimisticAttachments: FileAttachment[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
@@ -175,12 +177,41 @@ const ConversationalAI = () => {
         continue;
       }
 
-      // Validate file type
-      const allowedTypes = ['image/', 'application/pdf', 'text/', 'application/json', 'text/csv'];
-      if (!allowedTypes.some(type => file.type.startsWith(type))) {
-        toast.error(`File type ${file.type} is not supported. Supported types: Images, PDF, Text files, CSV, JSON.`);
+      // Extended file type support
+      const allowedTypes = [
+        'image/', 'application/pdf', 'text/', 'application/json', 'text/csv',
+        'audio/', 'video/', 'application/vnd.openxmlformats-officedocument',
+        'application/msword', 'application/vnd.ms-excel'
+      ];
+      const isAllowed = allowedTypes.some(type => file.type.startsWith(type)) || 
+        file.name.endsWith('.md') || file.name.endsWith('.log') || file.name.endsWith('.txt');
+      
+      if (!isAllowed) {
+        toast.error(`File type not supported: ${file.name}. Supported: images, PDFs, text, audio, video, documents.`);
         continue;
       }
+
+      // Add optimistic attachment
+      const fileId = `${Date.now()}-${file.name}`;
+      optimisticAttachments.push({
+        name: file.name,
+        type: file.type,
+        url: '',
+        status: 'uploading'
+      });
+      setUploadingFiles(prev => new Set(prev).add(fileId));
+    }
+
+    // Add optimistic attachments to UI immediately
+    setAttachments(prev => [...prev, ...optimisticAttachments]);
+
+    // Process uploads
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileId = `${Date.now()}-${file.name}`;
+      
+      // Skip if validation failed
+      if (!optimisticAttachments.find(a => a.name === file.name)) continue;
 
       try {
         // Upload to Supabase Storage
@@ -203,21 +234,34 @@ const ConversationalAI = () => {
           .from('chat-uploads')
           .createSignedUrl(filePath, 3600); // 1 hour expiry
 
-        newAttachments.push({
-          name: file.name,
-          type: file.type,
-          url: signedUrlData?.signedUrl || filePath // Use signed URL for preview, fallback to path
-        });
+        // Update attachment status to ready
+        setAttachments(prev => prev.map(attachment => 
+          attachment.name === file.name && attachment.status === 'uploading'
+            ? { ...attachment, url: signedUrlData?.signedUrl || filePath, status: 'ready' as const }
+            : attachment
+        ));
         
         console.log(`File processed successfully: ${file.name}`);
         toast.success(`Uploaded ${file.name}`);
       } catch (error) {
         console.error('Error uploading file:', error);
+        
+        // Update attachment status to failed
+        setAttachments(prev => prev.map(attachment => 
+          attachment.name === file.name && attachment.status === 'uploading'
+            ? { ...attachment, status: 'failed' as const }
+            : attachment
+        ));
+        
         toast.error(`Failed to upload ${file.name}`);
+      } finally {
+        setUploadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileId);
+          return newSet;
+        });
       }
     }
-    
-    setAttachments(prev => [...prev, ...newAttachments]);
     
     // Clear the input value to allow re-selecting the same file
     if (event.target) {
@@ -349,17 +393,17 @@ const ConversationalAI = () => {
           </label>
           <Button
             onClick={sendMessage}
-            disabled={isLoading}
+            disabled={isLoading || uploadingFiles.size > 0}
             className="flex items-center gap-2"
           >
             <Send className="h-4 w-4" />
-            {isLoading ? 'Sending...' : 'Send'}
+            {uploadingFiles.size > 0 ? `Uploading ${uploadingFiles.size}...` : isLoading ? 'Sending...' : 'Send'}
           </Button>
           <input
             id="file-upload"
             type="file"
             multiple
-            accept="image/*,.pdf,.txt,.csv,.json,text/*"
+            accept="image/*,.pdf,.txt,.csv,.json,.md,.log,text/*,audio/*,video/*,.doc,.docx,.xls,.xlsx"
             onChange={handleFileUpload}
             className="sr-only"
             ref={fileInputRef}
@@ -372,13 +416,22 @@ const ConversationalAI = () => {
             <p className="text-sm font-medium text-foreground">Attachments:</p>
             <div className="flex flex-wrap gap-2 mt-2">
               {attachments.map((attachment, index) => (
-                <div key={index} className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted">
-                  <p className="text-xs text-foreground">{attachment.name}</p>
+                <div key={index} className={`flex items-center gap-1 px-2 py-1 rounded-md ${
+                  attachment.status === 'uploading' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                  attachment.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                  'bg-muted'
+                }`}>
+                  <p className="text-xs">
+                    {attachment.name}
+                    {attachment.status === 'uploading' && ' (uploading...)'}
+                    {attachment.status === 'failed' && ' (failed)'}
+                  </p>
                   <Button
                     type="button"
                     size="icon"
                     variant="ghost"
                     onClick={() => handleRemoveAttachment(index)}
+                    disabled={attachment.status === 'uploading'}
                   >
                     <X className="h-4 w-4" />
                   </Button>
