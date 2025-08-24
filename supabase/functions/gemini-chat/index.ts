@@ -10,27 +10,83 @@ const corsHeaders = {
 const supabaseUrl = "https://dscndbpqvhvylukvcgpq.supabase.co";
 const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzY25kYnBxdmh2eWx1a3ZjZ3BxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4Mjg1NzksImV4cCI6MjA3MTQwNDU3OX0.GYh0VhUqTpVfwG2mh8WwW8GSBJPvpFAZSFJy7oWbnL0";
 
+// Enhanced retry logic with exponential backoff
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`Attempt ${attempt + 1} failed:`, error.message);
+      
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      // Exponential backoff with jitter
+      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError!;
+}
+
+// Enhanced input validation
+function validateInput(data: any): { message: string; conversation_history: any[]; attachments: any[]; thread_id?: string; coach_mode: boolean; stream?: boolean } {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid request body');
+  }
+  
+  const { message, conversation_history = [], attachments = [], thread_id, coach_mode = false, stream = false } = data;
+  
+  if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    throw new Error('Message is required and must be a non-empty string');
+  }
+  
+  if (message.length > 50000) {
+    throw new Error('Message too long (max 50,000 characters)');
+  }
+  
+  if (!Array.isArray(conversation_history)) {
+    throw new Error('Conversation history must be an array');
+  }
+  
+  if (!Array.isArray(attachments)) {
+    throw new Error('Attachments must be an array');
+  }
+  
+  if (attachments.length > 10) {
+    throw new Error('Too many attachments (max 10)');
+  }
+  
+  return { message: message.trim(), conversation_history, attachments, thread_id, coach_mode: Boolean(coach_mode), stream: Boolean(stream) };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { message, conversation_history = [], attachments = [], thread_id, coach_mode = false } = await req.json();
-    
-    if (!message) {
-      throw new Error('Message is required');
-    }
+    const validatedInput = validateInput(await req.json());
+    const { message, conversation_history, attachments, thread_id, coach_mode, stream } = validatedInput;
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
       throw new Error('Gemini API key not configured');
     }
 
-    // Get user from auth header
+    // Get user from auth header with enhanced validation
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('Invalid authorization header format');
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -39,30 +95,44 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      throw new Error('Authentication failed');
+      throw new Error(`Authentication failed: ${authError?.message || 'Unknown error'}`);
     }
 
-    // Get user's financial context - optimized for 24 months of Plaid data
-    const [
-      { data: budget },
-      { data: goals },
-      { data: allTransactions },
-      { data: accounts },
-      { data: recentTransactions },
-      { data: aiGuides }
-    ] = await Promise.all([
-      supabase.from('budget').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('goals').select('*').eq('user_id', user.id),
-      // Get all transactions for comprehensive analysis (24 months max)
-      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
-      supabase.from('accounts').select('*').eq('user_id', user.id),
-      // Recent transactions for quick context
-      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20),
-      // Get AI guides for enhanced coaching
-      supabase.from('ai_guides').select('*').eq('is_active', true)
-    ]);
+    console.log(`Processing request for user ${user.id} with ${attachments.length} attachments, stream: ${stream}`);
 
-    // Build context for Gemini with 24-month analysis capability
+    // Get user's financial context with enhanced error handling
+    const fetchFinancialData = async () => {
+      const [
+        budgetResult,
+        goalsResult,
+        allTransactionsResult,
+        accountsResult,
+        recentTransactionsResult,
+        aiGuidesResult
+      ] = await Promise.allSettled([
+        supabase.from('budget').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('goals').select('*').eq('user_id', user.id),
+        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(2000),
+        supabase.from('accounts').select('*').eq('user_id', user.id),
+        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(20),
+        supabase.from('ai_guides').select('*').eq('is_active', true)
+      ]);
+
+      const getData = (result: any) => result.status === 'fulfilled' ? result.value.data : null;
+
+      return {
+        budget: getData(budgetResult),
+        goals: getData(goalsResult),
+        allTransactions: getData(allTransactionsResult),
+        accounts: getData(accountsResult),
+        recentTransactions: getData(recentTransactionsResult),
+        aiGuides: getData(aiGuidesResult)
+      };
+    };
+
+    const { budget, goals, allTransactions, accounts, recentTransactions, aiGuides } = await retryWithBackoff(fetchFinancialData);
+
+    // Build comprehensive financial context
     const financialContext = {
       budget: budget || null,
       goals: goals || [],
@@ -87,7 +157,7 @@ serve(async (req) => {
     const last24MonthsTransactions = allTransactions?.filter(t => new Date(t.date) >= twoYearsAgo) || [];
     
     // Comprehensive income/expense analysis by period
-    const calculatePeriodMetrics = (transactions) => {
+    const calculatePeriodMetrics = (transactions: any[]) => {
       const income = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + Number(t.amount), 0);
       const expenses = Math.abs(transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Number(t.amount), 0));
       const categorySpending = transactions.reduce((acc, t) => {
@@ -141,7 +211,7 @@ serve(async (req) => {
       hasTransactions: (allTransactions?.length || 0) > 0,
       hasBudget: !!budget,
       needsBudget: (allTransactions?.length || 0) > 0 && !budget,
-      hasLongTermData: (allTransactions?.length || 0) > 50, // Indicates substantial data for analysis
+      hasLongTermData: (allTransactions?.length || 0) > 50,
       
       // Trend indicators
       incomeGrowth: metrics.lastYear.income > 0 && metrics.last24Months.income > metrics.lastYear.income ? 
@@ -150,8 +220,11 @@ serve(async (req) => {
         (((metrics.last24Months.expenses - metrics.lastYear.expenses) / metrics.lastYear.expenses) * 100).toFixed(1) : 0
     };
 
-    // Enhanced system prompt with coaching capabilities
-    let systemPrompt = `You are an advanced financial assistant capable of analyzing up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. You excel at identifying long-term trends, seasonal patterns, and creating sophisticated budgets based on extensive historical data.
+    // Enhanced system prompt with Deep Think mode capability
+    let systemPrompt = `You are an advanced financial assistant powered by Gemini 2.5 Pro with Deep Think reasoning capabilities. You can analyze up to 24 months of transaction data to provide comprehensive insights, detailed reporting, and personalized money management advice. Think step-by-step through complex financial problems for the most accurate and helpful responses.
+
+ENHANCED REASONING MODE: 
+Use Deep Think approach for complex financial analysis - break down problems step-by-step, consider multiple perspectives, analyze long-term implications, and provide detailed reasoning for all recommendations.
 
 FORMATTING RULES:
 - Use plain text only, no markdown formatting
@@ -211,7 +284,7 @@ CRITICAL ASSESSMENT:
 
 COACHING MODE ENABLED - ENHANCED BUDGETING KNOWLEDGE:
 
-You now have access to a comprehensive budgeting education guide. Use this knowledge to:
+You now have access to a comprehensive budgeting education guide. Use Deep Think reasoning to:
 1. Assess the user's current financial literacy level (beginner/intermediate/advanced)
 2. Provide educational content appropriate to their level
 3. Ask guided questions that help them reflect on their financial habits
@@ -243,14 +316,13 @@ MANDATORY ACTIONS FOR 24-MONTH DATA:
 4. YEAR-OVER-YEAR COMPARISON: Compare current vs previous year performance
 5. PREDICTIVE RECOMMENDATIONS: Use historical data to suggest future financial strategies
 
-ANALYSIS REQUIREMENTS FOR LONG-TERM DATA:
-- Identify seasonal spending patterns (holiday spending, quarterly patterns, etc.)
-- Calculate spending volatility and consistency metrics
-- Analyze income stability and growth trends
-- Identify category spending growth/decline patterns
-- Recommend budget adjustments based on historical averages
-- Suggest emergency fund targets based on expense history
-- Identify opportunities for expense optimization based on trends
+DEEP THINK ANALYSIS REQUIREMENTS:
+- Break down complex financial problems into logical steps
+- Consider multiple scenarios and their implications
+- Analyze cause-and-effect relationships in spending patterns
+- Evaluate short-term vs long-term financial impacts
+- Provide detailed reasoning for all recommendations
+- Consider psychological and behavioral factors in financial decisions
 
 AVAILABLE FUNCTIONS:
 1. create_goal: Create financial goals with specific targets and deadlines
@@ -264,11 +336,12 @@ CONVERSATION STYLE:
 - Explain seasonal variations and their impact on budgeting
 - Use year-over-year comparisons to show progress
 - Highlight both positive trends and areas needing attention
+- Use Deep Think reasoning for complex financial questions
 ${coach_mode ? '- In coach mode: Focus on education, ask guiding questions, and provide step-by-step learning' : ''}
 
-CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights.`;
+CRITICAL: With 24 months of data, provide sophisticated analysis including seasonal trends, year-over-year growth, spending pattern evolution, and data-driven budget recommendations. Always mention the time period being analyzed to show the depth of insights. Use Deep Think mode for complex problems - think through multiple steps and scenarios.`;
 
-    // Process attachments for Gemini
+    // Process attachments for Gemini with enhanced error handling
     const geminiParts = [{ text: message }];
     
     if (attachments && attachments.length > 0) {
@@ -276,28 +349,32 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
       
       for (const attachment of attachments) {
         try {
-          // Extract file path from URL (handle both signed URLs and direct paths)
+          // Extract file path from URL
           let filePath = attachment.url;
           
-          // If it's a signed URL, extract the file path
           if (attachment.url.includes('chat-uploads/')) {
             const urlParts = attachment.url.split('chat-uploads/');
             if (urlParts.length > 1) {
-              filePath = urlParts[1].split('?')[0]; // Remove query parameters
+              filePath = urlParts[1].split('?')[0];
             }
           }
           
           console.log(`Processing attachment: ${attachment.name}, type: ${attachment.type}, path: ${filePath}`);
           
-          // Download file from Supabase Storage
-          const { data: fileData, error: downloadError } = await supabase.storage
-            .from('chat-uploads')
-            .download(filePath);
+          // Download file from Supabase Storage with retry
+          const downloadFile = async () => {
+            const { data: fileData, error: downloadError } = await supabase.storage
+              .from('chat-uploads')
+              .download(filePath);
+              
+            if (downloadError) {
+              throw new Error(`Failed to download ${attachment.name}: ${downloadError.message}`);
+            }
             
-          if (downloadError) {
-            console.error('Error downloading file:', downloadError);
-            continue;
-          }
+            return fileData;
+          };
+
+          const fileData = await retryWithBackoff(downloadFile);
           
           if (attachment.type.startsWith('image/')) {
             // Process images for Gemini vision
@@ -312,309 +389,227 @@ CRITICAL: With 24 months of data, provide sophisticated analysis including seaso
             });
             console.log(`Added image to Gemini parts: ${attachment.name}`);
             
-          } else if (attachment.type === 'application/pdf' || attachment.type.startsWith('audio/') || attachment.type.startsWith('video/') || 
-                     attachment.type.includes('document') || attachment.type.includes('sheet') || attachment.type.includes('word')) {
-            // Upload large files to Gemini Files API for processing
-            const buffer = await fileData.arrayBuffer();
-            
-            try {
-              // Create upload session
-              const uploadResponse = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiApiKey}`, {
-                method: 'POST',
-                headers: {
-                  'X-Goog-Upload-Protocol': 'resumable',
-                  'X-Goog-Upload-Command': 'start',
-                  'X-Goog-Upload-Header-Content-Length': buffer.byteLength.toString(),
-                  'X-Goog-Upload-Header-Content-Type': attachment.type,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  file: {
-                    display_name: attachment.name,
-                    mime_type: attachment.type
-                  }
-                })
-              });
-              
-              const uploadUrl = uploadResponse.headers.get('X-Goog-Upload-URL');
-              
-              if (uploadUrl) {
-                // Upload file content
-                const contentResponse = await fetch(uploadUrl, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Length': buffer.byteLength.toString(),
-                    'X-Goog-Upload-Offset': '0',
-                    'X-Goog-Upload-Command': 'upload, finalize',
-                },
-                body: buffer
-              });
-              
-                if (contentResponse.ok) {
-                  const result = await contentResponse.json();
-                  geminiParts.push({
-                    file_data: {
-                      mime_type: attachment.type,
-                      file_uri: result.file.uri
-                    }
-                  });
-                  console.log(`Added file to Gemini parts: ${attachment.name}`);
-                }
-              }
-            } catch (error) {
-              console.error('Error uploading file to Gemini:', error);
-            }
-            
           } else if (attachment.type.startsWith('text/') || 
                      attachment.type === 'application/json' || 
                      attachment.type === 'text/csv') {
-            // Process text-based files by adding content directly to message
+            // Process text-based files
             const text = await fileData.text();
-            
-            // Limit text content to prevent overwhelming Gemini
             const truncatedText = text.length > 2000 ? text.substring(0, 2000) + '...' : text;
             
-            geminiParts.push({
-              text: `\n\nFile: ${attachment.name}\nContent:\n${truncatedText}`
+            geminiParts.push({ 
+              text: `\n\nFile: ${attachment.name}\nContent:\n${truncatedText}` 
             });
             console.log(`Added text file to Gemini parts: ${attachment.name}`);
           }
-          
         } catch (error) {
-          console.error('Error processing attachment:', attachment.name, error);
+          console.error(`Error processing attachment ${attachment.name}:`, error);
+          // Continue processing other attachments
         }
       }
     }
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...conversation_history.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      { role: 'user', content: message, parts: geminiParts }
-    ];
+    // Build conversation history for Gemini
+    const history = conversation_history.map((msg: any) => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.message || msg.content || '' }]
+    }));
 
-    // Call Gemini API with function calling
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: messages.map(msg => ({
-          role: msg.role === 'system' ? 'user' : (msg.role === 'assistant' ? 'model' : msg.role),
-          parts: msg.parts || [{ text: msg.content }]
-        })),
-        tools: [{
-          function_declarations: [
-            {
-              name: 'create_goal',
-              description: 'Create a new financial goal for the user',
-              parameters: {
-                type: 'object',
-                properties: {
-                  goal_name: { type: 'string', description: 'Name of the goal' },
-                  target_amount: { type: 'number', description: 'Target amount in dollars' },
-                  deadline: { type: 'string', description: 'Deadline in YYYY-MM-DD format' }
-                },
-                required: ['goal_name', 'target_amount']
-              }
-            },
-            {
-              name: 'update_budget',
-              description: 'Update the user\'s budget categories',
-              parameters: {
-                type: 'object',
-                properties: {
-                  income: { type: 'number', description: 'Monthly income' },
-                  expenses: { type: 'number', description: 'Monthly expenses' },
-                  categories: { 
-                    type: 'string', 
-                    description: 'JSON string of budget categories with amounts, e.g. {"food": 500, "rent": 1000}' 
+    // Enhanced Gemini API call with streaming support
+    const callGeminiAPI = async () => {
+      const apiUrl = stream 
+        ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?key=${geminiApiKey}`
+        : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiApiKey}`;
+
+      const requestBody = {
+        contents: [
+          {
+            role: 'user',
+            parts: geminiParts
+          }
+        ],
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        generationConfig: {
+          temperature: 0.3, // Lower for more factual, detailed outputs
+          topK: 40,
+          topP: 0.8,
+          maxOutputTokens: 8192, // Higher for longer responses
+          candidateCount: 1,
+          stopSequences: [],
+          responseMimeType: "text/plain"
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH", 
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      };
+
+      console.log(`Making Gemini API call with streaming: ${stream}`);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Gemini API error response:', errorText);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      }
+
+      return response;
+    };
+
+    const geminiResponse = await retryWithBackoff(callGeminiAPI);
+
+    // Handle streaming vs non-streaming responses
+    if (stream) {
+      console.log('Setting up streaming response');
+      
+      // Create a transform stream for processing chunks
+      const transformStream = new TransformStream({
+        transform(chunk, controller) {
+          const decoder = new TextDecoder();
+          const text = decoder.decode(chunk);
+          
+          // Parse streaming response chunks
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                  const content = data.candidates[0].content.parts[0].text;
+                  if (content) {
+                    controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content })}\n\n`));
                   }
                 }
-              }
-            },
-            {
-              name: 'analyze_finances',
-              description: 'Provide structured financial analysis with detailed insights and recommendations',
-              parameters: {
-                type: 'object',
-                properties: {
-                  analysis_type: {
-                    type: 'string',
-                    description: 'Type of analysis: spending, budget, cashflow, or comprehensive',
-                    enum: ['spending', 'budget', 'cashflow', 'comprehensive']
-                  }
-                }
+              } catch (e) {
+                console.error('Error parsing streaming chunk:', e);
               }
             }
-          ]
-        }],
-        generation_config: {
-          temperature: 0.7,
-          top_p: 0.8,
-          top_k: 40,
-          max_output_tokens: 2048,
-          response_mime_type: "text/plain"
+          }
         }
-      }),
-    });
+      });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
+      return new Response(geminiResponse.body?.pipeThrough(transformStream), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      });
+    } else {
+      // Handle non-streaming response
+      const result = await geminiResponse.json();
+      console.log('Gemini response received');
+
+      if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
+        throw new Error('Invalid response format from Gemini API');
+      }
+
+      const assistantMessage = result.candidates[0].content.parts[0].text;
+
+      // Save conversation to database with enhanced error handling
+      if (thread_id) {
+        try {
+          await retryWithBackoff(async () => {
+            const { error: userMsgError } = await supabase
+              .from('conversations')
+              .insert({
+                user_id: user.id,
+                thread_id: thread_id,
+                role: 'user',
+                message: message,
+                attachments: attachments
+              });
+
+            if (userMsgError) throw userMsgError;
+
+            const { error: assistantMsgError } = await supabase
+              .from('conversations')
+              .insert({
+                user_id: user.id,
+                thread_id: thread_id,
+                role: 'assistant',
+                message: assistantMessage
+              });
+
+            if (assistantMsgError) throw assistantMsgError;
+          });
+          
+          console.log('Conversation saved to database');
+        } catch (error) {
+          console.error('Error saving conversation:', error);
+          // Don't fail the whole request if conversation saving fails
+        }
+      }
+
       return new Response(JSON.stringify({ 
-        error: `Gemini API error: ${geminiResponse.status}`,
-        details: errorText
+        response: assistantMessage,
+        model: 'gemini-2.5-pro',
+        timestamp: new Date().toISOString()
       }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const geminiData = await geminiResponse.json();
-    // Don't log full Gemini response for security
-    console.log('Gemini response received successfully');
-
-    let assistantMessage = '';
-    let functionCalls = [];
-
-    if (geminiData.candidates && geminiData.candidates[0]) {
-      const candidate = geminiData.candidates[0];
-      
-      if (candidate.content && candidate.content.parts) {
-        for (const part of candidate.content.parts) {
-          if (part.text) {
-            assistantMessage += part.text;
-          }
-          if (part.functionCall) {
-            functionCalls.push(part.functionCall);
-          }
-        }
-      }
-    }
-
-    // Sanitize assistant message to remove any remaining markdown formatting
-    assistantMessage = assistantMessage.replace(/\*\*/g, '').replace(/\*/g, '');
-
-    // Execute function calls
-    for (const functionCall of functionCalls) {
-      const { name, args } = functionCall;
-      
-      try {
-        if (name === 'create_goal') {
-          const { goal_name, target_amount, deadline } = args;
-          await supabase.from('goals').insert({
-            user_id: user.id,
-            goal_name,
-            target_amount,
-            deadline: deadline || null
-          });
-          console.log('Goal created successfully');
-        } else if (name === 'update_budget') {
-          const { income, expenses, categories } = args;
-          
-          // Parse categories if it's a string
-          let parsedCategories = {};
-          if (typeof categories === 'string') {
-            try {
-              parsedCategories = JSON.parse(categories);
-            } catch (e) {
-              console.error('Failed to parse categories:', e);
-              parsedCategories = {};
-            }
-          } else {
-            parsedCategories = categories || {};
-          }
-          
-          // Upsert budget
-          await supabase.from('budget').upsert({
-            user_id: user.id,
-            income: income || 0,
-            expenses: expenses || 0,
-            categories: parsedCategories,
-            time_period: 'monthly',
-            status: 'active'
-          }, {
-            onConflict: 'user_id'
-          });
-          console.log('Budget updated successfully');
-        } else if (name === 'analyze_finances') {
-          const { analysis_type = 'comprehensive' } = args;
-          
-          // Provide structured analysis based on current financial data
-          const analysisResult = {
-            analysis_type,
-            timestamp: new Date().toISOString(),
-            financial_health_score: financialAnalysis.savingsRate24Month > 20 ? 'Excellent' : 
-                                   financialAnalysis.savingsRate24Month > 10 ? 'Good' : 
-                                   financialAnalysis.savingsRate24Month > 0 ? 'Fair' : 'Needs Improvement',
-            insights: {
-              monthly_averages: financialAnalysis.monthlyAverages,
-              savings_rate_24m: `${financialAnalysis.savingsRate24Month}%`,
-              savings_rate_12m: `${financialAnalysis.savingsRateLastYear}%`,
-              total_balance: financialAnalysis.totalBalance,
-              category_spending: financialAnalysis.currentMonth.categorySpending
-            },
-            recommendations: []
-          };
-          
-          assistantMessage += `\n\n📊 FINANCIAL ANALYSIS COMPLETE:\n- Health Score: ${analysisResult.financial_health_score}\n- 24-Month Savings Rate: ${financialAnalysis.savingsRate24Month}%\n- Monthly Net Flow (avg): $${financialAnalysis.monthlyAverages.netFlow.toFixed(2)}\n- Total Balance: $${financialAnalysis.totalBalance.toFixed(2)}`;
-          
-          console.log('Financial analysis completed successfully');
-        }
-      } catch (error) {
-        console.error('Function call error:', error);
-      }
-    }
-
-    // Validate thread ownership if thread_id is provided
-    if (thread_id) {
-      const { data: thread, error: threadError } = await supabase
-        .from('conversation_threads')
-        .select('user_id')
-        .eq('id', thread_id)
-        .single();
-      
-      if (threadError || !thread || thread.user_id !== user.id) {
-        throw new Error('Invalid thread ID or access denied');
-      }
-    }
-
-    // Save conversation to database
-    await Promise.all([
-      supabase.from('conversations').insert({
-        user_id: user.id,
-        thread_id: thread_id || null,
-        role: 'user',
-        message: message,
-        attachments: attachments || []
-      }),
-      supabase.from('conversations').insert({
-        user_id: user.id,
-        thread_id: thread_id || null,
-        role: 'assistant',
-        message: assistantMessage,
-        attachments: []
-      })
-    ]);
-
-    return new Response(JSON.stringify({
-      message: assistantMessage,
-      function_calls: functionCalls
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
   } catch (error) {
     console.error('Error in gemini-chat function:', error);
+    
+    // Enhanced error responses
+    let errorMessage = 'An unexpected error occurred';
+    let statusCode = 500;
+    
+    if (error.message.includes('Authentication failed')) {
+      errorMessage = 'Authentication failed. Please log in again.';
+      statusCode = 401;
+    } else if (error.message.includes('Invalid request body')) {
+      errorMessage = 'Invalid request format. Please check your input.';
+      statusCode = 400;
+    } else if (error.message.includes('Message too long')) {
+      errorMessage = 'Message is too long. Please shorten your message.';
+      statusCode = 400;
+    } else if (error.message.includes('Too many attachments')) {
+      errorMessage = 'Too many attachments. Maximum 10 attachments allowed.';
+      statusCode = 400;
+    } else if (error.message.includes('Gemini API error')) {
+      errorMessage = 'AI service temporarily unavailable. Please try again.';
+      statusCode = 503;
+    } else if (error.message.includes('API key not configured')) {
+      errorMessage = 'AI service not properly configured.';
+      statusCode = 500;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return new Response(JSON.stringify({ 
-      error: error.message 
+      error: errorMessage,
+      timestamp: new Date().toISOString(),
+      code: statusCode
     }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: statusCode,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
