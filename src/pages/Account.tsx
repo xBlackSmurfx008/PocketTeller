@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLayoutPreference } from '@/hooks/useLayoutPreference';
@@ -40,20 +39,20 @@ export default function Account() {
     if (!user) return;
     
     try {
+      // Use the secure view to check Plaid connection
       const { data, error } = await supabase
-        .from('profiles')
-        .select('encrypted_plaid_token')
+        .from('profiles_secure')
+        .select('has_plaid_connection')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!error && data?.encrypted_plaid_token) {
+      if (!error && data?.has_plaid_connection) {
         setHasPlaidToken(true);
       }
     } catch (error) {
       console.error('Error checking Plaid connection:', error);
     }
   };
-
 
   const handleDeleteAllData = async () => {
     if (!user) return;
@@ -80,14 +79,20 @@ export default function Account() {
         supabase.from('accounts').delete().eq('user_id', user.id),
         supabase.from('goals').delete().eq('user_id', user.id),
         supabase.from('budget').delete().eq('user_id', user.id),
+        supabase.from('plaid_token_audit_log').delete().eq('user_id', user.id),
+        supabase.from('budget_shares').delete().eq('user_id', user.id),
       ]);
 
-      // Update profile to remove encrypted Plaid token
+      // Update profile to remove encrypted Plaid token and reset security settings
       await supabase
         .from('profiles')
         .update({ 
           encrypted_plaid_token: null,
-          token_iv: null 
+          token_iv: null,
+          token_access_count: 0,
+          security_alerts_enabled: false,
+          last_suspicious_access_at: null,
+          last_token_rotation: null
         })
         .eq('user_id', user.id);
 
@@ -198,9 +203,7 @@ export default function Account() {
           </CardContent>
         </Card>
 
-        {hasPlaidToken && (
-          <PlaidSecuritySettings />
-        )}
+        <PlaidSecuritySettings />
 
         <Card className="border-destructive">
           <CardHeader>
@@ -238,6 +241,8 @@ export default function Account() {
                         <li>Chat conversation history</li>
                         <li>Uploaded files and documents</li>
                         <li>Bank connection (Plaid token)</li>
+                        <li>Security audit logs</li>
+                        <li>Budget shares</li>
                       </ul>
                     </AlertDialogDescription>
                   </AlertDialogHeader>

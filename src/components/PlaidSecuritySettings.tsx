@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Shield, RefreshCw, Eye, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Shield, RefreshCw, Eye, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface AuditLog {
   id: string;
@@ -24,6 +36,7 @@ interface SecuritySettings {
   token_access_count: number;
   last_suspicious_access_at?: string;
   last_token_rotation?: string;
+  has_plaid_connection: boolean;
 }
 
 export const PlaidSecuritySettings = () => {
@@ -48,10 +61,10 @@ export const PlaidSecuritySettings = () => {
       if (logsError) throw logsError;
       setAuditLogs((logs || []) as AuditLog[]);
 
-      // Fetch security settings from profile
+      // Fetch security settings from secure profile view
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('security_alerts_enabled, token_access_count, last_suspicious_access_at, last_token_rotation')
+        .from('profiles_secure')
+        .select('security_alerts_enabled, token_access_count, last_suspicious_access_at, last_token_rotation, has_plaid_connection')
         .single();
 
       if (profileError) throw profileError;
@@ -107,6 +120,26 @@ export const PlaidSecuritySettings = () => {
     }
   };
 
+  const clearAuditLogs = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('plaid_token_audit_log')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setAuditLogs([]);
+      toast.success('Audit logs cleared successfully');
+    } catch (error) {
+      console.error('Error clearing audit logs:', error);
+      toast.error('Failed to clear audit logs');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
@@ -154,6 +187,11 @@ export const PlaidSecuritySettings = () => {
         </CardContent>
       </Card>
     );
+  }
+
+  // Don't show security settings if no Plaid connection exists
+  if (!securitySettings?.has_plaid_connection) {
+    return null;
   }
 
   return (
@@ -229,10 +267,38 @@ export const PlaidSecuritySettings = () => {
       {/* Audit Logs */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Token Activity</CardTitle>
-          <CardDescription>
-            Monitor access to your encrypted Plaid tokens
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Token Activity</CardTitle>
+              <CardDescription>
+                Monitor access to your encrypted Plaid tokens
+              </CardDescription>
+            </div>
+            {auditLogs.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear Logs
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear Audit Logs?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all token access logs. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={clearAuditLogs}>
+                      Clear Logs
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">

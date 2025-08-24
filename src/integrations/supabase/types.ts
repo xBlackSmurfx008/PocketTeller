@@ -385,7 +385,6 @@ export type Database = {
           id: string
           last_suspicious_access_at: string | null
           last_token_rotation: string | null
-          plaid_access_token: string | null
           security_alerts_enabled: boolean | null
           token_access_count: number | null
           token_iv: string | null
@@ -400,7 +399,6 @@ export type Database = {
           id?: string
           last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
-          plaid_access_token?: string | null
           security_alerts_enabled?: boolean | null
           token_access_count?: number | null
           token_iv?: string | null
@@ -415,7 +413,6 @@ export type Database = {
           id?: string
           last_suspicious_access_at?: string | null
           last_token_rotation?: string | null
-          plaid_access_token?: string | null
           security_alerts_enabled?: boolean | null
           token_access_count?: number | null
           token_iv?: string | null
@@ -473,7 +470,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_secure: {
+        Row: {
+          app_id: string | null
+          created_at: string | null
+          has_connected_voice_ui: boolean | null
+          has_plaid_connection: boolean | null
+          last_suspicious_access_at: string | null
+          last_token_rotation: string | null
+          security_alerts_enabled: boolean | null
+          token_access_count: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_id?: string | null
+          created_at?: string | null
+          has_connected_voice_ui?: boolean | null
+          has_plaid_connection?: never
+          last_suspicious_access_at?: string | null
+          last_token_rotation?: string | null
+          security_alerts_enabled?: boolean | null
+          token_access_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_id?: string | null
+          created_at?: string | null
+          has_connected_voice_ui?: boolean | null
+          has_plaid_connection?: never
+          last_suspicious_access_at?: string | null
+          last_token_rotation?: string | null
+          security_alerts_enabled?: boolean | null
+          token_access_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_token_access_rate: {
