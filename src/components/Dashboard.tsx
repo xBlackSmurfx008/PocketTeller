@@ -35,11 +35,11 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('plaid_access_token')
+        .select('encrypted_plaid_token')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!error && data?.plaid_access_token) {
+      if (!error && data?.encrypted_plaid_token) {
         setHasPlaidToken(true);
       }
     } catch (error) {

@@ -60,11 +60,29 @@ serve(async (req) => {
       throw new Error(`Plaid exchange failed: ${exchangeData.error_message}`);
     }
 
-    // Store access token securely (note: in production, this should be encrypted)
+    // Encrypt and store the access token securely
+    const encryptionKey = Deno.env.get('PLAID_ENCRYPTION_KEY');
+    if (!encryptionKey) {
+      throw new Error('Encryption key not configured');
+    }
+
+    const { data: encryptionResult, error: encryptError } = await supabase
+      .rpc('encrypt_plaid_token', { 
+        token: exchangeData.access_token,
+        encryption_key: encryptionKey
+      });
+
+    if (encryptError || !encryptionResult) {
+      console.error('Token encryption failed:', encryptError);
+      throw new Error('Failed to encrypt token');
+    }
+
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ 
-        plaid_access_token: exchangeData.access_token,
+        encrypted_plaid_token: encryptionResult.encrypted_token,
+        token_iv: encryptionResult.iv,
+        plaid_access_token: null, // Ensure no plain text token
         last_token_rotation: new Date().toISOString()
       })
       .eq('user_id', user.id);

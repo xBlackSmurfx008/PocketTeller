@@ -41,11 +41,11 @@ export default function Account() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('plaid_access_token')
+        .select('encrypted_plaid_token')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!error && data?.plaid_access_token) {
+      if (!error && data?.encrypted_plaid_token) {
         setHasPlaidToken(true);
       }
     } catch (error) {
@@ -81,10 +81,13 @@ export default function Account() {
         supabase.from('budget').delete().eq('user_id', user.id),
       ]);
 
-      // Update profile to remove Plaid token
+      // Update profile to remove encrypted Plaid token
       await supabase
         .from('profiles')
-        .update({ plaid_access_token: null })
+        .update({ 
+          encrypted_plaid_token: null,
+          token_iv: null 
+        })
         .eq('user_id', user.id);
 
       toast({

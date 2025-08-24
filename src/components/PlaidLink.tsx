@@ -66,7 +66,10 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ plaid_access_token: null })
+        .update({ 
+          encrypted_plaid_token: null,
+          token_iv: null 
+        })
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
 
       if (error) throw error;

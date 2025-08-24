@@ -34,15 +34,35 @@ serve(async (req) => {
       throw new Error('Invalid auth token');
     }
 
-    // Get user's access token
+    // Get user's encrypted access token
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('plaid_access_token')
+      .select('encrypted_plaid_token, token_iv')
       .eq('user_id', user.id)
       .single();
 
-    if (profileError || !profile?.plaid_access_token) {
+    if (profileError || !profile?.encrypted_plaid_token) {
       throw new Error('No Plaid access token found');
+    }
+
+    // Decrypt the access token
+    const encryptionKey = Deno.env.get('PLAID_ENCRYPTION_KEY');
+    if (!encryptionKey) {
+      throw new Error('Encryption key not configured');
+    }
+
+    const { data: decryptedToken, error: decryptError } = await supabase
+      .rpc('decrypt_plaid_token', {
+        encrypted_data: {
+          encrypted_token: profile.encrypted_plaid_token,
+          iv: profile.token_iv
+        },
+        encryption_key: encryptionKey
+      });
+
+    if (decryptError || !decryptedToken) {
+      console.error('Token decryption failed:', decryptError);
+      throw new Error('Failed to decrypt token');
     }
 
     // Get accounts from Plaid
@@ -54,7 +74,7 @@ serve(async (req) => {
       body: JSON.stringify({
         client_id: plaidClientId,
         secret: plaidSecret,
-        access_token: profile.plaid_access_token,
+        access_token: decryptedToken,
       }),
     });
 
@@ -98,7 +118,7 @@ serve(async (req) => {
       body: JSON.stringify({
         client_id: plaidClientId,
         secret: plaidSecret,
-        access_token: profile.plaid_access_token,
+        access_token: decryptedToken,
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
         count: 500,
