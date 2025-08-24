@@ -75,7 +75,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if authentication is required
+    // Check if authentication is required and validate ownership
     if (share.requires_auth) {
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
@@ -87,6 +87,61 @@ serve(async (req) => {
           }
         );
       }
+
+      // Validate JWT and check ownership/email access
+      try {
+        const jwt = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+        
+        if (authError || !user) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid authentication token' }),
+            { 
+              status: 401, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
+        // Check if user owns the share or is in allowed emails
+        const isOwner = user.id === share.user_id;
+        const isAllowedEmail = share.allowed_emails && share.allowed_emails.includes(user.email);
+        
+        if (!isOwner && !isAllowedEmail) {
+          return new Response(
+            JSON.stringify({ error: 'Access denied to this budget share' }),
+            { 
+              status: 403, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+      } catch (error) {
+        console.error('JWT validation error:', error);
+        return new Response(
+          JSON.stringify({ error: 'Authentication validation failed' }),
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
+    // Rate limiting check
+    const isRateLimited = await supabase.rpc('check_budget_share_rate_limit', {
+      share_id: share.id,
+      ip_address: clientIP
+    });
+
+    if (!isRateLimited.data) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        { 
+          status: 429, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Log the access attempt

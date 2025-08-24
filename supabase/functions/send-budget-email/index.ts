@@ -28,15 +28,52 @@ serve(async (req) => {
   }
 
   try {
+    // Validate JWT authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Authentication required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
     const { recipientEmail, shareUrl, senderName, message }: EmailRequest = await req.json();
+
+    // Validate share URL ownership
+    const shareToken = shareUrl.split('/').pop();
+    if (shareToken) {
+      const { data: share } = await supabase
+        .from('budget_shares')
+        .select('user_id')
+        .eq('token', shareToken)
+        .single();
+      
+      if (!share || share.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized to share this budget' }),
+          { 
+            status: 403, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
 
     if (!recipientEmail || !shareUrl) {
       return new Response(

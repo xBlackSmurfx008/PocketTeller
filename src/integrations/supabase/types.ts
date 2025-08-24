@@ -511,6 +511,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_budget_share_rate_limit: {
+        Args: { ip_address: string; share_id: string }
+        Returns: boolean
+      }
       check_token_access_rate: {
         Args: { target_user_id: string }
         Returns: boolean
