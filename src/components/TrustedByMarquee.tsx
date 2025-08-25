@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-
 const TrustedByMarquee = () => {
   const phrases = [
     "🔒 Bank‑level security",
@@ -9,20 +7,8 @@ const TrustedByMarquee = () => {
     "Secure token handling"
   ];
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [fade, setFade] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % phrases.length);
-        setFade(true);
-      }, 150);
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, [phrases.length]);
+  // Duplicate phrases for seamless looping
+  const duplicatedPhrases = [...phrases, ...phrases];
 
   return (
     <section className="py-12 bg-muted/30">
@@ -30,17 +16,19 @@ const TrustedByMarquee = () => {
         <h3 className="text-lg font-semibold mb-4">
           Built with privacy in mind
         </h3>
-        <div className="h-8 flex items-center justify-center">
-          <span 
-            className={`inline-flex items-center px-4 py-2 rounded-full bg-background/80 text-sm font-medium border border-border/50 transition-all duration-150 ${
-              fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
-            }`}
-            style={{ 
-              animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : undefined 
-            }}
-          >
-            {phrases[currentIndex]}
-          </span>
+        <div className="h-8 flex items-center justify-center overflow-hidden">
+          <div className="marquee-container w-full max-w-2xl">
+            <div className="marquee-content">
+              {duplicatedPhrases.map((phrase, index) => (
+                <span 
+                  key={`${phrase}-${index}`}
+                  className="marquee-item inline-flex items-center px-4 py-2 rounded-full bg-background/80 text-sm font-medium border border-border/50 whitespace-nowrap mx-4"
+                >
+                  {phrase}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
