@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useSignOutAction } from '@/hooks/useSignOutAction';
@@ -25,8 +25,19 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [hasPlaidToken, setHasPlaidToken] = useState(false);
   const [budgetData, setBudgetData] = useState<any>(null);
+  const debounceRef = useRef<NodeJS.Timeout>();
 
   const showMobileLayout = isMobile && !isDesktopForced;
+
+  // Debounced fetch function to prevent excessive API calls
+  const debouncedFetchBudgetData = useCallback(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      fetchBudgetData();
+    }, 300);
+  }, []);
 
   useEffect(() => {
     if (!isDemo) {
@@ -47,12 +58,15 @@ export default function Dashboard() {
             },
             () => {
               console.log('Budget updated, refreshing dashboard data');
-              fetchBudgetData();
+              debouncedFetchBudgetData();
             }
           )
           .subscribe();
 
         return () => {
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
           supabase.removeChannel(budgetChannel);
         };
       }

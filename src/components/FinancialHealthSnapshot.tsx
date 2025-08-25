@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +21,17 @@ export default function FinancialHealthSnapshot() {
     monthlyExpenses: 0,
   });
   const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<NodeJS.Timeout>();
+
+  // Debounced fetch function to prevent excessive API calls
+  const debouncedFetchFinancialData = useCallback(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      fetchFinancialData();
+    }, 300);
+  }, []);
 
   useEffect(() => {
     if (isDemo && !user) {
@@ -48,7 +59,7 @@ export default function FinancialHealthSnapshot() {
           },
           () => {
             console.log('Accounts updated, refreshing financial data');
-            fetchFinancialData();
+            debouncedFetchFinancialData();
           }
         )
         .subscribe();
@@ -65,12 +76,15 @@ export default function FinancialHealthSnapshot() {
           },
           () => {
             console.log('Budget updated, refreshing financial data');
-            fetchFinancialData();
+            debouncedFetchFinancialData();
           }
         )
         .subscribe();
 
       return () => {
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
         supabase.removeChannel(accountsChannel);
         supabase.removeChannel(budgetChannel);
       };
