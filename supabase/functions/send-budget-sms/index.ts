@@ -50,7 +50,32 @@ serve(async (req) => {
       );
     }
 
+    // Get client IP address
+    const clientIP = req.headers.get('cf-connecting-ip') || 
+                    req.headers.get('x-forwarded-for') || 
+                    req.headers.get('x-real-ip') || 
+                    'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
     const { phoneNumber, shareUrl, senderName, message }: SMSRequest = await req.json();
+
+    // Check rate limiting first
+    const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc('check_share_send_rate', {
+      target_user_id: user.id,
+      channel_type: 'sms',
+      request_ip: clientIP
+    });
+
+    if (rateLimitError || !rateLimitOk) {
+      console.log(`Rate limit exceeded for user ${user.id}, IP: ${clientIP}`);
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        { 
+          status: 429, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     // Validate SMS content using the database function
     const { data: isValid, error: validationError } = await supabase.rpc('validate_sms_content', {
@@ -71,14 +96,26 @@ serve(async (req) => {
 
     // Validate share URL ownership
     const shareToken = shareUrl.split('/').pop();
+    let shareId = null;
     if (shareToken) {
       const { data: share } = await supabase
         .from('budget_shares')
-        .select('user_id')
+        .select('id, user_id')
         .eq('token', shareToken)
         .single();
       
       if (!share || share.user_id !== user.id) {
+        // Log failed attempt
+        await supabase.from('share_send_log').insert({
+          user_id: user.id,
+          channel: 'sms',
+          recipient: phoneNumber,
+          ip_address: clientIP,
+          user_agent: userAgent,
+          success: false,
+          error_message: 'Unauthorized share access'
+        });
+        
         return new Response(
           JSON.stringify({ error: 'Unauthorized to share this budget' }),
           { 
@@ -87,6 +124,7 @@ serve(async (req) => {
           }
         );
       }
+      shareId = share.id;
     }
 
     if (!phoneNumber || !shareUrl) {
@@ -148,6 +186,17 @@ serve(async (req) => {
     const result = await response.json();
     console.log('SMS sent successfully:', result);
 
+    // Log successful send
+    await supabase.from('share_send_log').insert({
+      user_id: user.id,
+      share_id: shareId,
+      channel: 'sms',
+      recipient: phoneNumber,
+      ip_address: clientIP,
+      user_agent: userAgent,
+      success: true
+    });
+
     return new Response(
       JSON.stringify({ success: true, messageId: result.sid }),
       {
@@ -158,6 +207,33 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in send-budget-sms:', error);
+    
+    // Try to log the failed attempt if we have user info
+    try {
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        const jwt = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(jwt);
+        if (user) {
+          const clientIP = req.headers.get('cf-connecting-ip') || 'unknown';
+          const userAgent = req.headers.get('user-agent') || 'unknown';
+          const body = await req.clone().json();
+          
+          await supabase.from('share_send_log').insert({
+            user_id: user.id,
+            channel: 'sms',
+            recipient: body.phoneNumber || 'unknown',
+            ip_address: clientIP,
+            user_agent: userAgent,
+            success: false,
+            error_message: error.message || 'Unknown error'
+          });
+        }
+      }
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+    
     return new Response(
       JSON.stringify({ error: 'Failed to send SMS' }),
       { 

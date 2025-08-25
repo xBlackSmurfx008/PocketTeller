@@ -55,10 +55,32 @@ serve(async (req) => {
 
     console.log(`Share access attempt - Token: ${token.substring(0, 8)}..., IP: ${clientIP}`);
 
-    // Use the secure validation function
+    // Extract user email from JWT if provided
+    let userEmail = null;
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      const jwt = authHeader.replace('Bearer ', '');
+      const anonSupabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      );
+      
+      try {
+        const { data: { user }, error: authError } = await anonSupabase.auth.getUser(jwt);
+        if (!authError && user) {
+          userEmail = user.email;
+          console.log(`Authenticated user email: ${userEmail}`);
+        }
+      } catch (authParseError) {
+        console.log('JWT parsing failed, proceeding as anonymous');
+      }
+    }
+
+    // Use the secure validation function with user email
     const { data: validationResult, error: validationError } = await supabase.rpc('validate_share_access', {
       share_token: token,
-      request_ip: clientIP
+      request_ip: clientIP,
+      user_email: userEmail
     });
 
     if (validationError) {
@@ -73,11 +95,18 @@ serve(async (req) => {
     }
 
     if (!validationResult?.success) {
-      console.log('Share access denied:', validationResult?.error);
+      console.log(`Share access denied: ${validationResult?.error}, User: ${userEmail || 'anonymous'}`);
+      
+      // Return appropriate status code based on error type
+      let statusCode = 403;
+      if (validationResult?.error === 'Authentication required') {
+        statusCode = 401;
+      }
+      
       return new Response(
         JSON.stringify({ error: validationResult?.error || 'Access denied' }),
         { 
-          status: 403, 
+          status: statusCode, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -107,7 +136,7 @@ serve(async (req) => {
       console.error('Failed to update view count:', updateError);
     }
 
-    console.log(`Share access granted for token: ${token.substring(0, 8)}...`);
+    console.log(`Share access granted for token: ${token.substring(0, 8)}..., User: ${userEmail || 'anonymous'}, Requires Auth: ${validationResult.requires_auth}`);
 
     return new Response(
       JSON.stringify({ 
