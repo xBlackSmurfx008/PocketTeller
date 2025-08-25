@@ -53,7 +53,8 @@ serve(async (req) => {
                     req.headers.get('x-real-ip') || 
                     'unknown';
 
-    console.log(`Share access attempt - Token: ${token.substring(0, 8)}..., IP: ${clientIP}`);
+    // Log access attempt with token masking
+    console.log(`Share access attempt - Token: ${token.substring(0, 8)}***, IP: ${clientIP}`);
 
     // Extract user email from JWT if provided
     let userEmail = null;
@@ -69,7 +70,7 @@ serve(async (req) => {
         const { data: { user }, error: authError } = await anonSupabase.auth.getUser(jwt);
         if (!authError && user) {
           userEmail = user.email;
-          console.log(`Authenticated user email: ${userEmail}`);
+          console.log(`Authenticated user: ${userEmail?.replace(/(.{2}).+@/, '$1***@')}`);
         }
       } catch (authParseError) {
         console.log('JWT parsing failed, proceeding as anonymous');
@@ -95,7 +96,7 @@ serve(async (req) => {
     }
 
     if (!validationResult?.success) {
-      console.log(`Share access denied: ${validationResult?.error}, User: ${userEmail || 'anonymous'}`);
+      console.log(`Share access denied: ${validationResult?.error}, User: ${userEmail?.replace(/(.{2}).+@/, '$1***@') || 'anonymous'}`);
       
       // Return appropriate status code based on error type
       let statusCode = 403;
@@ -136,7 +137,7 @@ serve(async (req) => {
       console.error('Failed to update view count:', updateError);
     }
 
-    console.log(`Share access granted for token: ${token.substring(0, 8)}..., User: ${userEmail || 'anonymous'}, Requires Auth: ${validationResult.requires_auth}`);
+    console.log(`Share access granted for token: ${token.substring(0, 8)}***, User: ${userEmail?.replace(/(.{2}).+@/, '$1***@') || 'anonymous'}`);
 
     return new Response(
       JSON.stringify({ 

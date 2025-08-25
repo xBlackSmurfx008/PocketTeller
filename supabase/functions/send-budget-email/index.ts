@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'development' ? '*' : 'https://dscndbpqvhvylukvcgpq.supabase.co',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -61,6 +61,23 @@ serve(async (req) => {
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
     const { recipientEmail, shareUrl, senderName, message }: EmailRequest = await req.json();
+    
+    // Validate shareUrl host for security
+    try {
+      const url = new URL(shareUrl);
+      const allowedHosts = ['dscndbpqvhvylukvcgpq.supabase.co', 'localhost'];
+      if (!allowedHosts.includes(url.hostname)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid share URL domain' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid share URL format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check rate limiting first
     const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc('check_share_send_rate', {
@@ -118,11 +135,11 @@ serve(async (req) => {
         .single();
       
       if (!share || share.user_id !== user.id) {
-        // Log failed attempt
+        // Log failed attempt with PII masking
         await supabase.from('share_send_log').insert({
           user_id: user.id,
           channel: 'email',
-          recipient: recipientEmail,
+          recipient: recipientEmail.replace(/(.{2}).+@/, '$1***@'), // Mask email
           ip_address: clientIP,
           user_agent: userAgent,
           success: false,
@@ -171,12 +188,12 @@ serve(async (req) => {
 
     console.log("Email sent successfully:", emailResponse);
 
-    // Log successful send
+    // Log successful send with PII masking
     await supabase.from('share_send_log').insert({
       user_id: user.id,
       share_id: shareId,
       channel: 'email',
-      recipient: recipientEmail,
+      recipient: recipientEmail.replace(/(.{2}).+@/, '$1***@'), // Mask email
       ip_address: clientIP,
       user_agent: userAgent,
       success: true
@@ -207,11 +224,11 @@ serve(async (req) => {
           await supabase.from('share_send_log').insert({
             user_id: user.id,
             channel: 'email',
-            recipient: body.recipientEmail || 'unknown',
+            recipient: (body.recipientEmail || 'unknown').replace(/(.{2}).+@/, '$1***@'), // Mask email
             ip_address: clientIP,
             user_agent: userAgent,
             success: false,
-            error_message: error.message || 'Unknown error'
+            error_message: error.message ? error.message.substring(0, 100) : 'Unknown error' // Truncate error
           });
         }
       }
