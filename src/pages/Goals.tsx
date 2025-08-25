@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Target, CheckCircle, Clock, AlertCircle, Settings, ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { Plus, Target, CheckCircle, Clock, AlertCircle, Settings, ArrowLeft, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { AddGoalDialog } from '@/components/AddGoalDialog';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
@@ -75,6 +75,13 @@ export default function Goals() {
       fetchTasks();
     }
   }, [user, isDemo, sampleData]);
+
+  // Auto-expand first goal when goals load
+  useEffect(() => {
+    if (goals.length > 0 && selectedGoal === null) {
+      setSelectedGoal(goals[0].id);
+    }
+  }, [goals]);
 
   const fetchGoals = async () => {
     try {
@@ -281,7 +288,7 @@ export default function Goals() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 space-y-6">
+      <main className="max-w-7xl mx-auto p-4 space-y-6 relative">
         {goals.length === 0 ? (
           <Card className="text-center py-12">
             <CardHeader>
@@ -309,33 +316,62 @@ export default function Goals() {
               const isOverdue = goal.deadline && goal.deadline.trim() !== '' && isPast(new Date(goal.deadline));
 
               return (
-                <Card key={goal.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedGoal(selectedGoal === goal.id ? null : goal.id)}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{goal.goal_name}</CardTitle>
-                      <div className="flex gap-2">
-                        {onTrack ? (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            On Track
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">
-                            {isOverdue ? 'Overdue' : 'Behind'}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <CardDescription>
-                      ${goal.current_amount.toLocaleString()} of ${goal.target_amount.toLocaleString()}
-                      {goal.deadline && goal.deadline.trim() !== '' && (
-                        <span className="block text-sm mt-1">
-                          {isOverdue ? 
-                            `Overdue by ${Math.abs(daysUntilDeadline!)} days` : 
-                            daysUntilDeadline !== null ? `${daysUntilDeadline} days remaining` : ''
-                          }
-                        </span>
-                      )}
-                    </CardDescription>
+                 <Card key={goal.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedGoal(selectedGoal === goal.id ? null : goal.id)}>
+                   <CardHeader>
+                     <div className="flex justify-between items-start">
+                       <div className="flex items-center gap-2 flex-1">
+                         {selectedGoal === goal.id ? 
+                           <ChevronDown className="h-4 w-4 text-muted-foreground" /> : 
+                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                         }
+                         <CardTitle className="text-lg">{goal.goal_name}</CardTitle>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             if (isDemo) {
+                               toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
+                             } else {
+                               setSelectedGoal(goal.id);
+                               setIsAddTaskOpen(true);
+                             }
+                           }}
+                           title="Add task to this goal"
+                           aria-label="Add task to this goal"
+                         >
+                           <Plus className="h-3 w-3 mr-1" />
+                           Add Task
+                         </Button>
+                         {onTrack ? (
+                           <Badge variant="outline" className="text-green-600 border-green-600">
+                             On Track
+                           </Badge>
+                         ) : (
+                           <Badge variant="destructive">
+                             {isOverdue ? 'Overdue' : 'Behind'}
+                           </Badge>
+                         )}
+                       </div>
+                     </div>
+                     <CardDescription>
+                       ${goal.current_amount.toLocaleString()} of ${goal.target_amount.toLocaleString()}
+                       {goal.deadline && goal.deadline.trim() !== '' && (
+                         <span className="block text-sm mt-1">
+                           {isOverdue ? 
+                             `Overdue by ${Math.abs(daysUntilDeadline!)} days` : 
+                             daysUntilDeadline !== null ? `${daysUntilDeadline} days remaining` : ''
+                           }
+                         </span>
+                       )}
+                       {selectedGoal !== goal.id && (
+                         <span className="block text-xs text-muted-foreground mt-1">
+                           Click to view tasks
+                         </span>
+                       )}
+                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -438,11 +474,29 @@ export default function Goals() {
                                    </div>
                                  </div>
                               ))}
-                              {getFilteredTasks(goal.id).length === 0 && (
-                                <p className="text-center text-muted-foreground text-sm py-4">
-                                  No {taskFilter === 'all' ? '' : taskFilter} tasks
-                                </p>
-                              )}
+                               {getFilteredTasks(goal.id).length === 0 && (
+                                 <div className="text-center py-4 text-muted-foreground">
+                                   <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                   <p className="text-sm mb-3">No {taskFilter === 'all' ? '' : taskFilter} tasks yet</p>
+                                   {taskFilter === 'all' && (
+                                     <Button
+                                       size="sm"
+                                       variant="outline"
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         if (isDemo) {
+                                           toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
+                                         } else {
+                                           setIsAddTaskOpen(true);
+                                         }
+                                       }}
+                                     >
+                                       <Plus className="h-3 w-3 mr-1" />
+                                       Add your first task
+                                     </Button>
+                                   )}
+                                 </div>
+                               )}
                             </div>
                           </TabsContent>
                         </Tabs>
@@ -454,9 +508,22 @@ export default function Goals() {
             })}
           </div>
         )}
+
+        {/* Mobile FAB for adding goals */}
+        <div className="fixed bottom-6 right-6 md:hidden">
+          <Button
+            size="icon"
+            className="h-14 w-14 rounded-full shadow-lg"
+            onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}
+            title="Add new goal"
+            aria-label="Add new goal"
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
       </main>
 
-      <AddGoalDialog 
+      <AddGoalDialog
         open={isAddGoalOpen} 
         onOpenChange={setIsAddGoalOpen}
         onGoalAdded={fetchGoals}
