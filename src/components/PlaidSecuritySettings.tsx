@@ -61,14 +61,15 @@ export const PlaidSecuritySettings = () => {
       if (logsError) throw logsError;
       setAuditLogs((logs || []) as AuditLog[]);
 
-      // Fetch security settings from secure profile view
+      // Fetch security settings using secure function
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('User not authenticated');
+
       const { data: profile, error: profileError } = await supabase
-        .from('profiles_secure')
-        .select('security_alerts_enabled, token_access_count, last_suspicious_access_at, last_token_rotation, has_plaid_connection')
-        .single();
+        .rpc('get_user_profile_secure', { target_user_id: user.user.id });
 
       if (profileError) throw profileError;
-      setSecuritySettings(profile);
+      setSecuritySettings(profile?.[0] || null);
 
     } catch (error) {
       console.error('Error fetching security data:', error);

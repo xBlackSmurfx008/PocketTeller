@@ -16,14 +16,11 @@ export function useTimezone() {
 
     const fetchAndSetTimezone = async () => {
       try {
-        // First, get the user's saved timezone from the database
+        // First, get the user's saved timezone using secure function
         const { data: profile } = await supabase
-          .from('profiles_secure')
-          .select('timezone')
-          .eq('user_id', user.id)
-          .single();
+          .rpc('get_user_profile_secure', { target_user_id: user.id });
 
-        const savedTimezone = profile?.timezone;
+        const savedTimezone = profile?.[0]?.timezone;
         
         if (savedTimezone) {
           setTimezone(savedTimezone);

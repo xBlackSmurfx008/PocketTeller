@@ -39,14 +39,11 @@ export default function Account() {
     if (!user) return;
     
     try {
-      // Use the secure view to check Plaid connection
+      // Use the secure function to check Plaid connection
       const { data, error } = await supabase
-        .from('profiles_secure')
-        .select('has_plaid_connection')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .rpc('get_user_profile_secure', { target_user_id: user.id });
 
-      if (!error && data?.has_plaid_connection) {
+      if (!error && data?.[0]?.has_plaid_connection) {
         setHasPlaidToken(true);
       }
     } catch (error) {

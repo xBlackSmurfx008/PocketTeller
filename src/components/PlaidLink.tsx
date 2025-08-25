@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Unlink } from 'lucide-react';
+import { usePlaidLink } from 'react-plaid-link';
 
 interface PlaidLinkProps {
   hasPlaidToken: boolean;
@@ -15,16 +16,20 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const { toast } = useToast();
 
-  const connectBank = async () => {
+  const onSuccess = useCallback(async (public_token: string, metadata: any) => {
     setIsConnecting(true);
     try {
-      // This would typically use Plaid Link SDK
-      // For now, we'll show a message about implementation
-      toast({
-        title: "Plaid Link Integration",
-        description: "Plaid Link SDK integration needed. Please add your public_token exchange logic here.",
-        variant: "destructive",
+      const { data, error } = await supabase.functions.invoke('plaid-link-exchange', {
+        body: { public_token }
       });
+
+      if (error) throw error;
+
+      toast({
+        title: "Bank Connected",
+        description: `Successfully connected ${metadata.institution.name}`,
+      });
+      onConnectionChange();
     } catch (error) {
       console.error('Error connecting bank:', error);
       toast({
@@ -34,6 +39,38 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       });
     } finally {
       setIsConnecting(false);
+    }
+  }, [toast, onConnectionChange]);
+
+  const onExit = useCallback((err: any, metadata: any) => {
+    if (err) {
+      console.error('Plaid Link error:', err);
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect bank account.",
+        variant: "destructive",
+      });
+    }
+    setIsConnecting(false);
+  }, [toast]);
+
+  const config = {
+    token: null, // Will be set when we have a link_token from backend
+    onSuccess,
+    onExit,
+  };
+
+  const { open, ready } = usePlaidLink(config);
+
+  const connectBank = () => {
+    if (ready) {
+      open();
+    } else {
+      toast({
+        title: "Plaid Not Ready",
+        description: "Please wait a moment and try again.",
+        variant: "destructive",
+      });
     }
   };
 

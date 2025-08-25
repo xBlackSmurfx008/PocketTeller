@@ -533,48 +533,7 @@ export type Database = {
       }
     }
     Views: {
-      profiles_secure: {
-        Row: {
-          app_id: string | null
-          created_at: string | null
-          has_connected_voice_ui: boolean | null
-          has_plaid_connection: boolean | null
-          last_suspicious_access_at: string | null
-          last_token_rotation: string | null
-          security_alerts_enabled: boolean | null
-          timezone: string | null
-          token_access_count: number | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          app_id?: string | null
-          created_at?: string | null
-          has_connected_voice_ui?: boolean | null
-          has_plaid_connection?: never
-          last_suspicious_access_at?: string | null
-          last_token_rotation?: string | null
-          security_alerts_enabled?: boolean | null
-          timezone?: string | null
-          token_access_count?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          app_id?: string | null
-          created_at?: string | null
-          has_connected_voice_ui?: boolean | null
-          has_plaid_connection?: never
-          last_suspicious_access_at?: string | null
-          last_token_rotation?: string | null
-          security_alerts_enabled?: boolean | null
-          timezone?: string | null
-          token_access_count?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_auth_security_settings: {
@@ -621,6 +580,22 @@ export type Database = {
         Returns: string
       }
       get_secure_profile: {
+        Args: { target_user_id?: string }
+        Returns: {
+          app_id: string
+          created_at: string
+          has_connected_voice_ui: boolean
+          has_plaid_connection: boolean
+          last_suspicious_access_at: string
+          last_token_rotation: string
+          security_alerts_enabled: boolean
+          timezone: string
+          token_access_count: number
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_user_profile_secure: {
         Args: { target_user_id?: string }
         Returns: {
           app_id: string
