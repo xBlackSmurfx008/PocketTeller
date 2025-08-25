@@ -21,6 +21,8 @@ import Demo from "./pages/Demo";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
+import EmailConfirmation from "./pages/EmailConfirmation";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,8 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/demo" element={<Demo />} />
+                  <Route path="/confirm" element={<EmailConfirmation />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/chat" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
                   <Route path="/chat/:threadId" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
                   <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />

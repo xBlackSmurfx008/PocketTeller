@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { AuthConfig } from '@/utils/authConfig';
 
 interface AuthContextType {
   user: User | null;
@@ -55,13 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: AuthConfig.emailConfirmRedirect
       }
     });
     return { error };
@@ -86,23 +85,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resendConfirmation = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: AuthConfig.emailConfirmRedirect
       }
     });
     return { error };
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl
+      redirectTo: AuthConfig.passwordResetRedirect
     });
     return { error };
   };

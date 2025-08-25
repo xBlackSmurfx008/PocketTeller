@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/utils/authConfig';
 import { Play, Eye, EyeOff, ArrowLeft, Mail, RotateCcw } from 'lucide-react';
 import PublicFooter from '@/components/PublicFooter';
 
@@ -78,25 +79,16 @@ export default function Auth() {
     const { error } = await signUp(email, password);
     
     if (error) {
-      // Handle specific signup errors
-      if (error.message.includes('User already registered')) {
-        toast({
-          title: "Account already exists",
-          description: "Please sign in instead, or reset your password if you've forgotten it.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Sign up failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Sign up failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } else {
       setLastSignUpEmail(email);
       toast({
         title: "Success!",
-        description: "Check your email for the confirmation link.",
+        description: "Check your email (including spam folder) for the confirmation link.",
       });
     }
     setLoading(false);
@@ -110,25 +102,18 @@ export default function Auth() {
     const { error } = await signIn(email, password);
     
     if (error) {
-      // Handle specific signin errors
       if (error.message.includes('Email not confirmed')) {
         setEmailNotConfirmed(true);
         setLastSignUpEmail(email);
         toast({
           title: "Email not confirmed",
-          description: "Please check your email and click the confirmation link, or resend the confirmation email.",
-          variant: "destructive",
-        });
-      } else if (error.message.includes('Invalid login credentials')) {
-        toast({
-          title: "Invalid credentials",
-          description: "Please check your email and password, or reset your password if you've forgotten it.",
+          description: "Please check your email and click the confirmation link, or use the resend option below.",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Sign in failed",
-          description: error.message,
+          description: getErrorMessage(error),
           variant: "destructive",
         });
       }
@@ -147,13 +132,13 @@ export default function Auth() {
     if (error) {
       toast({
         title: "Failed to resend",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Email sent!",
-        description: "Check your email for the confirmation link.",
+        title: "Confirmation email sent",
+        description: "Please check your email (including spam folder) for the confirmation link.",
       });
     }
     setResendLoading(false);
@@ -176,13 +161,13 @@ export default function Auth() {
     if (error) {
       toast({
         title: "Reset failed",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Reset email sent!",
-        description: "Check your email for password reset instructions.",
+        title: "Password reset email sent",
+        description: "Please check your email (including spam folder) for reset instructions.",
       });
       setShowForgotPassword(false);
     }
