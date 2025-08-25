@@ -86,6 +86,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Privacy Section */}
+      <TrustedByMarquee />
       
       {/* KPI Section */}
       <section className="py-12 px-4 bg-muted/20">
@@ -95,19 +98,19 @@ const Index = () => {
         >
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={metrics.totalUsers} suffix="+" animateOnChange={false} />
+              <CountUp end={metrics.totalUsers} suffix={metrics.totalUsers > 0 ? "+" : undefined} animateOnChange={false} />
             </span>
             <span className="kpi-label">Users Joined</span>
           </div>
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={metrics.totalBudgets} suffix="+" animateOnChange={false} />
+              <CountUp end={metrics.totalBudgets} suffix={metrics.totalBudgets > 0 ? "+" : undefined} animateOnChange={false} />
             </span>
             <span className="kpi-label">Budgets Created</span>
           </div>
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={metrics.totalTransactions} suffix="+" animateOnChange={false} />
+              <CountUp end={metrics.totalTransactions} suffix={metrics.totalTransactions > 0 ? "+" : undefined} animateOnChange={false} />
             </span>
             <span className="kpi-label">Transactions Tracked</span>
           </div>
@@ -187,8 +190,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Trusted By Marquee */}
-      <TrustedByMarquee />
 
       {/* CTA Section */}
       <section className="py-20 px-4">

@@ -33,9 +33,9 @@ export const useSiteMetrics = () => {
 
         if (data) {
           const newMetrics = {
-            totalUsers: data.total_users || 1247,
-            totalBudgets: data.total_budgets || 3891,
-            totalTransactions: data.total_transactions || 28456,
+            totalUsers: data.total_users ?? 0,
+            totalBudgets: data.total_budgets ?? 0,
+            totalTransactions: data.total_transactions ?? 0,
             lastUpdated: data.updated_at
           };
           
@@ -76,9 +76,9 @@ export const useSiteMetrics = () => {
           console.log('Real-time metrics update:', payload);
           const newData = payload.new as any;
           const newMetrics = {
-            totalUsers: newData.total_users || 1247,
-            totalBudgets: newData.total_budgets || 3891,
-            totalTransactions: newData.total_transactions || 28456,
+            totalUsers: newData.total_users ?? 0,
+            totalBudgets: newData.total_budgets ?? 0,
+            totalTransactions: newData.total_transactions ?? 0,
             lastUpdated: newData.updated_at
           };
           
