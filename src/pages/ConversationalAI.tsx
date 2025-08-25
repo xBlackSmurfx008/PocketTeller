@@ -6,13 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemo } from "@/hooks/useDemo";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useDateHelpers } from "@/utils/dateUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink, MessageCircle, ArrowLeft, Lightbulb, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink, MessageCircle, ArrowLeft, Lightbulb, ThumbsUp, ThumbsDown, Menu } from "lucide-react";
 
 interface Message {
   id: string;
@@ -80,6 +82,7 @@ const ConversationalAI = () => {
   const { isDemo, usePrompt, promptsUsed, maxPrompts, exitDemo } = useDemo();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
+  const isMobile = useIsMobile();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +95,7 @@ const ConversationalAI = () => {
   const [coachStage, setCoachStage] = useState<string>('');
   const [autoAskQuestions, setAutoAskQuestions] = useState(false);
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -420,92 +424,155 @@ const ConversationalAI = () => {
   }, [messages, isLoading]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4">
-        {/* Header with Back Button, New Conversation and Coach Mode */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-            <h1 className="text-3xl font-bold text-foreground">AI Financial Assistant</h1>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                <Label htmlFor="coach-mode" className="text-sm font-medium">
-                  Coach Mode
-                </Label>
-                <Switch
-                  id="coach-mode"
-                  checked={coachMode}
-                  onCheckedChange={setCoachMode}
-                />
-              </div>
-              
-              {coachMode && (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="auto-ask"
-                    checked={autoAskQuestions}
-                    onChange={(e) => setAutoAskQuestions(e.target.checked)}
-                    className="rounded border-border"
-                  />
-                  <Label htmlFor="auto-ask" className="text-sm text-muted-foreground">
-                    Auto-ask coaching questions
-                  </Label>
-                </div>
-              )}
-            </div>
-          </div>
-          <Button 
-            onClick={createNewThread}
-            variant="outline"
-            className="flex items-center gap-2"
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Mobile Header */}
+      {isMobile ? (
+        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1 text-xs"
           >
-            <Plus className="h-4 w-4" />
-            New Conversation
+            <ArrowLeft className="h-4 w-4" />
+            Dashboard
+          </Button>
+          <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="flex items-center gap-1 text-xs"
+          >
+            <Menu className="h-4 w-4" />
           </Button>
         </div>
-
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Main Chat Area */}
-          <div className="flex-1">
-            {coachMode && (
-              <Card className="mb-4 border-primary/20 bg-primary/5">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <GraduationCap className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold text-primary mb-1">Coach Mode Enabled</h3>
-                      <p className="text-sm text-muted-foreground">
-                        I'll provide educational guidance, ask reflective questions, and help you build better financial habits step-by-step. 
-                        Perfect for learning budgeting fundamentals or advancing your money management skills.
-                      </p>
-                    </div>
+      ) : (
+        /* Desktop Header */
+        <div className="max-w-7xl mx-auto w-full p-4">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Dashboard
+              </Button>
+              <h1 className="text-3xl font-bold text-foreground">AI Financial Assistant</h1>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="coach-mode" className="text-sm font-medium">
+                    Coach Mode
+                  </Label>
+                  <Switch
+                    id="coach-mode"
+                    checked={coachMode}
+                    onCheckedChange={setCoachMode}
+                  />
+                </div>
+                
+                {coachMode && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="auto-ask"
+                      checked={autoAskQuestions}
+                      onChange={(e) => setAutoAskQuestions(e.target.checked)}
+                      className="rounded border-border"
+                    />
+                    <Label htmlFor="auto-ask" className="text-sm text-muted-foreground">
+                      Auto-ask coaching questions
+                    </Label>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </div>
+            </div>
+            <Button 
+              onClick={createNewThread}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Conversation
+            </Button>
+          </div>
+        </div>
+      )}
 
-            {/* Messages Display */}
-            <Card className="mb-4">
+      <div className={`flex flex-1 ${isMobile ? 'flex-col' : 'max-w-7xl mx-auto w-full px-4 flex-row gap-6'}`}>
+        {/* Main Chat Area */}
+        <div className={`flex-1 flex flex-col ${isMobile ? 'h-full' : ''}`}>
+          {!isMobile && coachMode && (
+            <Card className="mb-4 border-primary/20 bg-primary/5">
               <CardContent className="p-4">
-                <ScrollArea className="h-[400px] pr-4">
+                <div className="flex items-start gap-3">
+                  <GraduationCap className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-primary mb-1">Coach Mode Enabled</h3>
+                    <p className="text-sm text-muted-foreground">
+                      I'll provide educational guidance, ask reflective questions, and help you build better financial habits step-by-step. 
+                      Perfect for learning budgeting fundamentals or advancing your money management skills.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Messages Display */}
+          <div className={`flex-1 ${isMobile ? 'px-4 pb-2' : ''}`}>
+            <Card className={`${isMobile ? 'h-full' : 'mb-4'}`}>
+              <CardContent className="p-4 h-full">
+                <ScrollArea className={`${isMobile ? 'h-full' : 'h-[400px]'} pr-4`}>
+                  {/* Prompt Suggestions in Chat */}
+                  {showPromptSuggestions && messages.length === 0 && (
+                    <div className="mb-4 p-4 border border-primary/20 bg-primary/5 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Lightbulb className="h-4 w-4 text-primary" />
+                          <h3 className="text-sm font-medium text-primary">Get Started</h3>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowPromptSuggestions(false)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">Try asking about these financial topics</p>
+                      <div className={`grid gap-2 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        {promptSuggestions.slice(0, isMobile ? 4 : 8).map((suggestion, index) => (
+                          <Button
+                            key={index}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setInputMessage(suggestion);
+                              setShowPromptSuggestions(false);
+                            }}
+                            className="text-left justify-start h-auto p-2 text-xs whitespace-normal border border-border/30 hover:border-primary/30"
+                          >
+                            {suggestion}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {messages.map((msg) => (
-                    <div key={msg.id} className={`mb-2 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                      <div className={`rounded-lg p-3 max-w-[80%] ${msg.role === 'user' ? 'bg-secondary text-secondary-foreground' : 'bg-muted'}`}>
-                        <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                    <div key={msg.id} className={`mb-4 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`rounded-lg p-3 ${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                        <p className={`${isMobile ? 'text-sm' : 'text-sm'} whitespace-pre-line`}>{msg.content}</p>
                         {msg.attachments && msg.attachments.length > 0 && (
                           <div className="mt-2">
                             {msg.attachments.map((attachment, index) => (
-                              <div key={index} className="text-xs text-blue-500 underline">
+                              <div key={index} className="text-xs text-blue-400 underline">
                                 <a href={attachment.url} target="_blank" rel="noopener noreferrer">{attachment.name}</a>
                               </div>
                             ))}
@@ -516,18 +583,18 @@ const ConversationalAI = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600"
+                              className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-green-100 hover:text-green-600`}
                               onClick={() => toast.success("Feedback recorded!")}
                             >
-                              <ThumbsUp className="h-3 w-3" />
+                              <ThumbsUp className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                              className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-red-100 hover:text-red-600`}
                               onClick={() => toast.info("Thanks for the feedback!")}
                             >
-                              <ThumbsDown className="h-3 w-3" />
+                              <ThumbsDown className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
                             </Button>
                           </div>
                         )}
@@ -540,8 +607,8 @@ const ConversationalAI = () => {
                   
                   {/* Thinking indicator */}
                   {isLoading && (
-                    <div className="mb-2 flex flex-col items-start">
-                      <div className="rounded-lg p-3 max-w-[80%] bg-muted">
+                    <div className="mb-4 flex flex-col items-start">
+                      <div className={`rounded-lg p-3 ${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} bg-muted`}>
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <p className="text-sm">Thinking...</p>
@@ -554,51 +621,93 @@ const ConversationalAI = () => {
                 </ScrollArea>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Prompt Suggestions */}
-            {showPromptSuggestions && messages.length === 0 && (
-              <Card className="mb-4 border-primary/20 bg-primary/5">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 text-primary" />
-                      <CardTitle className="text-sm text-primary">Get Started</CardTitle>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowPromptSuggestions(false)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <CardDescription className="text-xs">
-                    Try asking about these financial topics
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {promptSuggestions.map((suggestion, index) => (
-                      <Button
-                        key={index}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setInputMessage(suggestion);
-                          setShowPromptSuggestions(false);
-                        }}
-                        className="text-left justify-start h-auto p-2 text-xs whitespace-normal"
-                      >
-                        {suggestion}
-                      </Button>
+          {/* Mobile Input Bar - Fixed at bottom */}
+          {isMobile && (
+            <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              {/* Attachments Preview */}
+              {attachments.length > 0 && (
+                <div className="px-4 py-2 border-b">
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((attachment, index) => (
+                      <div key={index} className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                        attachment.status === 'uploading' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                        attachment.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                        'bg-muted'
+                      }`}>
+                        <span>
+                          {attachment.name}
+                          {attachment.status === 'uploading' && ' (uploading...)'}
+                          {attachment.status === 'failed' && ' (failed)'}
+                        </span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleRemoveAttachment(index)}
+                          disabled={attachment.status === 'uploading'}
+                          className="h-4 w-4 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              )}
+              
+              <div className="p-4">
+                <div className="flex items-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={triggerFileInput}
+                    className="h-10 w-10 p-0 shrink-0"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                  <div className="flex-1 relative">
+                    <Textarea
+                      placeholder={isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      onFocus={() => setShowPromptSuggestions(false)}
+                      className="min-h-[40px] max-h-[120px] resize-none text-base"
+                      data-tour-id="chat-input"
+                    />
+                  </div>
+                  <Button
+                    onClick={sendMessage}
+                    disabled={isLoading || uploadingFiles.size > 0 || !inputMessage.trim()}
+                    size="sm"
+                    className="h-10 w-10 p-0 shrink-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                accept="image/*,.pdf,.txt,.csv,.json,.md,.log,text/*,audio/*,video/*,.doc,.docx,.xls,.xlsx"
+                onChange={handleFileUpload}
+                className="sr-only"
+                ref={fileInputRef}
+              />
+            </div>
+          )}
 
-            {/* Input Area */}
+          {/* Desktop Input Area */}
+          {!isMobile && (
             <div className="flex items-center gap-2">
               <Input
                 type="text"
@@ -615,7 +724,7 @@ const ConversationalAI = () => {
                 className="flex-grow"
                 data-tour-id="chat-input"
               />
-              <label htmlFor="file-upload" className="cursor-pointer">
+              <label htmlFor="file-upload-desktop" className="cursor-pointer">
                 <Button
                   type="button"
                   variant="secondary"
@@ -637,7 +746,7 @@ const ConversationalAI = () => {
                 {uploadingFiles.size > 0 ? `Uploading ${uploadingFiles.size}...` : isLoading ? 'Sending...' : 'Send'}
               </Button>
               <input
-                id="file-upload"
+                id="file-upload-desktop"
                 type="file"
                 multiple
                 accept="image/*,.pdf,.txt,.csv,.json,.md,.log,text/*,audio/*,video/*,.doc,.docx,.xls,.xlsx"
@@ -646,10 +755,82 @@ const ConversationalAI = () => {
                 ref={fileInputRef}
               />
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Right Sidebar - Resources */}
-          <div className="w-full lg:w-80 space-y-4">
+        {/* Right Sidebar - Resources (Hidden on mobile unless toggled) */}
+        {(showSidebar || !isMobile) && (
+          <div className={`${isMobile ? 'fixed inset-0 z-50 bg-background' : 'w-full lg:w-80'} space-y-4 ${isMobile ? 'p-4 overflow-y-auto' : ''}`}>
+            {isMobile && (
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Resources & Settings</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSidebar(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* Coach Mode Settings - Mobile */}
+            {isMobile && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4 text-primary" />
+                        <Label htmlFor="coach-mode-mobile" className="text-sm font-medium">
+                          Coach Mode
+                        </Label>
+                      </div>
+                      <Switch
+                        id="coach-mode-mobile"
+                        checked={coachMode}
+                        onCheckedChange={setCoachMode}
+                      />
+                    </div>
+                    
+                    {coachMode && (
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="auto-ask-mobile" className="text-sm text-muted-foreground">
+                          Auto-ask coaching questions
+                        </Label>
+                        <input
+                          type="checkbox"
+                          id="auto-ask-mobile"
+                          checked={autoAskQuestions}
+                          onChange={(e) => setAutoAskQuestions(e.target.checked)}
+                          className="rounded border-border"
+                        />
+                      </div>
+                    )}
+
+                    {coachMode && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          I'll provide educational guidance, ask reflective questions, and help you build better financial habits step-by-step.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* New Conversation Button - Mobile */}
+            {isMobile && (
+              <Button 
+                onClick={createNewThread}
+                variant="outline"
+                className="w-full flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Conversation
+              </Button>
+            )}
             {/* Education Suggestions */}
             {showSuggestions && educationSuggestions.length > 0 && (
               <Card className="border-primary/20 bg-primary/5">
@@ -837,39 +1018,39 @@ const ConversationalAI = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
-
-        {/* Attachments Preview */}
-        {attachments.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm font-medium text-foreground">Attachments:</p>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {attachments.map((attachment, index) => (
-                <div key={index} className={`flex items-center gap-1 px-2 py-1 rounded-md ${
-                  attachment.status === 'uploading' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                  attachment.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
-                  'bg-muted'
-                }`}>
-                  <p className="text-xs">
-                    {attachment.name}
-                    {attachment.status === 'uploading' && ' (uploading...)'}
-                    {attachment.status === 'failed' && ' (failed)'}
-                  </p>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleRemoveAttachment(index)}
-                    disabled={attachment.status === 'uploading'}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
       </div>
+
+      {/* Desktop Attachments Preview */}
+      {!isMobile && attachments.length > 0 && (
+        <div className="max-w-7xl mx-auto w-full px-4 pb-4">
+          <p className="text-sm font-medium text-foreground">Attachments:</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {attachments.map((attachment, index) => (
+              <div key={index} className={`flex items-center gap-1 px-2 py-1 rounded-md ${
+                attachment.status === 'uploading' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                attachment.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                'bg-muted'
+              }`}>
+                <p className="text-xs">
+                  {attachment.name}
+                  {attachment.status === 'uploading' && ' (uploading...)'}
+                  {attachment.status === 'failed' && ' (failed)'}
+                </p>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleRemoveAttachment(index)}
+                  disabled={attachment.status === 'uploading'}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
