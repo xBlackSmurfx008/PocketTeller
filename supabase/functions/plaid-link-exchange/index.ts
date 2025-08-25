@@ -41,7 +41,7 @@ serve(async (req) => {
     }
 
     // Exchange public token for access token
-    const exchangeResponse = await fetch('https://production.plaid.com/link/token/exchange', {
+    const exchangeResponse = await fetch('https://production.plaid.com/item/public_token/exchange', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

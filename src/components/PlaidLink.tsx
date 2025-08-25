@@ -14,6 +14,7 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [linkToken, setLinkToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   const onSuccess = useCallback(async (public_token: string, metadata: any) => {
@@ -55,14 +56,38 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
   }, [toast]);
 
   const config = {
-    token: null, // Will be set when we have a link_token from backend
+    token: linkToken,
     onSuccess,
     onExit,
   };
 
   const { open, ready } = usePlaidLink(config);
 
-  const connectBank = () => {
+  const fetchLinkToken = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('plaid-link-token');
+      
+      if (error) throw error;
+      
+      setLinkToken(data.link_token);
+      return data.link_token;
+    } catch (error) {
+      console.error('Error fetching link token:', error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to initialize bank connection. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const connectBank = async () => {
+    if (!linkToken) {
+      const token = await fetchLinkToken();
+      if (!token) return;
+    }
+    
     if (ready) {
       open();
     } else {

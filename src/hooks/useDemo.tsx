@@ -24,6 +24,7 @@ interface DemoContextType extends DemoState {
   usePrompt: () => boolean;
   useConversation: () => boolean;
   nextTourStep: () => void;
+  prevTourStep: () => void;
   skipTour: () => void;
   resetTour: () => void;
 }
@@ -220,6 +221,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const prevTourStep = () => {
+    setDemoState(prev => ({
+      ...prev,
+      tourStep: Math.max(0, prev.tourStep - 1)
+    }));
+  };
+
   const skipTour = () => {
     setDemoState(prev => ({
       ...prev,
@@ -237,11 +245,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     ...demoState,
+    sampleData: SAMPLE_DATA,
     startDemo,
     exitDemo,
     usePrompt,
     useConversation,
     nextTourStep,
+    prevTourStep,
     skipTour,
     resetTour
   };

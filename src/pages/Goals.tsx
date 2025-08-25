@@ -70,13 +70,16 @@ export default function Goals() {
   const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isDemo) {
+    if (isDemo && !user) {
+      // Only show demo data if in demo mode AND no authenticated user
       setGoals(sampleData.goals as Goal[]);
       setTasks([]);
       setLoading(false);
     } else if (user) {
       fetchGoals();
       fetchTasks();
+    } else {
+      setLoading(false);
     }
   }, [user, isDemo, sampleData]);
 
@@ -370,7 +373,7 @@ export default function Goals() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setIsAddGoalOpen(true)}>
+              <Button onClick={() => isDemo && !user ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Goal
               </Button>

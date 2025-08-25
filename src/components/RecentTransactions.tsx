@@ -46,7 +46,8 @@ export default function RecentTransactions() {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
-    if (isDemo) {
+    if (isDemo && !user) {
+      // Only show demo data if in demo mode AND no authenticated user
       const demoTransactions = sampleData.transactions.map(t => ({
         id: t.id,
         date: t.date,
@@ -59,6 +60,8 @@ export default function RecentTransactions() {
       setLoading(false);
     } else if (user) {
       fetchTransactions();
+    } else {
+      setLoading(false);
     }
   }, [user, isDemo, sampleData]);
 

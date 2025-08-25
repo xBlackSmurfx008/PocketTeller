@@ -82,7 +82,7 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 export function CoachMarks() {
-  const { tourActive, tourStep, nextTourStep, skipTour } = useDemo();
+  const { tourActive, tourStep, nextTourStep, prevTourStep, skipTour } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
   const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
@@ -162,7 +162,7 @@ export function CoachMarks() {
 
   const handlePrevious = () => {
     if (tourStep > 0) {
-      nextTourStep(); // This will actually go to the previous step
+      prevTourStep();
     }
   };
 
