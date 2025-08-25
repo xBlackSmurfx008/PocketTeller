@@ -52,6 +52,23 @@ serve(async (req) => {
 
     const { phoneNumber, shareUrl, senderName, message }: SMSRequest = await req.json();
 
+    // Validate SMS content using the database function
+    const { data: isValid, error: validationError } = await supabase.rpc('validate_sms_content', {
+      phone_number: phoneNumber,
+      message: message || ''
+    });
+
+    if (validationError || !isValid) {
+      console.error('SMS content validation failed:', validationError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid phone number or message content' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Validate share URL ownership
     const shareToken = shareUrl.split('/').pop();
     if (shareToken) {

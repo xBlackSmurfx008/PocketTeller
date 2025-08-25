@@ -31,6 +31,9 @@ verify_jwt = true
 [functions.share-get-budget-by-token]
 verify_jwt = false
 
+[functions.share-get-budget-by-token-secure]
+verify_jwt = false
+
 [functions.send-budget-email]
 verify_jwt = true
 

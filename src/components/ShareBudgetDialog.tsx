@@ -124,10 +124,53 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
   };
 
   const sendSMS = async () => {
-    if (!recipientPhone || !shareUrl) return;
-    
+    if (!recipientPhone || !shareUrl || !senderName) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate phone number format (E.164)
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(recipientPhone)) {
+      toast({
+        title: "Error", 
+        description: "Please enter a valid phone number in international format (e.g., +1234567890)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate message length for SMS
+    if (message && message.length > 1600) {
+      toast({
+        title: "Error",
+        description: "Message is too long for SMS. Please keep it under 1600 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Validate content on backend first
+      const { data: isValid } = await supabase.rpc('validate_sms_content', {
+        phone_number: recipientPhone,
+        message: message || ''
+      });
+
+      if (!isValid) {
+        toast({
+          title: "Error",
+          description: "Invalid phone number or message content. Please check your input.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase.functions.invoke('send-budget-sms', {
         body: {
           phoneNumber: recipientPhone,
@@ -325,16 +368,16 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
                       onChange={(e) => {
                         const value = e.target.value;
                         // Basic input sanitization for security
-                        if (value.length <= 1000 && !/<script|javascript:|data:|vbscript:|on\w+\s*=/i.test(value)) {
+                        if (value.length <= 1600 && !/<script|javascript:|data:|vbscript:|on\w+\s*=/i.test(value)) {
                           setMessage(value);
                         }
                       }}
                       placeholder="Add a personal message..."
                       rows={3}
-                      maxLength={1000}
+                      maxLength={1600}
                     />
                     <p className="text-xs text-muted-foreground">
-                      HTML and script content is not allowed
+                      {message?.length || 0}/1600 characters (SMS/email limit) - HTML and script content is not allowed
                     </p>
                   </div>
                 
@@ -370,7 +413,14 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
                         onChange={(e) => setRecipientPhone(e.target.value)}
                         placeholder="+1234567890"
                         className="flex-1"
+                        maxLength={16}
+                        pattern="^\+[1-9]\d{1,14}$"
                       />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter phone number in international format (e.g., +1234567890)
+                    </p>
+                    <div className="flex gap-2">
                       <Button 
                         onClick={sendSMS} 
                         disabled={!recipientPhone || !shareUrl || isLoading}

@@ -648,6 +648,14 @@ export type Database = {
         Args: { content: string }
         Returns: boolean
       }
+      validate_share_access: {
+        Args: { request_ip?: string; share_token: string }
+        Returns: Json
+      }
+      validate_sms_content: {
+        Args: { message: string; phone_number: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
