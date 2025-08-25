@@ -682,21 +682,9 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_user_security_profile_secure: {
-        Args: { target_user_id: string }
-        Returns: {
-          app_id: string
-          created_at: string
-          has_connected_voice_ui: boolean
-          has_plaid_connection: boolean
-          last_suspicious_access_at: string
-          last_token_rotation: string
-          security_alerts_enabled: boolean
-          timezone: string
-          token_access_count: number
-          updated_at: string
-          user_id: string
-        }[]
+      increment_budget_share_view: {
+        Args: { share_id: string }
+        Returns: boolean
       }
       log_budget_share_access: {
         Args: { ip_address?: string; share_id: string; user_agent?: string }

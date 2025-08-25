@@ -124,17 +124,14 @@ serve(async (req) => {
       console.error('Failed to log access:', logError);
     }
 
-    // Increment view count
-    const { error: updateError } = await supabase
-      .from('budget_shares')
-      .update({ 
-        view_count: supabase.raw('view_count + 1'),
-        last_accessed_at: new Date().toISOString()
-      })
-      .eq('id', validationResult.share_id);
+    // Safely increment view count using secure RPC
+    const { error: incrementError } = await supabase.rpc('increment_budget_share_view', {
+      share_id: validationResult.share_id
+    });
 
-    if (updateError) {
-      console.error('Failed to update view count:', updateError);
+    if (incrementError) {
+      console.error('Failed to increment view count:', incrementError);
+      // Continue processing - don't fail the request for this
     }
 
     console.log(`Share access granted for token: ${token.substring(0, 8)}***, User: ${userEmail?.replace(/(.{2}).+@/, '$1***@') || 'anonymous'}`);
