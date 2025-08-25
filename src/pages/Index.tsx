@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useReveal } from '@/hooks/useReveal';
+import { useSiteMetrics } from '@/hooks/useSiteMetrics';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 import TrustedByMarquee from '@/components/TrustedByMarquee';
@@ -21,6 +22,7 @@ const Index = () => {
   const featuresReveal = useReveal();
   const ctaReveal = useReveal();
   const kpiReveal = useReveal();
+  const { metrics } = useSiteMetrics();
   
 
 
@@ -93,21 +95,21 @@ const Index = () => {
         >
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={25000} suffix="+" />
+              <CountUp end={metrics.totalUsers} suffix="+" />
+            </span>
+            <span className="kpi-label">Users Joined</span>
+          </div>
+          <div className="kpi-stat">
+            <span className="kpi-number">
+              <CountUp end={metrics.totalBudgets} suffix="+" />
             </span>
             <span className="kpi-label">Budgets Created</span>
           </div>
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={1200000} suffix="+" />
+              <CountUp end={metrics.totalTransactions} suffix="+" />
             </span>
             <span className="kpi-label">Transactions Tracked</span>
-          </div>
-          <div className="kpi-stat">
-            <span className="kpi-number">
-              <CountUp end={35} suffix="%" />
-            </span>
-            <span className="kpi-label">Average Savings Boost</span>
           </div>
         </div>
       </section>

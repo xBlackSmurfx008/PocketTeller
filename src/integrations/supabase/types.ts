@@ -424,6 +424,30 @@ export type Database = {
         }
         Relationships: []
       }
+      site_metrics: {
+        Row: {
+          id: number
+          total_budgets: number
+          total_transactions: number
+          total_users: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          total_budgets?: number
+          total_transactions?: number
+          total_users?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          total_budgets?: number
+          total_transactions?: number
+          total_users?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           account_id: string | null
