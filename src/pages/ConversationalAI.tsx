@@ -12,7 +12,7 @@ import { useDemo } from "@/hooks/useDemo";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useDateHelpers } from "@/utils/dateUtils";
 import { toast } from "sonner";
-import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink, MessageCircle } from "lucide-react";
+import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink, MessageCircle, ArrowLeft } from "lucide-react";
 
 interface Message {
   id: string;
@@ -406,9 +406,18 @@ const ConversationalAI = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4">
-        {/* Header with New Conversation and Coach Mode */}
+        {/* Header with Back Button, New Conversation and Coach Mode */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
             <h1 className="text-3xl font-bold text-foreground">AI Financial Assistant</h1>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
