@@ -13,7 +13,7 @@ export function useSignOutAction() {
       navigate('/');
     } else {
       await signOut();
-      // signOut already handles navigation to /auth
+      navigate('/auth', { replace: true });
     }
   };
 

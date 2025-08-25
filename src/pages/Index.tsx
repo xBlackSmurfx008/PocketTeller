@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useReveal } from '@/hooks/useReveal';
 
-import Dashboard from '@/components/Dashboard';
+const Dashboard = lazy(() => import('@/components/Dashboard'));
 import TrustedByMarquee from '@/components/TrustedByMarquee';
 import CountUp from '@/components/CountUp';
 import { Button } from '@/components/ui/button';
@@ -23,12 +23,6 @@ const Index = () => {
   const kpiReveal = useReveal();
   
 
-  useEffect(() => {
-    if (user) {
-      // User is authenticated, they can stay on dashboard
-      return;
-    }
-  }, [user]);
 
   if (loading) {
     return (
@@ -41,7 +35,17 @@ const Index = () => {
   }
 
   if (user || isDemo) {
-    return <Dashboard />;
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center">
+            <div className="text-xl text-muted-foreground">Loading...</div>
+          </div>
+        </div>
+      }>
+        <Dashboard />
+      </Suspense>
+    );
   }
 
   return (
