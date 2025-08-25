@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSignOutAction } from '@/hooks/useSignOutAction';
 import { useLayoutPreference } from '@/hooks/useLayoutPreference';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +25,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Account() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { handleSignOut } = useSignOutAction();
   const { layoutMode, setLayoutMode } = useLayoutPreference();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -261,7 +263,7 @@ export default function Account() {
             </div>
 
             <div className="pt-4 border-t">
-              <Button variant="outline" onClick={signOut}>
+              <Button variant="outline" onClick={handleSignOut}>
                 Sign Out
               </Button>
             </div>

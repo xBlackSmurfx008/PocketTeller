@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LayoutPreferenceProvider } from "@/hooks/useLayoutPreference";
@@ -37,11 +38,11 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/demo" element={<Demo />} />
-                  <Route path="/chat" element={<ConversationalAI />} />
-                  <Route path="/chat/:threadId" element={<ConversationalAI />} />
-                  <Route path="/goals" element={<Goals />} />
-                  <Route path="/transactions" element={<Transactions />} />
-                  <Route path="/account" element={<Account />} />
+                  <Route path="/chat" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
+                  <Route path="/chat/:threadId" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
+                  <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+                  <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+                  <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                   <Route path="/share/budget/:token" element={<SharedBudget />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />

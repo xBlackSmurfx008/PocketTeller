@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
+import { useSignOutAction } from '@/hooks/useSignOutAction';
 import { useLayoutPreference } from '@/hooks/useLayoutPreference';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
@@ -16,8 +17,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Settings, Target, MessageSquare, Share2, Receipt } from 'lucide-react';
 
 export default function Dashboard() {
-  const { signOut, user } = useAuth();
-  const { isDemo, exitDemo } = useDemo();
+  const { user } = useAuth();
+  const { isDemo } = useDemo();
+  const { handleSignOut } = useSignOutAction();
   const { isDesktopForced } = useLayoutPreference();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -70,14 +72,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignOut = async () => {
-    if (isDemo) {
-      exitDemo();
-      navigate('/');
-    } else {
-      await signOut();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background" data-tour-id="dashboard">
