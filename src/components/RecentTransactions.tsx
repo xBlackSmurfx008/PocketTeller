@@ -60,6 +60,39 @@ export default function RecentTransactions() {
       setLoading(false);
     } else if (user) {
       fetchTransactions();
+      
+      // Set up real-time subscription for transactions
+      const channel = supabase
+        .channel('transactions-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'transactions',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Real-time transaction update:', payload);
+            
+            if (payload.eventType === 'INSERT') {
+              setTransactions(prev => [payload.new as Transaction, ...prev.slice(0, 49)]);
+            } else if (payload.eventType === 'UPDATE') {
+              setTransactions(prev => 
+                prev.map(t => t.id === payload.new.id ? payload.new as Transaction : t)
+              );
+            } else if (payload.eventType === 'DELETE') {
+              setTransactions(prev => 
+                prev.filter(t => t.id !== payload.old.id)
+              );
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setLoading(false);
     }

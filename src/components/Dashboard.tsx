@@ -32,6 +32,30 @@ export default function Dashboard() {
     if (!isDemo) {
       checkPlaidConnection();
       fetchBudgetData();
+      
+      if (user) {
+        // Set up real-time subscription for budget changes
+        const budgetChannel = supabase
+          .channel('dashboard-budget-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'budget',
+              filter: `user_id=eq.${user.id}`
+            },
+            () => {
+              console.log('Budget updated, refreshing dashboard data');
+              fetchBudgetData();
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(budgetChannel);
+        };
+      }
     }
   }, [user, isDemo]);
 

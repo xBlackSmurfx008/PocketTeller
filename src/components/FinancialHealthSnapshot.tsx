@@ -34,6 +34,46 @@ export default function FinancialHealthSnapshot() {
       setLoading(false);
     } else if (user) {
       fetchFinancialData();
+      
+      // Set up real-time subscriptions for accounts and budget changes
+      const accountsChannel = supabase
+        .channel('accounts-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'accounts',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            console.log('Accounts updated, refreshing financial data');
+            fetchFinancialData();
+          }
+        )
+        .subscribe();
+
+      const budgetChannel = supabase
+        .channel('budget-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'budget',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            console.log('Budget updated, refreshing financial data');
+            fetchFinancialData();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(accountsChannel);
+        supabase.removeChannel(budgetChannel);
+      };
     } else {
       setLoading(false);
     }
