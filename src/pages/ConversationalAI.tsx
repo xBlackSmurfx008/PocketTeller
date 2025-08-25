@@ -12,7 +12,7 @@ import { useDemo } from "@/hooks/useDemo";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useDateHelpers } from "@/utils/dateUtils";
 import { toast } from "sonner";
-import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink, MessageCircle, ArrowLeft } from "lucide-react";
+import { Send, Plus, Upload, X, GraduationCap, Loader2, BookOpen, ExternalLink, MessageCircle, ArrowLeft, Lightbulb, ThumbsUp, ThumbsDown } from "lucide-react";
 
 interface Message {
   id: string;
@@ -77,7 +77,7 @@ const ConversationalAI = () => {
   const { threadId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isDemo, usePrompt, promptsUsed, maxPrompts } = useDemo();
+  const { isDemo, usePrompt, promptsUsed, maxPrompts, exitDemo } = useDemo();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -91,8 +91,20 @@ const ConversationalAI = () => {
   const [coachQuestions, setCoachQuestions] = useState<string[]>([]);
   const [coachStage, setCoachStage] = useState<string>('');
   const [autoAskQuestions, setAutoAskQuestions] = useState(false);
+  const [showPromptSuggestions, setShowPromptSuggestions] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const promptSuggestions = [
+    "Analyze my spending patterns from the last month",
+    "Help me create a budget for next month",
+    "What are some strategies to reduce my expenses?",
+    "How can I improve my credit score?",
+    "Explain the difference between needs and wants",
+    "Help me set realistic financial goals",
+    "What should I know about emergency funds?",
+    "How do I start investing with a small budget?"
+  ];
 
   const loadConversationHistory = async () => {
     if (!threadId) return;
@@ -141,7 +153,11 @@ const ConversationalAI = () => {
     if (!inputMessage.trim() && attachments.length === 0) return;
     
     if (isDemo && !usePrompt()) {
-      toast.error(`Demo limit reached! You've used all ${maxPrompts} messages.`);
+      toast.warning("Demo limit reached. Redirecting to dashboard...");
+      setTimeout(() => {
+        exitDemo();
+        navigate('/');
+      }, 2000);
       return;
     }
     
@@ -495,6 +511,26 @@ const ConversationalAI = () => {
                             ))}
                           </div>
                         )}
+                        {msg.role === 'assistant' && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600"
+                              onClick={() => toast.success("Feedback recorded!")}
+                            >
+                              <ThumbsUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                              onClick={() => toast.info("Thanks for the feedback!")}
+                            >
+                              <ThumbsDown className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {msg.timestamp.toLocaleTimeString()}
@@ -519,6 +555,49 @@ const ConversationalAI = () => {
               </CardContent>
             </Card>
 
+            {/* Prompt Suggestions */}
+            {showPromptSuggestions && messages.length === 0 && (
+              <Card className="mb-4 border-primary/20 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-sm text-primary">Get Started</CardTitle>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPromptSuggestions(false)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Try asking about these financial topics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {promptSuggestions.map((suggestion, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setInputMessage(suggestion);
+                          setShowPromptSuggestions(false);
+                        }}
+                        className="text-left justify-start h-auto p-2 text-xs whitespace-normal"
+                      >
+                        {suggestion}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Input Area */}
             <div className="flex items-center gap-2">
               <Input
@@ -532,6 +611,7 @@ const ConversationalAI = () => {
                     sendMessage();
                   }
                 }}
+                onFocus={() => setShowPromptSuggestions(false)}
                 className="flex-grow"
                 data-tour-id="chat-input"
               />

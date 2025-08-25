@@ -146,6 +146,10 @@ export function CoachMarks() {
   const handleNext = () => {
     if (isLastStep) {
       skipTour();
+      // Redirect to dashboard after tour completion
+      setTimeout(() => {
+        navigate('/');
+      }, 500);
     } else {
       nextTourStep();
     }
