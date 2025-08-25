@@ -62,7 +62,10 @@ serve(async (req) => {
     // Validate shareUrl host for security
     try {
       const url = new URL(shareUrl);
-      const allowedHosts = ['dscndbpqvhvylukvcgpq.supabase.co', 'localhost'];
+      // Only allow production domains (no localhost in production)
+      const allowedHosts = Deno.env.get('DENO_DEPLOYMENT_ID') 
+        ? ['dscndbpqvhvylukvcgpq.supabase.co'] // Production only
+        : ['dscndbpqvhvylukvcgpq.supabase.co', 'localhost']; // Development allows localhost
       if (!allowedHosts.includes(url.hostname)) {
         return new Response(
           JSON.stringify({ error: 'Invalid share URL domain' }),
@@ -126,7 +129,7 @@ serve(async (req) => {
         await supabase.from('share_send_log').insert({
           user_id: user.id,
           channel: 'sms',
-          recipient: phoneNumber.replace(/(\+\d{2})\d+(\d{3})/, '$1***$2'), // Mask phone number
+          recipient_masked: phoneNumber.replace(/(\+\d{2})\d+(\d{3})/, '$1***$2'), // Mask phone number
           ip_address: clientIP,
           user_agent: userAgent,
           success: false,
@@ -208,7 +211,7 @@ serve(async (req) => {
       user_id: user.id,
       share_id: shareId,
       channel: 'sms',
-      recipient: phoneNumber.replace(/(\+\d{2})\d+(\d{3})/, '$1***$2'), // Mask phone number
+      recipient_masked: phoneNumber.replace(/(\+\d{2})\d+(\d{3})/, '$1***$2'), // Mask phone number
       ip_address: clientIP,
       user_agent: userAgent,
       success: true
@@ -239,7 +242,7 @@ serve(async (req) => {
           await supabase.from('share_send_log').insert({
             user_id: user.id,
             channel: 'sms',
-            recipient: (body.phoneNumber || 'unknown').replace(/(\+\d{2})\d+(\d{3})/, '$1***$2'), // Mask phone number
+            recipient_masked: (body.phoneNumber || 'unknown').replace(/(\+\d{2})\d+(\d{3})/, '$1***$2'), // Mask phone number
             ip_address: clientIP,
             user_agent: userAgent,
             success: false,

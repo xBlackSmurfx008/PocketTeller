@@ -65,7 +65,10 @@ serve(async (req) => {
     // Validate shareUrl host for security
     try {
       const url = new URL(shareUrl);
-      const allowedHosts = ['dscndbpqvhvylukvcgpq.supabase.co', 'localhost'];
+      // Only allow production domains (no localhost in production)
+      const allowedHosts = Deno.env.get('DENO_DEPLOYMENT_ID') 
+        ? ['dscndbpqvhvylukvcgpq.supabase.co'] // Production only
+        : ['dscndbpqvhvylukvcgpq.supabase.co', 'localhost']; // Development allows localhost
       if (!allowedHosts.includes(url.hostname)) {
         return new Response(
           JSON.stringify({ error: 'Invalid share URL domain' }),
@@ -139,7 +142,7 @@ serve(async (req) => {
         await supabase.from('share_send_log').insert({
           user_id: user.id,
           channel: 'email',
-          recipient: recipientEmail.replace(/(.{2}).+@/, '$1***@'), // Mask email
+          recipient_masked: recipientEmail.replace(/(.{2}).+@/, '$1***@'), // Mask email
           ip_address: clientIP,
           user_agent: userAgent,
           success: false,
@@ -193,7 +196,7 @@ serve(async (req) => {
       user_id: user.id,
       share_id: shareId,
       channel: 'email',
-      recipient: recipientEmail.replace(/(.{2}).+@/, '$1***@'), // Mask email
+      recipient_masked: recipientEmail.replace(/(.{2}).+@/, '$1***@'), // Mask email
       ip_address: clientIP,
       user_agent: userAgent,
       success: true
@@ -224,7 +227,7 @@ serve(async (req) => {
           await supabase.from('share_send_log').insert({
             user_id: user.id,
             channel: 'email',
-            recipient: (body.recipientEmail || 'unknown').replace(/(.{2}).+@/, '$1***@'), // Mask email
+            recipient_masked: (body.recipientEmail || 'unknown').replace(/(.{2}).+@/, '$1***@'), // Mask email
             ip_address: clientIP,
             user_agent: userAgent,
             success: false,
