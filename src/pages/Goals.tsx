@@ -7,11 +7,22 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Target, CheckCircle, Clock, AlertCircle, Settings, ArrowLeft } from 'lucide-react';
+import { Plus, Target, CheckCircle, Clock, AlertCircle, Settings, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { AddGoalDialog } from '@/components/AddGoalDialog';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
+import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { useToast } from '@/hooks/use-toast';
 import { format, differenceInDays, isPast } from 'date-fns';
 
@@ -50,6 +61,9 @@ export default function Goals() {
   const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<GoalTask | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isDemo) {
@@ -130,6 +144,53 @@ export default function Goals() {
         description: "Failed to update task",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleEditTask = (task: GoalTask) => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Editing tasks is disabled in demo mode",
+      });
+      return;
+    }
+    setEditingTask(task);
+    setIsEditTaskOpen(true);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Deleting tasks is disabled in demo mode",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('goal_tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Task deleted",
+        description: "Task has been permanently removed",
+      });
+
+      fetchTasks();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingTaskId(null);
     }
   };
 
@@ -341,13 +402,41 @@ export default function Goals() {
                                     {task.description && (
                                       <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
                                     )}
-                                    {task.due_date && task.due_date.trim() !== '' && (
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        Due: {format(new Date(task.due_date), 'MMM dd, yyyy')}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
+                                     {task.due_date && task.due_date.trim() !== '' && (
+                                       <p className="text-xs text-muted-foreground mt-1">
+                                         Due: {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                                       </p>
+                                     )}
+                                   </div>
+                                   <div className="flex gap-1">
+                                     <Button
+                                       size="icon"
+                                       variant="ghost"
+                                       className="h-6 w-6"
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         handleEditTask(task);
+                                       }}
+                                       title="Edit task"
+                                       aria-label="Edit task"
+                                     >
+                                       <Edit className="h-3 w-3" />
+                                     </Button>
+                                     <Button
+                                       size="icon"
+                                       variant="ghost"
+                                       className="h-6 w-6 text-destructive hover:text-destructive"
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         setDeletingTaskId(task.id);
+                                       }}
+                                       title="Delete task"
+                                       aria-label="Delete task"
+                                     >
+                                       <Trash2 className="h-3 w-3" />
+                                     </Button>
+                                   </div>
+                                 </div>
                               ))}
                               {getFilteredTasks(goal.id).length === 0 && (
                                 <p className="text-center text-muted-foreground text-sm py-4">
@@ -380,6 +469,34 @@ export default function Goals() {
         goals={goals}
         onTaskAdded={fetchTasks}
       />
+      
+      <EditTaskDialog 
+        open={isEditTaskOpen} 
+        onOpenChange={setIsEditTaskOpen}
+        task={editingTask}
+        goals={goals}
+        onTaskUpdated={fetchTasks}
+      />
+
+      <AlertDialog open={deletingTaskId !== null} onOpenChange={() => setDeletingTaskId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingTaskId && handleDeleteTask(deletingTaskId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
