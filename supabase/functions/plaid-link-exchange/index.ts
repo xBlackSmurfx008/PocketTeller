@@ -162,16 +162,38 @@ serve(async (req) => {
       });
     }
 
-    const { error: updateError } = await supabase
+    // Try to update existing profile first
+    const { data: updateResult, error: updateError } = await supabase
       .from('profiles')
       .update({ 
         encrypted_plaid_token: encryptionResult.encrypted_token,
         token_iv: encryptionResult.iv,
         last_token_rotation: new Date().toISOString()
       })
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .select('user_id');
 
-    if (updateError) {
+    // If no rows were updated (profile doesn't exist), create one
+    if (!updateError && (!updateResult || updateResult.length === 0)) {
+      console.log('No existing profile found, creating new one for user:', user.id);
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          app_id: 'budget-ai',
+          encrypted_plaid_token: encryptionResult.encrypted_token,
+          token_iv: encryptionResult.iv,
+          last_token_rotation: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+        return new Response(JSON.stringify({ error: 'Failed to create user profile' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else if (updateError) {
       console.error('Error updating profile:', updateError);
       return new Response(JSON.stringify({ error: 'Failed to store access token' }), {
         status: 500,
@@ -179,8 +201,24 @@ serve(async (req) => {
       });
     }
 
-    // Get client IP and User-Agent for audit logging
-    const clientIP = req.headers.get('x-forwarded-for') || 
+    // Verify the token was saved successfully
+    const { data: verifyProfile, error: verifyError } = await supabase
+      .from('profiles')
+      .select('encrypted_plaid_token')
+      .eq('user_id', user.id)
+      .single();
+
+    if (verifyError || !verifyProfile?.encrypted_plaid_token) {
+      console.error('Failed to verify token save:', verifyError);
+      return new Response(JSON.stringify({ error: 'Token save verification failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Safely parse client IP from x-forwarded-for (may contain multiple IPs)
+    const forwardedFor = req.headers.get('x-forwarded-for');
+    const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : 
                      req.headers.get('x-real-ip') || 
                      'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
