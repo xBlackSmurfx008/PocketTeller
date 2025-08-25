@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useReveal } from '@/hooks/useReveal';
 
 interface CountUpProps {
@@ -6,16 +6,22 @@ interface CountUpProps {
   duration?: number;
   suffix?: string;
   prefix?: string;
+  animateOnChange?: boolean;
+  animateOnMount?: boolean;
 }
 
 const CountUp: React.FC<CountUpProps> = ({ 
   end, 
   duration = 2000, 
   suffix = '', 
-  prefix = '' 
+  prefix = '',
+  animateOnChange = true,
+  animateOnMount = true
 }) => {
   const [count, setCount] = useState(0);
   const { ref, isVisible } = useReveal();
+  const previousEndRef = useRef<number>(0);
+  const hasAnimatedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -25,9 +31,21 @@ const CountUp: React.FC<CountUpProps> = ({
     
     if (prefersReducedMotion) {
       setCount(end);
+      previousEndRef.current = end;
       return;
     }
 
+    // Determine if we should animate
+    const shouldAnimate = (animateOnMount && !hasAnimatedRef.current) || 
+                         (animateOnChange && hasAnimatedRef.current);
+    
+    if (!shouldAnimate) {
+      setCount(end);
+      previousEndRef.current = end;
+      return;
+    }
+
+    const startValue = hasAnimatedRef.current ? previousEndRef.current : 0;
     let startTime: number;
     let animationFrame: number;
 
@@ -37,10 +55,14 @@ const CountUp: React.FC<CountUpProps> = ({
       
       // Easing function for smooth animation
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      setCount(Math.floor(easeOutQuart * end));
+      const currentValue = Math.floor(startValue + (end - startValue) * easeOutQuart);
+      setCount(currentValue);
 
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate);
+      } else {
+        hasAnimatedRef.current = true;
+        previousEndRef.current = end;
       }
     };
 
@@ -51,7 +73,7 @@ const CountUp: React.FC<CountUpProps> = ({
         cancelAnimationFrame(animationFrame);
       }
     };
-  }, [isVisible, end, duration]);
+  }, [isVisible, end, duration, animateOnChange, animateOnMount]);
 
   return (
     <span ref={ref} className="tabular-nums">

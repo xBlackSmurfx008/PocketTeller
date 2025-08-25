@@ -10,9 +10,9 @@ interface SiteMetrics {
 
 export const useSiteMetrics = () => {
   const [metrics, setMetrics] = useState<SiteMetrics>({
-    totalUsers: 1247,
-    totalBudgets: 3891,
-    totalTransactions: 28456
+    totalUsers: 0,
+    totalBudgets: 0,
+    totalTransactions: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -32,11 +32,24 @@ export const useSiteMetrics = () => {
         }
 
         if (data) {
-          setMetrics({
+          const newMetrics = {
             totalUsers: data.total_users || 1247,
             totalBudgets: data.total_budgets || 3891,
             totalTransactions: data.total_transactions || 28456,
             lastUpdated: data.updated_at
+          };
+          
+          // Only update if values actually changed
+          setMetrics(prev => {
+            if (prev.totalUsers !== newMetrics.totalUsers || 
+                prev.totalBudgets !== newMetrics.totalBudgets || 
+                prev.totalTransactions !== newMetrics.totalTransactions) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Site metrics updated:', newMetrics);
+              }
+              return newMetrics;
+            }
+            return prev;
           });
         }
       } catch (err) {
@@ -62,11 +75,24 @@ export const useSiteMetrics = () => {
         (payload) => {
           console.log('Real-time metrics update:', payload);
           const newData = payload.new as any;
-          setMetrics({
+          const newMetrics = {
             totalUsers: newData.total_users || 1247,
             totalBudgets: newData.total_budgets || 3891,
             totalTransactions: newData.total_transactions || 28456,
             lastUpdated: newData.updated_at
+          };
+          
+          // Throttle updates and only apply if values changed
+          setMetrics(prev => {
+            if (prev.totalUsers !== newMetrics.totalUsers || 
+                prev.totalBudgets !== newMetrics.totalBudgets || 
+                prev.totalTransactions !== newMetrics.totalTransactions) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Real-time site metrics updated:', newMetrics);
+              }
+              return newMetrics;
+            }
+            return prev;
           });
         }
       )

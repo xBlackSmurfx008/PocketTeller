@@ -95,19 +95,19 @@ const Index = () => {
         >
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={metrics.totalUsers} suffix="+" />
+              <CountUp end={metrics.totalUsers} suffix="+" animateOnChange={false} />
             </span>
             <span className="kpi-label">Users Joined</span>
           </div>
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={metrics.totalBudgets} suffix="+" />
+              <CountUp end={metrics.totalBudgets} suffix="+" animateOnChange={false} />
             </span>
             <span className="kpi-label">Budgets Created</span>
           </div>
           <div className="kpi-stat">
             <span className="kpi-number">
-              <CountUp end={metrics.totalTransactions} suffix="+" />
+              <CountUp end={metrics.totalTransactions} suffix="+" animateOnChange={false} />
             </span>
             <span className="kpi-label">Transactions Tracked</span>
           </div>
