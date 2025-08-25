@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useReveal } from '@/hooks/useReveal';
-import { useParallax } from '@/hooks/useParallax';
+
 import Dashboard from '@/components/Dashboard';
 import TrustedByMarquee from '@/components/TrustedByMarquee';
 import CountUp from '@/components/CountUp';
@@ -21,7 +21,7 @@ const Index = () => {
   const featuresReveal = useReveal();
   const ctaReveal = useReveal();
   const kpiReveal = useReveal();
-  const { ref: parallaxRef, values } = useParallax(0.05);
+  
 
   useEffect(() => {
     if (user) {
@@ -47,16 +47,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4 aurora-bg" ref={parallaxRef}>
+      <section className="relative overflow-hidden py-20 px-4 aurora-bg">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
-        
-        {/* Floating Parallax Icons */}
-        <div className="parallax-layer" style={{ transform: `translate(${values.x}px, ${values.y}px)` }}>
-          <div className="parallax-icon">💰</div>
-          <div className="parallax-icon">📊</div>
-          <div className="parallax-icon">🎯</div>
-          <div className="parallax-icon">💳</div>
-        </div>
         
         <div className="relative max-w-6xl mx-auto text-center">
           <h1 
