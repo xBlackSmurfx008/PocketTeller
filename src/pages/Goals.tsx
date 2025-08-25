@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Target, CheckCircle, Clock, AlertCircle, Settings, ArrowLeft, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { AddGoalDialog } from '@/components/AddGoalDialog';
+import { EditGoalDialog } from '@/components/EditGoalDialog';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -64,6 +65,9 @@ export default function Goals() {
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<GoalTask | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [isEditGoalOpen, setIsEditGoalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isDemo) {
@@ -201,6 +205,69 @@ export default function Goals() {
     }
   };
 
+  const handleEditGoal = (goal: Goal) => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Editing goals is disabled in demo mode",
+      });
+      return;
+    }
+    setEditingGoal(goal);
+    setIsEditGoalOpen(true);
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Deleting goals is disabled in demo mode",
+      });
+      return;
+    }
+
+    try {
+      // First delete related tasks
+      const { error: tasksError } = await supabase
+        .from('goal_tasks')
+        .delete()
+        .eq('goal_id', goalId)
+        .eq('user_id', user?.id);
+
+      if (tasksError) throw tasksError;
+
+      // Then delete the goal
+      const { error: goalError } = await supabase
+        .from('goals')
+        .delete()
+        .eq('id', goalId);
+
+      if (goalError) throw goalError;
+
+      toast({
+        title: "Goal deleted",
+        description: "Goal and all associated tasks have been permanently removed",
+      });
+
+      // Clear selected goal if it was the one being deleted
+      if (selectedGoal === goalId) {
+        setSelectedGoal(null);
+      }
+
+      fetchGoals();
+      fetchTasks();
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete goal",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingGoalId(null);
+    }
+  };
+
   const getGoalProgress = (goal: Goal) => {
     return Math.min((goal.current_amount / goal.target_amount) * 100, 100);
   };
@@ -326,25 +393,51 @@ export default function Goals() {
                          }
                          <CardTitle className="text-lg">{goal.goal_name}</CardTitle>
                        </div>
-                       <div className="flex items-center gap-2">
-                         <Button
-                           size="sm"
-                           variant="outline"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             if (isDemo) {
-                               toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
-                             } else {
-                               setSelectedGoal(goal.id);
-                               setIsAddTaskOpen(true);
-                             }
-                           }}
-                           title="Add task to this goal"
-                           aria-label="Add task to this goal"
-                         >
-                           <Plus className="h-3 w-3 mr-1" />
-                           Add Task
-                         </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditGoal(goal);
+                            }}
+                            title="Edit goal"
+                            aria-label="Edit goal"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingGoalId(goal.id);
+                            }}
+                            title="Delete goal"
+                            aria-label="Delete goal"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isDemo) {
+                                toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
+                              } else {
+                                setSelectedGoal(goal.id);
+                                setIsAddTaskOpen(true);
+                              }
+                            }}
+                            title="Add task to this goal"
+                            aria-label="Add task to this goal"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Task
+                          </Button>
                          {onTrack ? (
                            <Badge variant="outline" className="text-green-600 border-green-600">
                              On Track
@@ -529,7 +622,14 @@ export default function Goals() {
         onGoalAdded={fetchGoals}
       />
       
-      <AddTaskDialog 
+      <EditGoalDialog
+        open={isEditGoalOpen} 
+        onOpenChange={setIsEditGoalOpen}
+        goal={editingGoal}
+        onGoalUpdated={fetchGoals}
+      />
+      
+      <AddTaskDialog
         open={isAddTaskOpen} 
         onOpenChange={setIsAddTaskOpen}
         goalId={selectedGoal}
@@ -557,6 +657,26 @@ export default function Goals() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingTaskId && handleDeleteTask(deletingTaskId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deletingGoalId !== null} onOpenChange={() => setDeletingGoalId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Goal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this goal? This will also remove all tasks for this goal. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingGoalId && handleDeleteGoal(deletingGoalId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
