@@ -7,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import aiAvatar from "@/assets/ai-avatar.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemo } from "@/hooks/useDemo";
@@ -437,7 +439,13 @@ const ConversationalAI = () => {
             <ArrowLeft className="h-4 w-4" />
             Dashboard
           </Button>
-          <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={aiAvatar} alt="AI Assistant" />
+              <AvatarFallback>AI</AvatarFallback>
+            </Avatar>
+            <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -461,7 +469,13 @@ const ConversationalAI = () => {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Dashboard
               </Button>
-              <h1 className="text-3xl font-bold text-foreground">AI Financial Assistant</h1>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={aiAvatar} alt="AI Assistant" />
+                  <AvatarFallback>AI</AvatarFallback>
+                </Avatar>
+                <h1 className="text-3xl font-bold text-foreground">AI Financial Assistant</h1>
+              </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -566,7 +580,13 @@ const ConversationalAI = () => {
                   )}
 
                   {messages.map((msg) => (
-                    <div key={msg.id} className={`mb-4 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div key={msg.id} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start items-start gap-2'}`}>
+                      {msg.role === 'assistant' && (
+                        <Avatar className="w-6 h-6 mt-1 shrink-0">
+                          <AvatarImage src={aiAvatar} alt="AI Assistant" />
+                          <AvatarFallback>AI</AvatarFallback>
+                        </Avatar>
+                      )}
                       <div className={`rounded-lg p-3 ${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                         <p className={`${isMobile ? 'text-sm' : 'text-sm'} whitespace-pre-line`}>{msg.content}</p>
                         {msg.attachments && msg.attachments.length > 0 && (
@@ -607,7 +627,11 @@ const ConversationalAI = () => {
                   
                   {/* Thinking indicator */}
                   {isLoading && (
-                    <div className="mb-4 flex flex-col items-start">
+                    <div className="mb-4 flex justify-start items-start gap-2">
+                      <Avatar className="w-6 h-6 mt-1 shrink-0">
+                        <AvatarImage src={aiAvatar} alt="AI Assistant" />
+                        <AvatarFallback>AI</AvatarFallback>
+                      </Avatar>
                       <div className={`rounded-lg p-3 ${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} bg-muted`}>
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
