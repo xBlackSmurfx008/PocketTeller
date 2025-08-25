@@ -17,35 +17,60 @@ export const useParallax = (strength: number = 0.1) => {
     const isMobile = window.innerWidth < 768;
     if (prefersReducedMotion || isMobile) return;
 
+    let animationFrame: number;
+    let cachedRect: DOMRect | null = null;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!ref.current) return;
 
-      const rect = ref.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+      if (animationFrame) return; // Throttle to one calculation per frame
 
-      const deltaX = (e.clientX - centerX) * strength;
-      const deltaY = (e.clientY - centerY) * strength;
+      animationFrame = requestAnimationFrame(() => {
+        if (!ref.current) return;
 
-      // Clamp values to prevent excessive movement
-      const clampedX = Math.max(-20, Math.min(20, deltaX));
-      const clampedY = Math.max(-20, Math.min(20, deltaY));
+        // Use cached rect or get new one
+        if (!cachedRect) {
+          cachedRect = ref.current.getBoundingClientRect();
+        }
 
-      setValues({ x: clampedX, y: clampedY });
+        const centerX = cachedRect.left + cachedRect.width / 2;
+        const centerY = cachedRect.top + cachedRect.height / 2;
+
+        const deltaX = (e.clientX - centerX) * strength;
+        const deltaY = (e.clientY - centerY) * strength;
+
+        // Clamp values to prevent excessive movement
+        const clampedX = Math.max(-20, Math.min(20, deltaX));
+        const clampedY = Math.max(-20, Math.min(20, deltaY));
+
+        setValues({ x: clampedX, y: clampedY });
+        animationFrame = 0;
+      });
     };
 
     const handleMouseLeave = () => {
       setValues({ x: 0, y: 0 });
+      cachedRect = null; // Clear cache when mouse leaves
+    };
+
+    // Update cached rect on resize
+    const handleResize = () => {
+      cachedRect = null;
     };
 
     const element = ref.current;
     if (element) {
       element.addEventListener('mousemove', handleMouseMove);
       element.addEventListener('mouseleave', handleMouseLeave);
+      window.addEventListener('resize', handleResize);
 
       return () => {
         element.removeEventListener('mousemove', handleMouseMove);
         element.removeEventListener('mouseleave', handleMouseLeave);
+        window.removeEventListener('resize', handleResize);
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
       };
     }
   }, [strength]);

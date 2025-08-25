@@ -15,27 +15,15 @@ export const useReveal = (options: UseRevealOptions = {}) => {
     const element = ref.current;
     if (!element) return;
 
-    // Fallback for browsers without IntersectionObserver or immediate visibility
+    // Fallback for browsers without IntersectionObserver
     if (!('IntersectionObserver' in window)) {
-      
       setIsVisible(true);
       return;
-    }
-
-    // Check if element is already in viewport
-    const rect = element.getBoundingClientRect();
-    const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
-    
-    if (isInViewport) {
-      
-      setIsVisible(true);
-      if (triggerOnce) return;
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          
           setIsVisible(true);
           if (triggerOnce) {
             observer.unobserve(element);
@@ -49,15 +37,8 @@ export const useReveal = (options: UseRevealOptions = {}) => {
 
     observer.observe(element);
 
-    // Safety timeout fallback
-    const timeoutId = setTimeout(() => {
-      
-      setIsVisible(true);
-    }, 100);
-
     return () => {
       observer.unobserve(element);
-      clearTimeout(timeoutId);
     };
   }, [threshold, rootMargin, triggerOnce]);
 

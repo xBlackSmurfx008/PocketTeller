@@ -111,29 +111,31 @@ export function CoachMarks() {
       if (element) {
         setHighlightedElement(element);
         
-        // Calculate tooltip position using getBoundingClientRect
-        const rect = element.getBoundingClientRect();
-        let x = rect.left + rect.width / 2;
-        let y = rect.top;
-        
-        switch (currentStep.position) {
-          case 'top':
-            y = rect.top - 10;
-            break;
-          case 'bottom':
-            y = rect.bottom + 10;
-            break;
-          case 'left':
-            x = rect.left - 10;
-            y = rect.top + rect.height / 2;
-            break;
-          case 'right':
-            x = rect.right + 10;
-            y = rect.top + rect.height / 2;
-            break;
-        }
-        
-        setTooltipPosition({ x, y });
+        // Use requestAnimationFrame to avoid forced reflow
+        requestAnimationFrame(() => {
+          const rect = element.getBoundingClientRect();
+          let x = rect.left + rect.width / 2;
+          let y = rect.top;
+          
+          switch (currentStep.position) {
+            case 'top':
+              y = rect.top - 10;
+              break;
+            case 'bottom':
+              y = rect.bottom + 10;
+              break;
+            case 'left':
+              x = rect.left - 10;
+              y = rect.top + rect.height / 2;
+              break;
+            case 'right':
+              x = rect.right + 10;
+              y = rect.top + rect.height / 2;
+              break;
+          }
+          
+          setTooltipPosition({ x, y });
+        });
         
         // Scroll element into view
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -176,18 +178,20 @@ export function CoachMarks() {
       <div className="fixed inset-0 bg-black/50 z-40 pointer-events-none" />
       
       {/* Highlight */}
-      <div
-        className="fixed z-50 pointer-events-none"
-        style={{
-          left: highlightedElement.getBoundingClientRect().left - 4,
-          top: highlightedElement.getBoundingClientRect().top - 4,
-          width: highlightedElement.getBoundingClientRect().width + 8,
-          height: highlightedElement.getBoundingClientRect().height + 8,
-          border: '3px solid hsl(var(--primary))',
-          borderRadius: '8px',
-          boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
-        }}
-      />
+      {highlightedElement && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{
+            left: highlightedElement.getBoundingClientRect().left - 4,
+            top: highlightedElement.getBoundingClientRect().top - 4,
+            width: highlightedElement.getBoundingClientRect().width + 8,
+            height: highlightedElement.getBoundingClientRect().height + 8,
+            border: '3px solid hsl(var(--primary))',
+            borderRadius: '8px',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
+          }}
+        />
+      )}
       
       {/* Tooltip */}
       <Card
