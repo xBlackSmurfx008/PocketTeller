@@ -176,6 +176,12 @@ const ConversationalAI = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim() && attachments.length === 0) return;
     
+    // Safety check: if no threadId, create one first
+    if (!threadId) {
+      await createNewThread();
+      return;
+    }
+    
     // Check if demo conversation limit reached
     if (isDemo && conversationsUsed >= maxConversations) {
       toast.warning("Demo limit reached: You can create up to 5 conversations. Create a free account to continue.");
@@ -441,7 +447,12 @@ const ConversationalAI = () => {
     fileInputRef.current?.click();
   };
 
+  // Auto-create thread when on /chat without threadId
   useEffect(() => {
+    if (!threadId) {
+      createNewThread();
+      return;
+    }
     loadConversationHistory();
   }, [threadId]);
 
@@ -597,6 +608,25 @@ const ConversationalAI = () => {
                   >
                     Exit Demo
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Demo Conversation Banner */}
+          {threadId?.startsWith('demo-') && !isDemo && (
+            <Card className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                    <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-800 dark:text-blue-200">Demo Conversation</h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      This conversation isn't saved — messages will be lost when you leave this page.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
