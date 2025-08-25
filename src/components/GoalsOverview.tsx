@@ -32,11 +32,14 @@ export default function GoalsOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isDemo) {
+    if (isDemo && !user) {
+      // Only show demo data if in demo mode AND no authenticated user
       setGoals(sampleData.goals as Goal[]);
       setLoading(false);
     } else if (user) {
       fetchGoals();
+    } else {
+      setLoading(false);
     }
   }, [user, isDemo, sampleData]);
 

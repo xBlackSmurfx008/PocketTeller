@@ -23,7 +23,8 @@ export default function FinancialHealthSnapshot() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isDemo) {
+    if (isDemo && !user) {
+      // Only show demo data if in demo mode AND no authenticated user
       const totalBalance = sampleData.accounts.reduce((sum, account) => sum + account.balance, 0);
       setData({
         totalBalance,
@@ -33,6 +34,8 @@ export default function FinancialHealthSnapshot() {
       setLoading(false);
     } else if (user) {
       fetchFinancialData();
+    } else {
+      setLoading(false);
     }
   }, [user, isDemo, sampleData]);
 

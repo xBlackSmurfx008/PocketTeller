@@ -33,11 +33,14 @@ export default function UpcomingBills() {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
-    if (isDemo) {
+    if (isDemo && !user) {
+      // Only show demo data if in demo mode AND no authenticated user
       setBills(sampleData.bills.map(bill => ({ ...bill, is_paid: false })) as Bill[]);
       setLoading(false);
     } else if (user) {
       fetchBills();
+    } else {
+      setLoading(false);
     }
   }, [user, isDemo, sampleData]);
 

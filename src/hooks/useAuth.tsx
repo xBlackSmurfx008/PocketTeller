@@ -25,6 +25,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Auto-exit demo mode when a real user session is detected
+        if (session?.user && !session.user.is_anonymous) {
+          const demoState = sessionStorage.getItem('demo-state');
+          if (demoState) {
+            const parsed = JSON.parse(demoState);
+            if (parsed.isDemo) {
+              // Exit demo mode immediately when real user signs in
+              sessionStorage.removeItem('demo-state');
+              // Trigger a custom event to notify demo context
+              window.dispatchEvent(new CustomEvent('exit-demo-mode'));
+            }
+          }
+        }
       }
     );
 

@@ -146,6 +146,24 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.setItem('demo-state', JSON.stringify(demoState));
   }, [demoState]);
 
+  // Listen for auth-triggered demo exit
+  useEffect(() => {
+    const handleExitDemo = () => {
+      setDemoState(prev => ({
+        ...prev,
+        isDemo: false,
+        promptsUsed: 0,
+        conversationsUsed: 0,
+        tourStep: 0,
+        tourActive: false,
+        isAnonymousDemo: false
+      }));
+    };
+
+    window.addEventListener('exit-demo-mode', handleExitDemo);
+    return () => window.removeEventListener('exit-demo-mode', handleExitDemo);
+  }, []);
+
   const startDemo = async () => {
     // Demo mode now works locally without authentication
     setDemoState(prev => ({
