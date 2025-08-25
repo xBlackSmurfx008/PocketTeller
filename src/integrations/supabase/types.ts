@@ -424,6 +424,45 @@ export type Database = {
         }
         Relationships: []
       }
+      share_send_log: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          ip_address: unknown | null
+          recipient_masked: string
+          share_id: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          recipient_masked: string
+          share_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          recipient_masked?: string
+          share_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       site_metrics: {
         Row: {
           id: number
@@ -571,6 +610,14 @@ export type Database = {
       }
       check_budget_share_rate_limit: {
         Args: { ip_address: string; share_id: string }
+        Returns: boolean
+      }
+      check_share_send_rate: {
+        Args: {
+          channel_type: string
+          request_ip?: unknown
+          target_user_id: string
+        }
         Returns: boolean
       }
       check_token_access_rate: {

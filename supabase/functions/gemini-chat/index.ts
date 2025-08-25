@@ -46,7 +46,7 @@ const commitmentQuestions = [
 ];
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.supabase.co',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
