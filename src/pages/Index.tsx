@@ -18,7 +18,7 @@ const Index = () => {
   const navigate = useNavigate();
   
   // Animation hooks
-  const heroReveal = useReveal();
+  
   const featuresReveal = useReveal();
   const ctaReveal = useReveal();
   const kpiReveal = useReveal();
@@ -57,17 +57,14 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
         
         <div className="relative z-10 max-w-6xl mx-auto text-center">
-          <h1 
-            ref={heroReveal.ref} 
-            className={`text-4xl md:text-6xl font-bold tracking-tight mb-6 text-foreground reveal ${heroReveal.isVisible ? 'is-visible' : ''}`}
-          >
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-foreground">
             Smart <span className="text-primary">AI-Powered</span> Finance Management
           </h1>
-          <p className={`text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto reveal reveal-delay-1 ${heroReveal.isVisible ? 'is-visible' : ''}`}>
+          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
             Take control of your finances with intelligent budgeting, expense tracking, and personalized AI insights. 
             Connect your bank accounts and let AI help you make smarter financial decisions.
           </p>
-          <div className={`flex flex-col sm:flex-row gap-4 justify-center reveal reveal-delay-2 ${heroReveal.isVisible ? 'is-visible' : ''}`}>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"

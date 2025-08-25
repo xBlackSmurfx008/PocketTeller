@@ -17,7 +17,7 @@ export const useReveal = (options: UseRevealOptions = {}) => {
 
     // Fallback for browsers without IntersectionObserver or immediate visibility
     if (!('IntersectionObserver' in window)) {
-      console.log('useReveal: IntersectionObserver not available, showing content immediately');
+      
       setIsVisible(true);
       return;
     }
@@ -27,7 +27,7 @@ export const useReveal = (options: UseRevealOptions = {}) => {
     const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
     
     if (isInViewport) {
-      console.log('useReveal: Element already in viewport, showing immediately');
+      
       setIsVisible(true);
       if (triggerOnce) return;
     }
@@ -35,7 +35,7 @@ export const useReveal = (options: UseRevealOptions = {}) => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          console.log('useReveal: Element became visible');
+          
           setIsVisible(true);
           if (triggerOnce) {
             observer.unobserve(element);
@@ -51,7 +51,7 @@ export const useReveal = (options: UseRevealOptions = {}) => {
 
     // Safety timeout fallback
     const timeoutId = setTimeout(() => {
-      console.log('useReveal: Timeout fallback triggered');
+      
       setIsVisible(true);
     }, 100);
 
