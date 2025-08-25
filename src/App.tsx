@@ -17,6 +17,8 @@ import Account from "./pages/Account";
 import Transactions from "./pages/Transactions";
 import SharedBudget from "./pages/SharedBudget";
 import Demo from "./pages/Demo";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +43,8 @@ const App = () => (
                   <Route path="/transactions" element={<Transactions />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="/share/budget/:token" element={<SharedBudget />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Play, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import PublicFooter from '@/components/PublicFooter';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -284,6 +285,7 @@ export default function Auth() {
           </CardContent>
         </Card>
       </div>
+      <PublicFooter />
     </div>
   );
 }

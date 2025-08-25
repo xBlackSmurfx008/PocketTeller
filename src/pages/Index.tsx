@@ -5,6 +5,7 @@ import { useDemo } from '@/hooks/useDemo';
 import Dashboard from '@/components/Dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import PublicFooter from '@/components/PublicFooter';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -163,6 +164,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+      
+      <PublicFooter />
     </div>
   );
 };
