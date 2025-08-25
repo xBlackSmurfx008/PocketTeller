@@ -151,19 +151,20 @@ export default function RecentTransactions() {
   return (
     <Card data-tour-id="recent-transactions">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <CardTitle>Recent Transactions</CardTitle>
           <Button 
             onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding transactions disabled in demo" }) : setShowAddDialog(true)} 
             size="sm"
+            className="w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Transaction
+            <span className="sm:inline">Add Transaction</span>
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -174,10 +175,10 @@ export default function RecentTransactions() {
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border border-border shadow-lg z-50">
               <SelectItem value="all">All Categories</SelectItem>
               {CATEGORIES.map(category => (
                 <SelectItem key={category} value={category}>
@@ -188,18 +189,18 @@ export default function RecentTransactions() {
           </Select>
         </div>
 
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+        <div className="space-y-2 max-h-[50vh] sm:max-h-[400px] overflow-y-auto">
           {filteredTransactions.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               No transactions found
             </div>
           ) : (
             filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">{transaction.description}</span>
-                    <span className="text-sm text-muted-foreground">
+              <div key={transaction.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border border-border rounded-lg gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+                    <span className="font-medium text-sm sm:text-base truncate">{transaction.description}</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
                       {format(new Date(transaction.date), 'MMM dd, yyyy')}
                     </span>
                   </div>
@@ -207,10 +208,10 @@ export default function RecentTransactions() {
                     value={transaction.category}
                     onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
                   >
-                    <SelectTrigger className="w-fit h-6 text-xs">
+                    <SelectTrigger className="w-full sm:w-fit h-8 sm:h-6 text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border shadow-lg z-50">
                       {CATEGORIES.map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
@@ -219,7 +220,7 @@ export default function RecentTransactions() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Badge variant={transaction.amount >= 0 ? "default" : "destructive"}>
+                <Badge variant={transaction.amount >= 0 ? "default" : "destructive"} className="shrink-0 text-xs sm:text-sm">
                   {transaction.amount >= 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </Badge>
               </div>

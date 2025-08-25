@@ -117,19 +117,19 @@ export default function Account() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border p-4">
+      <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Account Settings</h1>
           </div>
           <ThemeToggle />
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 space-y-6">
+      <main className="max-w-4xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>

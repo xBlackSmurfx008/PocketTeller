@@ -335,27 +335,31 @@ export default function Goals() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+      <header className="border-b border-border p-3 sm:p-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-2xl font-bold text-foreground">Financial Goals</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financial Goals</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <Button onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}>
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <Button 
+              onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}
+              className="flex-1 sm:flex-none"
+              size="sm"
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Add Goal
+              <span className="sm:inline">Add Goal</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="shrink-0">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 space-y-6 relative">
+      <main className="max-w-7xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative">
         {goals.length === 0 ? (
           <Card className="text-center py-12">
             <CardHeader>
