@@ -74,18 +74,25 @@ export default function GoalsOverview() {
   };
 
   const getDeadlineInfo = (goal: Goal) => {
-    if (!goal.deadline) return null;
+    // Don't show deadline info if no deadline is set
+    if (!goal.deadline || goal.deadline.trim() === '') return null;
     
-    const daysUntil = dateHelpers.getDaysUntil(goal.deadline);
-    
-    if (daysUntil < 0) {
-      return { text: `${Math.abs(daysUntil)} days overdue`, variant: 'destructive' as const };
-    } else if (daysUntil === 0) {
-      return { text: 'Due today', variant: 'secondary' as const };
-    } else if (daysUntil <= 7) {
-      return { text: `${daysUntil} days left`, variant: 'outline' as const };
-    } else {
-      return { text: format(new Date(goal.deadline), 'MMM dd'), variant: 'outline' as const };
+    try {
+      const daysUntil = dateHelpers.getDaysUntil(goal.deadline);
+      
+      if (daysUntil < 0) {
+        return { text: `${Math.abs(daysUntil)} days overdue`, variant: 'destructive' as const };
+      } else if (daysUntil === 0) {
+        return { text: 'Due today', variant: 'secondary' as const };
+      } else if (daysUntil <= 7) {
+        return { text: `${daysUntil} days left`, variant: 'outline' as const };
+      } else {
+        return { text: format(new Date(goal.deadline), 'MMM dd'), variant: 'outline' as const };
+      }
+    } catch (error) {
+      // If date parsing fails, don't show deadline info
+      console.warn('Invalid deadline format:', goal.deadline, error);
+      return null;
     }
   };
 

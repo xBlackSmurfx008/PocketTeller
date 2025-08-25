@@ -145,12 +145,20 @@ export default function Goals() {
   };
 
   const isGoalOnTrack = (goal: Goal) => {
-    if (!goal.deadline) return true;
-    const daysUntilDeadline = differenceInDays(new Date(goal.deadline), new Date());
-    const daysTotal = differenceInDays(new Date(goal.deadline), new Date(goal.created_at));
-    const expectedProgress = ((daysTotal - daysUntilDeadline) / daysTotal) * 100;
-    const actualProgress = getGoalProgress(goal);
-    return actualProgress >= expectedProgress * 0.9; // 10% tolerance
+    // Goals without deadlines are always considered on track
+    if (!goal.deadline || goal.deadline.trim() === '') return true;
+    
+    try {
+      const daysUntilDeadline = differenceInDays(new Date(goal.deadline), new Date());
+      const daysTotal = differenceInDays(new Date(goal.deadline), new Date(goal.created_at));
+      const expectedProgress = ((daysTotal - daysUntilDeadline) / daysTotal) * 100;
+      const actualProgress = getGoalProgress(goal);
+      return actualProgress >= expectedProgress * 0.9; // 10% tolerance
+    } catch (error) {
+      // If date parsing fails, consider goal on track
+      console.warn('Invalid deadline format:', goal.deadline, error);
+      return true;
+    }
   };
 
   const getFilteredTasks = (goalId: string) => {
@@ -235,8 +243,9 @@ export default function Goals() {
               const financialProgress = getGoalProgress(goal);
               const taskProgress = getTaskProgress(goal.id);
               const onTrack = isGoalOnTrack(goal);
-              const daysUntilDeadline = goal.deadline ? differenceInDays(new Date(goal.deadline), new Date()) : null;
-              const isOverdue = goal.deadline && isPast(new Date(goal.deadline));
+              const daysUntilDeadline = goal.deadline && goal.deadline.trim() !== '' ? 
+                differenceInDays(new Date(goal.deadline), new Date()) : null;
+              const isOverdue = goal.deadline && goal.deadline.trim() !== '' && isPast(new Date(goal.deadline));
 
               return (
                 <Card key={goal.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedGoal(selectedGoal === goal.id ? null : goal.id)}>
@@ -257,11 +266,11 @@ export default function Goals() {
                     </div>
                     <CardDescription>
                       ${goal.current_amount.toLocaleString()} of ${goal.target_amount.toLocaleString()}
-                      {goal.deadline && (
+                      {goal.deadline && goal.deadline.trim() !== '' && (
                         <span className="block text-sm mt-1">
                           {isOverdue ? 
                             `Overdue by ${Math.abs(daysUntilDeadline!)} days` : 
-                            `${daysUntilDeadline} days remaining`
+                            daysUntilDeadline !== null ? `${daysUntilDeadline} days remaining` : ''
                           }
                         </span>
                       )}
@@ -332,7 +341,7 @@ export default function Goals() {
                                     {task.description && (
                                       <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
                                     )}
-                                    {task.due_date && (
+                                    {task.due_date && task.due_date.trim() !== '' && (
                                       <p className="text-xs text-muted-foreground mt-1">
                                         Due: {format(new Date(task.due_date), 'MMM dd, yyyy')}
                                       </p>
