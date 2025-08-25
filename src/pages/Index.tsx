@@ -54,12 +54,12 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 px-4 aurora-bg">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
         
-        <div className="relative max-w-6xl mx-auto text-center">
+        <div className="relative z-10 max-w-6xl mx-auto text-center">
           <h1 
             ref={heroReveal.ref} 
-            className={`text-4xl md:text-6xl font-bold tracking-tight mb-6 reveal ${heroReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-4xl md:text-6xl font-bold tracking-tight mb-6 text-foreground reveal ${heroReveal.isVisible ? 'is-visible' : ''}`}
           >
             Smart <span className="text-primary">AI-Powered</span> Finance Management
           </h1>
@@ -71,7 +71,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer hover-scale"
+              className="text-lg px-8 py-3 h-auto btn-shimmer hover-scale text-foreground"
             >
               Get Started Free
             </Button>
@@ -79,7 +79,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale"
+              className="text-lg px-8 py-3 h-auto hover-scale text-foreground"
             >
               Try Demo
             </Button>
@@ -122,7 +122,7 @@ const Index = () => {
         <div className="max-w-6xl mx-auto">
           <h2 
             ref={featuresReveal.ref}
-            className={`text-3xl md:text-4xl font-bold text-center mb-12 reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-3xl md:text-4xl font-bold text-center mb-12 text-foreground reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}
           >
             Everything you need to manage your finances
           </h2>
@@ -131,7 +131,7 @@ const Index = () => {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🤖</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3">AI Financial Assistant</h3>
+              <h3 className="text-xl font-semibold mb-3 text-foreground">AI Financial Assistant</h3>
               <p className="text-muted-foreground">
                 Get personalized insights, spending recommendations, and financial advice powered by advanced AI
               </p>
@@ -196,7 +196,7 @@ const Index = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h2 
             ref={ctaReveal.ref}
-            className={`text-3xl md:text-4xl font-bold mb-6 reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-3xl md:text-4xl font-bold mb-6 text-foreground reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
           >
             Ready to take control of your finances?
           </h2>

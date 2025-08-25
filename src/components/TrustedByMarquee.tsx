@@ -17,7 +17,7 @@ const TrustedByMarquee = () => {
           Built with privacy in mind
         </h3>
         <div className="h-10 sm:h-12 flex items-center justify-center overflow-hidden">
-          <div className="marquee-container w-full max-w-2xl">
+          <div className="marquee-container w-full max-w-2xl relative z-10">
             <div className="marquee-content items-center">
               {duplicatedPhrases.map((phrase, index) => (
                 <span 
