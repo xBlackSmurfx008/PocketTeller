@@ -666,6 +666,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_shared_budget_secure: {
+        Args: { share_token: string; user_email?: string }
+        Returns: Json
+      }
       get_user_profile_secure: {
         Args: { target_user_id?: string }
         Returns: {
@@ -701,6 +705,10 @@ export type Database = {
       validate_share_access: {
         Args: { request_ip?: string; share_token: string; user_email?: string }
         Returns: Json
+      }
+      validate_share_token_only: {
+        Args: { share_token: string }
+        Returns: boolean
       }
       validate_sms_content: {
         Args: { message: string; phone_number: string }

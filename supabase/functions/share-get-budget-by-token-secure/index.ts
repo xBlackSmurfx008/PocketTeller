@@ -77,17 +77,16 @@ serve(async (req) => {
       }
     }
 
-    // Use the secure validation function with user email
-    const { data: validationResult, error: validationError } = await supabase.rpc('validate_share_access', {
+    // Use the NEW secure function instead of the old validation function
+    const { data: secureResult, error: secureError } = await supabase.rpc('get_shared_budget_secure', {
       share_token: token,
-      request_ip: clientIP,
       user_email: userEmail
     });
 
-    if (validationError) {
-      console.error('Validation error:', validationError);
+    if (secureError) {
+      console.error('Secure access error:', secureError);
       return new Response(
-        JSON.stringify({ error: 'Failed to validate share access' }),
+        JSON.stringify({ error: 'Failed to access shared budget' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -95,17 +94,17 @@ serve(async (req) => {
       );
     }
 
-    if (!validationResult?.success) {
-      console.log(`Share access denied: ${validationResult?.error}, User: ${userEmail?.replace(/(.{2}).+@/, '$1***@') || 'anonymous'}`);
+    if (secureResult?.error) {
+      console.log(`Share access denied: ${secureResult.error}, User: ${userEmail?.replace(/(.{2}).+@/, '$1***@') || 'anonymous'}`);
       
       // Return appropriate status code based on error type
       let statusCode = 403;
-      if (validationResult?.error === 'Authentication required') {
+      if (secureResult.error === 'Authentication required') {
         statusCode = 401;
       }
       
       return new Response(
-        JSON.stringify({ error: validationResult?.error || 'Access denied' }),
+        JSON.stringify({ error: secureResult.error }),
         { 
           status: statusCode, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -113,25 +112,33 @@ serve(async (req) => {
       );
     }
 
-    // Log the access
-    const { error: logError } = await supabase.rpc('log_budget_share_access', {
-      share_id: validationResult.share_id,
-      ip_address: clientIP,
-      user_agent: userAgent || req.headers.get('user-agent') || 'unknown'
-    });
+    // Get the share_id for logging by validating the token
+    const { data: shareValidation } = await supabase.from('budget_shares')
+      .select('id')
+      .eq('token', token)
+      .single();
 
-    if (logError) {
-      console.error('Failed to log access:', logError);
-    }
+    if (shareValidation?.id) {
+      // Log the access
+      const { error: logError } = await supabase.rpc('log_budget_share_access', {
+        share_id: shareValidation.id,
+        ip_address: clientIP,
+        user_agent: userAgent || req.headers.get('user-agent') || 'unknown'
+      });
 
-    // Safely increment view count using secure RPC
-    const { error: incrementError } = await supabase.rpc('increment_budget_share_view', {
-      share_id: validationResult.share_id
-    });
+      if (logError) {
+        console.error('Failed to log access:', logError);
+      }
 
-    if (incrementError) {
-      console.error('Failed to increment view count:', incrementError);
-      // Continue processing - don't fail the request for this
+      // Safely increment view count using secure RPC
+      const { error: incrementError } = await supabase.rpc('increment_budget_share_view', {
+        share_id: shareValidation.id
+      });
+
+      if (incrementError) {
+        console.error('Failed to increment view count:', incrementError);
+        // Continue processing - don't fail the request for this
+      }
     }
 
     console.log(`Share access granted for token: ${token.substring(0, 8)}***, User: ${userEmail?.replace(/(.{2}).+@/, '$1***@') || 'anonymous'}`);
@@ -139,7 +146,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        budgetData: validationResult.budget_data 
+        budgetData: secureResult // Now using the filtered, secure result
       }),
       { 
         status: 200, 
