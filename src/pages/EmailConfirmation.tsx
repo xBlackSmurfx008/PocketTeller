@@ -18,20 +18,40 @@ export default function EmailConfirmation() {
   useEffect(() => {
     const confirmEmail = async () => {
       const token = searchParams.get('token');
+      const tokenHash = searchParams.get('token_hash');
       const type = searchParams.get('type');
       const accessToken = searchParams.get('access_token');
       const refreshToken = searchParams.get('refresh_token');
 
+      // Dev mode diagnostics
+      if (import.meta.env.DEV) {
+        console.log('EmailConfirmation - URL params:', {
+          token: token ? 'present' : 'missing',
+          tokenHash: tokenHash ? 'present' : 'missing', 
+          type,
+          accessToken: accessToken ? 'present' : 'missing',
+          refreshToken: refreshToken ? 'present' : 'missing'
+        });
+      }
+
       // Handle password recovery redirect
       if (type === 'recovery' && accessToken && refreshToken) {
+        if (import.meta.env.DEV) {
+          console.log('EmailConfirmation - Redirecting to reset-password');
+        }
         navigate(`/reset-password?${searchParams.toString()}`, { replace: true });
         return;
       }
 
       // Handle email confirmation
       if (type === 'signup' || type === 'email_change') {
-        if (accessToken && refreshToken) {
-          try {
+        try {
+          // Try setSession method first (new format with access/refresh tokens)
+          if (accessToken && refreshToken) {
+            if (import.meta.env.DEV) {
+              console.log('EmailConfirmation - Using setSession method');
+            }
+            
             const { error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
@@ -53,24 +73,65 @@ export default function EmailConfirmation() {
             setTimeout(() => {
               navigate('/', { replace: true });
             }, 2000);
-          } catch (error: any) {
-            console.error('Email confirmation error:', error);
-            setStatus('error');
-            setMessage(error.message || 'Failed to confirm email. Please try again.');
+            
+          } else if (token || tokenHash) {
+            // Try verifyOtp method (legacy format with token/token_hash)
+            if (import.meta.env.DEV) {
+              console.log('EmailConfirmation - Using verifyOtp method');
+            }
+            
+            const { error } = await supabase.auth.verifyOtp({
+              type: type as 'signup' | 'email_change',
+              token_hash: tokenHash || token || '',
+            });
+
+            if (error) {
+              throw error;
+            }
+
+            setStatus('success');
+            setMessage('Your email has been confirmed successfully! You can now access all features.');
             
             toast({
-              variant: "destructive",
-              title: "Confirmation failed",
-              description: error.message || "Please try clicking the link in your email again.",
+              title: "Email confirmed",
+              description: "Welcome! Your account is now fully activated.",
             });
+
+            // Redirect to home after a short delay
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 2000);
+            
+          } else {
+            setStatus('error');
+            setMessage('Invalid confirmation link. Please check your email and try again.');
+            
+            if (import.meta.env.DEV) {
+              console.log('EmailConfirmation - No valid tokens found');
+            }
           }
-        } else {
+        } catch (error: any) {
+          console.error('Email confirmation error:', error);
           setStatus('error');
-          setMessage('Invalid confirmation link. Please check your email and try again.');
+          setMessage(error.message || 'Failed to confirm email. Please try again.');
+          
+          toast({
+            variant: "destructive",
+            title: "Confirmation failed",
+            description: error.message || "Please try clicking the link in your email again.",
+          });
+          
+          if (import.meta.env.DEV) {
+            console.log('EmailConfirmation - Error details:', error);
+          }
         }
       } else {
         setStatus('error');
         setMessage('Invalid confirmation link. Please check your email and try again.');
+        
+        if (import.meta.env.DEV) {
+          console.log('EmailConfirmation - Invalid type:', type);
+        }
       }
     };
 

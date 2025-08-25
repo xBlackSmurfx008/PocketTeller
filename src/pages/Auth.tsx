@@ -21,6 +21,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [lastSignUpEmail, setLastSignUpEmail] = useState('');
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
@@ -124,10 +125,25 @@ export default function Auth() {
   };
 
   const handleResendConfirmation = async () => {
-    if (!lastSignUpEmail) return;
+    const emailToResend = lastSignUpEmail || email;
+    if (!emailToResend) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (resendCooldown > 0) return;
     
     setResendLoading(true);
-    const { error } = await resendConfirmation(lastSignUpEmail);
+    
+    if (import.meta.env.DEV) {
+      console.log('Auth - Attempting resend for:', emailToResend);
+    }
+    
+    const { error } = await resendConfirmation(emailToResend);
     
     if (error) {
       toast({
@@ -135,11 +151,31 @@ export default function Auth() {
         description: getErrorMessage(error),
         variant: "destructive",
       });
+      
+      if (import.meta.env.DEV) {
+        console.log('Auth - Resend error:', error);
+      }
     } else {
       toast({
         title: "Confirmation email sent",
         description: "Please check your email (including spam folder) for the confirmation link.",
       });
+      
+      // Start 30-second cooldown
+      setResendCooldown(30);
+      const interval = setInterval(() => {
+        setResendCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      if (import.meta.env.DEV) {
+        console.log('Auth - Resend successful for:', emailToResend);
+      }
     }
     setResendLoading(false);
   };
@@ -278,11 +314,13 @@ export default function Auth() {
                               variant="outline" 
                               size="sm"
                               onClick={handleResendConfirmation}
-                              disabled={resendLoading}
+                              disabled={resendLoading || resendCooldown > 0}
                               className="ml-2"
                             >
                               {resendLoading ? (
                                 <RotateCcw className="h-3 w-3 animate-spin" />
+                              ) : resendCooldown > 0 ? (
+                                `Wait ${resendCooldown}s`
                               ) : (
                                 "Resend"
                               )}
@@ -357,11 +395,13 @@ export default function Auth() {
                             variant="outline" 
                             size="sm"
                             onClick={handleResendConfirmation}
-                            disabled={resendLoading}
+                            disabled={resendLoading || resendCooldown > 0}
                             className="ml-2"
                           >
                             {resendLoading ? (
                               <RotateCcw className="h-3 w-3 animate-spin" />
+                            ) : resendCooldown > 0 ? (
+                              `Wait ${resendCooldown}s`
                             ) : (
                               "Resend"
                             )}
