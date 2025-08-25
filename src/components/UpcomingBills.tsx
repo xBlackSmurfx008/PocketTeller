@@ -111,14 +111,25 @@ export default function UpcomingBills() {
       return <Badge variant="default" className="text-xs">Paid</Badge>;
     }
 
-    const daysUntil = dateHelpers.getDaysUntil(bill.due_date);
-    
-    if (dateHelpers.isOverdue(bill.due_date)) {
-      return <Badge variant="destructive" className="text-xs">Overdue</Badge>;
-    } else if (dateHelpers.isDueToday(bill.due_date)) {
-      return <Badge variant="secondary" className="text-xs">Due Today</Badge>;
-    } else if (daysUntil <= 3 && daysUntil > 0) {
-      return <Badge variant="outline" className="text-xs">Due in {daysUntil} day{daysUntil > 1 ? 's' : ''}</Badge>;
+    // Don't show overdue status if there's no valid due_date
+    if (!bill.due_date || bill.due_date.trim() === '') {
+      return null;
+    }
+
+    try {
+      const daysUntil = dateHelpers.getDaysUntil(bill.due_date);
+      
+      if (dateHelpers.isOverdue(bill.due_date)) {
+        return <Badge variant="destructive" className="text-xs">Overdue</Badge>;
+      } else if (dateHelpers.isDueToday(bill.due_date)) {
+        return <Badge variant="secondary" className="text-xs">Due Today</Badge>;
+      } else if (daysUntil <= 3 && daysUntil > 0) {
+        return <Badge variant="outline" className="text-xs">Due in {daysUntil} day{daysUntil > 1 ? 's' : ''}</Badge>;
+      }
+    } catch (error) {
+      // If date parsing fails, don't show any status badge
+      console.warn('Invalid due_date format:', bill.due_date, error);
+      return null;
     }
     
     return null;
@@ -171,8 +182,14 @@ export default function UpcomingBills() {
                   <div>
                     <div className="font-medium">{bill.name}</div>
                     <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span>Due: {format(new Date(bill.due_date), 'MMM dd, yyyy')}</span>
-                      {getBillStatusBadge(bill)}
+                      {bill.due_date && bill.due_date.trim() !== '' ? (
+                        <>
+                          <span>Due: {format(new Date(bill.due_date), 'MMM dd, yyyy')}</span>
+                          {getBillStatusBadge(bill)}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">No due date set</span>
+                      )}
                     </div>
                   </div>
                 </div>
