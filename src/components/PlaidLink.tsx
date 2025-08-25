@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,20 +64,46 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
   const { open, ready } = usePlaidLink(config);
 
   const fetchLinkToken = async () => {
+    setIsConnecting(true);
     try {
       const { data, error } = await supabase.functions.invoke('plaid-link-token');
       
-      if (error) throw error;
+      if (error) {
+        const errorMessage = error.message || "Failed to initialize bank connection";
+        toast({
+          title: "Connection Error",
+          description: errorMessage.includes("Missing required Plaid configuration") 
+            ? "Plaid is not properly configured. Please contact support."
+            : errorMessage,
+          variant: "destructive",
+        });
+        setIsConnecting(false);
+        return null;
+      }
+      
+      if (!data?.link_token) {
+        toast({
+          title: "Connection Error", 
+          description: "Invalid response from Plaid service",
+          variant: "destructive",
+        });
+        setIsConnecting(false);
+        return null;
+      }
       
       setLinkToken(data.link_token);
       return data.link_token;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching link token:', error);
+      const errorMessage = error?.message || "Unknown error occurred";
       toast({
         title: "Connection Error",
-        description: "Failed to initialize bank connection. Please try again.",
+        description: errorMessage.includes("Missing required Plaid configuration")
+          ? "Plaid is not properly configured. Please contact support."
+          : "Failed to initialize bank connection. Please try again.",
         variant: "destructive",
       });
+      setIsConnecting(false);
       return null;
     }
   };
@@ -96,8 +122,16 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
         description: "Please wait a moment and try again.",
         variant: "destructive",
       });
+      setIsConnecting(false);
     }
   };
+
+  // Auto-open Plaid when link token is ready
+  useEffect(() => {
+    if (linkToken && ready && isConnecting) {
+      open();
+    }
+  }, [linkToken, ready, isConnecting, open]);
 
   const syncData = async () => {
     setIsSyncing(true);
