@@ -176,6 +176,12 @@ const ConversationalAI = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim() && attachments.length === 0) return;
     
+    // Check if demo conversation limit reached
+    if (isDemo && conversationsUsed >= maxConversations) {
+      toast.warning("Demo limit reached: You can create up to 5 conversations. Create a free account to continue.");
+      return;
+    }
+    
     if (isDemo && !usePrompt()) {
       toast.warning("Demo limit reached. Redirecting to dashboard...");
       setTimeout(() => {
@@ -198,53 +204,7 @@ const ConversationalAI = () => {
     setIsLoading(true);
 
     try {
-      // Handle demo mode with local responses
-      if (isDemo) {
-        // Simulate thinking time
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-        
-        // Generate demo response based on user input
-        const generateDemoResponse = (input: string): string => {
-          const lowerInput = input.toLowerCase();
-          
-          if (lowerInput.includes('budget') || lowerInput.includes('spending')) {
-            return "Based on your demo data, I can see you've spent $130.50 recently on groceries and gas. Your checking account balance is $2,850.75. I'd recommend creating a monthly budget with categories for essentials like food ($400), transportation ($200), and setting aside 20% for savings. Would you like me to help you create a detailed budget plan?";
-          }
-          
-          if (lowerInput.includes('save') || lowerInput.includes('emergency') || lowerInput.includes('goal')) {
-            return "Great question about savings! I see you already have an Emergency Fund goal with $3,500 saved toward your $10,000 target. You're 35% there! With your current savings account balance of $8,500, you're in a good position. I recommend aiming to save 3-6 months of expenses for emergencies. Would you like tips on how to accelerate your savings?";
-          }
-          
-          if (lowerInput.includes('bill') || lowerInput.includes('payment')) {
-            return "Looking at your upcoming bills, you have an Electric Bill of $120.50 due in 5 days and Internet bill of $79.99 due in 12 days. That's $200.49 in upcoming expenses. With your checking balance of $2,850.75, you're well covered. Consider setting up automatic payments to avoid late fees!";
-          }
-          
-          if (lowerInput.includes('invest') || lowerInput.includes('stock') || lowerInput.includes('401k')) {
-            return "Investment is a great way to build wealth! With your current financial position showing $8,500 in savings, you might consider starting with low-cost index funds. A common rule is to invest after you have an emergency fund (which you're working on). Start with 10-15% of your income in a diversified portfolio. Would you like to discuss different investment options?";
-          }
-          
-          if (lowerInput.includes('credit') || lowerInput.includes('score') || lowerInput.includes('debt')) {
-            return "Credit health is crucial for your financial future! To improve your credit score: pay bills on time (35% of score), keep credit utilization below 30% (30% of score), maintain older accounts, and monitor your credit report regularly. Your recent $2,500 direct deposit shows steady income, which helps with creditworthiness.";
-          }
-          
-          // Default response
-          return "Thank you for your question! In this demo mode, I can help you understand your financial picture using sample data. I see you have $2,850.75 in checking, $8,500 in savings, and you're working toward financial goals like your Emergency Fund ($3,500/$10,000) and Europe vacation ($1,200/$5,000). What specific area of your finances would you like to explore?";
-        };
-        
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: generateDemoResponse(inputMessage),
-          timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-        setAttachments([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // Regular mode - call Gemini API
+      // Call Gemini API for both demo and regular mode
       const todayString = dateHelpers.getTodayString();
       const now = new Date();
       const nowUserLocal = timezone ? 
@@ -267,7 +227,7 @@ const ConversationalAI = () => {
             content: msg.content
           })),
           attachments: attachments,
-          thread_id: threadId,
+          thread_id: isDemo ? undefined : threadId, // Don't save demo conversations
           coach_mode: coachMode,
           timezone: timezone,
           todayString: todayString,
@@ -489,6 +449,13 @@ const ConversationalAI = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isLoading]);
 
+  // Exit demo when user signs up (non-anonymous auth)
+  useEffect(() => {
+    if (isDemo && user && !user.is_anonymous) {
+      exitDemo();
+    }
+  }, [isDemo, user, exitDemo]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Mobile Header */}
@@ -629,6 +596,33 @@ const ConversationalAI = () => {
                     className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900"
                   >
                     Exit Demo
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Demo Conversation Limit Reached - Lock UI */}
+          {isDemo && conversationsUsed >= maxConversations && (
+            <Card className="mb-4 border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30">
+              <CardContent className="p-4">
+                <div className="flex flex-col items-center text-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
+                      <MessageCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-red-800 dark:text-red-200">Demo Limit Reached</h3>
+                      <p className="text-sm text-red-700 dark:text-red-300">
+                        You can create up to 5 conversations. Create a free account to continue.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => navigate('/auth')}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    Create Account
                   </Button>
                 </div>
               </CardContent>
@@ -791,27 +785,28 @@ const ConversationalAI = () => {
                     <Plus className="h-5 w-5" />
                   </Button>
                   <div className="flex-1 relative">
-                    <Textarea
-                      placeholder={isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          sendMessage();
-                        }
-                      }}
-                      onFocus={() => setShowPromptSuggestions(false)}
-                      className="min-h-[40px] max-h-[120px] resize-none text-base"
-                      data-tour-id="chat-input"
-                    />
+                     <Textarea
+                       placeholder={isDemo && conversationsUsed >= maxConversations ? "Demo limit reached - Create account to continue" : isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
+                       value={inputMessage}
+                       onChange={(e) => setInputMessage(e.target.value)}
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter' && !e.shiftKey) {
+                           e.preventDefault();
+                           sendMessage();
+                         }
+                       }}
+                       onFocus={() => setShowPromptSuggestions(false)}
+                       className="min-h-[40px] max-h-[120px] resize-none text-base"
+                       data-tour-id="chat-input"
+                       disabled={isDemo && conversationsUsed >= maxConversations}
+                     />
                   </div>
-                  <Button
-                    onClick={sendMessage}
-                    disabled={isLoading || uploadingFiles.size > 0 || !inputMessage.trim()}
-                    size="sm"
-                    className="h-10 w-10 p-0 shrink-0"
-                  >
+                   <Button
+                     onClick={sendMessage}
+                     disabled={isLoading || uploadingFiles.size > 0 || !inputMessage.trim() || (isDemo && conversationsUsed >= maxConversations)}
+                     size="sm"
+                     className="h-10 w-10 p-0 shrink-0"
+                   >
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
@@ -831,21 +826,22 @@ const ConversationalAI = () => {
           {/* Desktop Input Area */}
           {!isMobile && (
             <div className="flex items-center gap-2">
-              <Input
-                type="text"
-                placeholder={isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                onFocus={() => setShowPromptSuggestions(false)}
-                className="flex-grow"
-                data-tour-id="chat-input"
-              />
+               <Input
+                 type="text"
+                 placeholder={isDemo && conversationsUsed >= maxConversations ? "Demo limit reached - Create account to continue" : isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
+                 value={inputMessage}
+                 onChange={(e) => setInputMessage(e.target.value)}
+                 onKeyDown={(e) => {
+                   if (e.key === 'Enter' && !e.shiftKey) {
+                     e.preventDefault();
+                     sendMessage();
+                   }
+                 }}
+                 onFocus={() => setShowPromptSuggestions(false)}
+                 className="flex-grow"
+                 data-tour-id="chat-input"
+                 disabled={isDemo && conversationsUsed >= maxConversations}
+               />
               <label htmlFor="file-upload-desktop" className="cursor-pointer">
                 <Button
                   type="button"
@@ -859,11 +855,11 @@ const ConversationalAI = () => {
                   </span>
                 </Button>
               </label>
-              <Button
-                onClick={sendMessage}
-                disabled={isLoading || uploadingFiles.size > 0}
-                className="flex items-center gap-2"
-              >
+               <Button
+                 onClick={sendMessage}
+                 disabled={isLoading || uploadingFiles.size > 0 || (isDemo && conversationsUsed >= maxConversations)}
+                 className="flex items-center gap-2"
+               >
                 <Send className="h-4 w-4" />
                 {uploadingFiles.size > 0 ? `Uploading ${uploadingFiles.size}...` : isLoading ? 'Sending...' : 'Send'}
               </Button>

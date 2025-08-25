@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface DemoState {
   isDemo: boolean;
@@ -8,6 +9,7 @@ export interface DemoState {
   maxConversations: number;
   tourStep: number;
   tourActive: boolean;
+  isAnonymousDemo: boolean;
   sampleData: {
     transactions: any[];
     goals: any[];
@@ -135,6 +137,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       maxConversations: 5,
       tourStep: 0,
       tourActive: false,
+      isAnonymousDemo: false,
       sampleData: SAMPLE_DATA
     };
   });
@@ -143,25 +146,43 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.setItem('demo-state', JSON.stringify(demoState));
   }, [demoState]);
 
-  const startDemo = () => {
+  const startDemo = async () => {
+    // Check if user is already authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      // Sign in anonymously for demo mode
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.error('Failed to create anonymous session:', error);
+      }
+    }
+    
     setDemoState(prev => ({
       ...prev,
       isDemo: true,
       promptsUsed: 0,
       conversationsUsed: 0,
       tourStep: 0,
-      tourActive: true
+      tourActive: true,
+      isAnonymousDemo: !session // True if we created anonymous session
     }));
   };
 
-  const exitDemo = () => {
+  const exitDemo = async () => {
+    // Sign out if we created an anonymous session
+    if (demoState.isAnonymousDemo) {
+      await supabase.auth.signOut();
+    }
+    
     setDemoState(prev => ({
       ...prev,
       isDemo: false,
       promptsUsed: 0,
       conversationsUsed: 0,
       tourStep: 0,
-      tourActive: false
+      tourActive: false,
+      isAnonymousDemo: false
     }));
     sessionStorage.removeItem('demo-state');
   };
