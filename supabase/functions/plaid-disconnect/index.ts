@@ -14,11 +14,21 @@ const plaidSecret = Deno.env.get('PLAID_SECRET')!;
 const plaidEncryptionKey = Deno.env.get('PLAID_ENCRYPTION_KEY')!;
 const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox';
 
-// Environment URL mapping
-const envMap = {
-  sandbox: 'https://sandbox.plaid.com',
-  development: 'https://development.plaid.com',
-  production: 'https://production.plaid.com'
+// Normalize PLAID_ENV to base URL
+const getPlaidBaseUrl = (env: string) => {
+  // If it's already a full URL, return as-is
+  if (env.startsWith('https://')) {
+    return env;
+  }
+  
+  // Environment URL mapping for short names
+  const envMap: { [key: string]: string } = {
+    sandbox: 'https://sandbox.plaid.com',
+    development: 'https://development.plaid.com', 
+    production: 'https://production.plaid.com'
+  };
+  
+  return envMap[env] || null;
 };
 
 serve(async (req) => {
@@ -38,18 +48,17 @@ serve(async (req) => {
       });
     }
 
-    // Validate environment
-    if (!envMap[plaidEnv as keyof typeof envMap]) {
+    // Validate and normalize environment
+    const plaidBaseUrl = getPlaidBaseUrl(plaidEnv);
+    if (!plaidBaseUrl) {
       console.error('Invalid PLAID_ENV:', plaidEnv);
       return new Response(JSON.stringify({ 
-        error: 'Invalid Plaid environment configuration' 
+        error: 'Invalid Plaid environment configuration. Use "sandbox", "development", "production", or a full URL.' 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const plaidBaseUrl = envMap[plaidEnv as keyof typeof envMap];
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get user from auth header
