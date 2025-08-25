@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Play, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Play, Eye, EyeOff, ArrowLeft, Mail, RotateCcw } from 'lucide-react';
 import PublicFooter from '@/components/PublicFooter';
 
 export default function Auth() {
@@ -17,7 +18,12 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signUp, signIn, user } = useAuth();
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [lastSignUpEmail, setLastSignUpEmail] = useState('');
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+  const { signUp, signIn, user, resendConfirmation, resetPassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -72,12 +78,22 @@ export default function Auth() {
     const { error } = await signUp(email, password);
     
     if (error) {
-      toast({
-        title: "Sign up failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Handle specific signup errors
+      if (error.message.includes('User already registered')) {
+        toast({
+          title: "Account already exists",
+          description: "Please sign in instead, or reset your password if you've forgotten it.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } else {
+      setLastSignUpEmail(email);
       toast({
         title: "Success!",
         description: "Check your email for the confirmation link.",
@@ -89,19 +105,88 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setEmailNotConfirmed(false);
     
     const { error } = await signIn(email, password);
     
     if (error) {
-      toast({
-        title: "Sign in failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Handle specific signin errors
+      if (error.message.includes('Email not confirmed')) {
+        setEmailNotConfirmed(true);
+        setLastSignUpEmail(email);
+        toast({
+          title: "Email not confirmed",
+          description: "Please check your email and click the confirmation link, or resend the confirmation email.",
+          variant: "destructive",
+        });
+      } else if (error.message.includes('Invalid login credentials')) {
+        toast({
+          title: "Invalid credentials",
+          description: "Please check your email and password, or reset your password if you've forgotten it.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } else {
       navigate('/');
     }
     setLoading(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!lastSignUpEmail) return;
+    
+    setResendLoading(true);
+    const { error } = await resendConfirmation(lastSignUpEmail);
+    
+    if (error) {
+      toast({
+        title: "Failed to resend",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Email sent!",
+        description: "Check your email for the confirmation link.",
+      });
+    }
+    setResendLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await resetPassword(email);
+    
+    if (error) {
+      toast({
+        title: "Reset failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Reset email sent!",
+        description: "Check your email for password reset instructions.",
+      });
+      setShowForgotPassword(false);
+    }
+    setResetLoading(false);
   };
 
   const handleDemoAccess = () => {
@@ -170,133 +255,218 @@ export default function Auth() {
                 </TabsList>
                 
                 <TabsContent value="signin">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-email">Email</Label>
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-password">Password</Label>
-                      <div className="relative">
+                  {showForgotPassword ? (
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email</Label>
                         <Input
-                          id="signin-password"
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pr-10"
+                          id="reset-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           required
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Hide password" : "Show password"}
+                      </div>
+                      <div className="space-y-2">
+                        <Button type="submit" className="w-full" disabled={resetLoading}>
+                          {resetLoading ? "Sending reset email..." : "Send Reset Email"}
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          className="w-full" 
+                          onClick={() => setShowForgotPassword(false)}
                         >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
+                          Back to Sign In
                         </Button>
                       </div>
+                    </form>
+                  ) : (
+                    <div className="space-y-4">
+                      {emailNotConfirmed && lastSignUpEmail && (
+                        <Alert>
+                          <Mail className="h-4 w-4" />
+                          <AlertDescription className="flex items-center justify-between">
+                            <span>Email not confirmed. Please check your inbox.</span>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={handleResendConfirmation}
+                              disabled={resendLoading}
+                              className="ml-2"
+                            >
+                              {resendLoading ? (
+                                <RotateCcw className="h-3 w-3 animate-spin" />
+                              ) : (
+                                "Resend"
+                              )}
+                            </Button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      <form onSubmit={handleSignIn} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-email">Email</Label>
+                          <Input
+                            id="signin-email"
+                            type="email"
+                            placeholder="your@email.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-password">Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="signin-password"
+                              type={showPassword ? "text" : "password"}
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              className="pr-10"
+                              required
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowPassword(!showPassword)}
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? "Signing in..." : "Sign In"}
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          className="w-full text-sm" 
+                          onClick={() => setShowForgotPassword(true)}
+                        >
+                          Forgot password?
+                        </Button>
+                      </form>
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Signing in..." : "Sign In"}
-                    </Button>
-                  </form>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="signup">
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <div className="relative">
+                  <div className="space-y-4">
+                    {lastSignUpEmail && (
+                      <Alert>
+                        <Mail className="h-4 w-4" />
+                        <AlertDescription className="flex items-center justify-between">
+                          <span>Didn't get the email? Check spam folder or resend.</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleResendConfirmation}
+                            disabled={resendLoading}
+                            className="ml-2"
+                          >
+                            {resendLoading ? (
+                              <RotateCcw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Resend"
+                            )}
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    <form onSubmit={handleSignUp} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email">Email</Label>
                         <Input
-                          id="signup-password"
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pr-10"
+                          id="signup-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           required
-                          minLength={8}
-                          placeholder="At least 8 characters"
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Password strength: {password.length >= 8 ? "Good" : "Too short"}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirm-password"
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="pr-10"
-                          required
-                          placeholder="Confirm your password"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      {confirmPassword && password !== confirmPassword && (
-                        <p className="text-xs text-destructive">
-                          Passwords don't match
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="signup-password"
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pr-10"
+                            required
+                            minLength={8}
+                            placeholder="At least 8 characters"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Password strength: {password.length >= 8 ? "Good" : "Too short"}
                         </p>
-                      )}
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Creating account..." : "Create Account"}
-                    </Button>
-                  </form>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirm-password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="pr-10"
+                            required
+                            placeholder="Confirm your password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        {confirmPassword && password !== confirmPassword && (
+                          <p className="text-xs text-destructive">
+                            Passwords don't match
+                          </p>
+                        )}
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? "Creating account..." : "Create Account"}
+                      </Button>
+                    </form>
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>
