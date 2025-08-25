@@ -4,6 +4,8 @@ export interface DemoState {
   isDemo: boolean;
   promptsUsed: number;
   maxPrompts: number;
+  conversationsUsed: number;
+  maxConversations: number;
   tourStep: number;
   tourActive: boolean;
   sampleData: {
@@ -18,6 +20,7 @@ interface DemoContextType extends DemoState {
   startDemo: () => void;
   exitDemo: () => void;
   usePrompt: () => boolean;
+  useConversation: () => boolean;
   nextTourStep: () => void;
   skipTour: () => void;
   resetTour: () => void;
@@ -128,6 +131,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       isDemo: false,
       promptsUsed: 0,
       maxPrompts: 5,
+      conversationsUsed: 0,
+      maxConversations: 5,
       tourStep: 0,
       tourActive: false,
       sampleData: SAMPLE_DATA
@@ -143,6 +148,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       isDemo: true,
       promptsUsed: 0,
+      conversationsUsed: 0,
       tourStep: 0,
       tourActive: true
     }));
@@ -153,6 +159,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       isDemo: false,
       promptsUsed: 0,
+      conversationsUsed: 0,
       tourStep: 0,
       tourActive: false
     }));
@@ -166,6 +173,17 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     setDemoState(prev => ({
       ...prev,
       promptsUsed: prev.promptsUsed + 1
+    }));
+    return true;
+  };
+
+  const useConversation = () => {
+    if (!demoState.isDemo) return true;
+    if (demoState.conversationsUsed >= demoState.maxConversations) return false;
+    
+    setDemoState(prev => ({
+      ...prev,
+      conversationsUsed: prev.conversationsUsed + 1
     }));
     return true;
   };
@@ -197,6 +215,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     startDemo,
     exitDemo,
     usePrompt,
+    useConversation,
     nextTourStep,
     skipTour,
     resetTour

@@ -81,7 +81,7 @@ const ConversationalAI = () => {
   const { threadId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isDemo, usePrompt, promptsUsed, maxPrompts, exitDemo } = useDemo();
+  const { isDemo, usePrompt, useConversation, promptsUsed, maxPrompts, conversationsUsed, maxConversations, exitDemo } = useDemo();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const isMobile = useIsMobile();
@@ -114,6 +114,12 @@ const ConversationalAI = () => {
 
   const loadConversationHistory = async () => {
     if (!threadId) return;
+    
+    // Skip Supabase for demo threads
+    if (isDemo || threadId.startsWith('demo-')) {
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('conversations')
@@ -139,6 +145,18 @@ const ConversationalAI = () => {
   };
 
   const createNewThread = async () => {
+    if (isDemo) {
+      if (!useConversation()) {
+        toast.warning("Demo limit reached: You can create up to 5 conversations. Sign up to create more.");
+        return;
+      }
+      
+      // Create demo thread ID and navigate
+      const demoThreadId = `demo-${Date.now()}`;
+      navigate(`/chat/${demoThreadId}`);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('conversation_threads')
@@ -555,6 +573,8 @@ const ConversationalAI = () => {
               onClick={createNewThread}
               variant="outline"
               className="flex items-center gap-2"
+              disabled={isDemo && conversationsUsed >= maxConversations}
+              title={isDemo && conversationsUsed >= maxConversations ? "Demo limit reached: You can create up to 5 conversations." : undefined}
             >
               <Plus className="h-4 w-4" />
               New Conversation
@@ -592,12 +612,12 @@ const ConversationalAI = () => {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900">
                       <MessageCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-amber-800 dark:text-amber-200">Demo Mode</h3>
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        Try the AI assistant with sample data • {promptsUsed}/{maxPrompts} messages used
-                      </p>
-                    </div>
+                     <div>
+                       <h3 className="font-semibold text-amber-800 dark:text-amber-200">Demo Mode</h3>
+                       <p className="text-sm text-amber-700 dark:text-amber-300">
+                         Try the AI assistant with sample data • {promptsUsed}/{maxPrompts} messages used • {conversationsUsed}/{maxConversations} conversations used
+                       </p>
+                     </div>
                   </div>
                   <Button
                     variant="outline"
@@ -924,14 +944,15 @@ const ConversationalAI = () => {
 
             {/* New Conversation Button - Mobile */}
             {isMobile && (
-              <Button 
-                onClick={createNewThread}
-                variant="outline"
-                className="w-full flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                New Conversation
-              </Button>
+               <Button 
+                 onClick={createNewThread}
+                 variant="outline"
+                 className="w-full flex items-center gap-2"
+                 disabled={isDemo && conversationsUsed >= maxConversations}
+               >
+                 <Plus className="h-4 w-4" />
+                 New Conversation
+               </Button>
             )}
             {/* Education Suggestions */}
             {showSuggestions && educationSuggestions.length > 0 && (
