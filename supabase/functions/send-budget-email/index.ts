@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'development' ? '*' : 'https://dscndbpqvhvylukvcgpq.supabase.co',
+  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.supabase.co',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -164,7 +164,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Sending budget share email to:', recipientEmail);
+    console.log('Sending budget share email to:', recipientEmail.replace(/(.{2}).+@/, '$1***@'));
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

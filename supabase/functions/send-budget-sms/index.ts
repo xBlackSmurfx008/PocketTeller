@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'development' ? '*' : 'https://dscndbpqvhvylukvcgpq.supabase.co',
+  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.supabase.co',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -151,7 +151,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Sending budget share SMS to:', phoneNumber);
+    console.log('Sending budget share SMS to:', phoneNumber.replace(/(\+\d{2})\d+(\d{3})/, '$1***$2'));
 
     const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
