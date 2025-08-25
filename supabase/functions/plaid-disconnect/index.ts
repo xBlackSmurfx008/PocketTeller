@@ -11,6 +11,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')!;
 const plaidSecret = Deno.env.get('PLAID_SECRET')!;
+const plaidEncryptionKey = Deno.env.get('PLAID_ENCRYPTION_KEY')!;
 const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox';
 
 // Environment URL mapping
@@ -27,7 +28,7 @@ serve(async (req) => {
 
   try {
     // Validate secrets
-    if (!plaidClientId || !plaidSecret) {
+    if (!plaidClientId || !plaidSecret || !plaidEncryptionKey) {
       console.error('Missing required Plaid configuration');
       return new Response(JSON.stringify({ 
         error: 'Plaid configuration incomplete. Please check your secrets.' 
@@ -71,48 +72,43 @@ serve(async (req) => {
       });
     }
 
-    // Check rate limit
-    const { data: rateLimitCheck, error: rateLimitError } = await supabase
-      .rpc('check_link_token_rate', { target_user_id: user.id });
+    // Get user's encrypted token
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('encrypted_plaid_token, token_iv')
+      .eq('user_id', user.id)
+      .single();
 
-    if (rateLimitError) {
-      console.error('Rate limit check failed:', rateLimitError);
-      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), {
+    if (profileError || !profile || !profile.encrypted_plaid_token) {
+      return new Response(JSON.stringify({ error: 'No Plaid connection found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Decrypt the access token
+    const { data: decryptedToken, error: decryptError } = await supabase
+      .rpc('decrypt_plaid_token_with_audit', {
+        encrypted_data: {
+          encrypted_token: profile.encrypted_plaid_token,
+          iv: profile.token_iv
+        },
+        encryption_key: plaidEncryptionKey,
+        function_name: 'plaid-disconnect',
+        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        user_agent: req.headers.get('user-agent') || 'unknown'
+      });
+
+    if (decryptError || !decryptedToken) {
+      console.error('Token decryption failed:', decryptError);
+      return new Response(JSON.stringify({ error: 'Failed to decrypt access token' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!rateLimitCheck) {
-      // Log rate limit exceeded
-      const { error: auditError } = await supabase
-        .from('plaid_token_audit_log')
-        .insert({
-          user_id: user.id,
-          access_type: 'link_token',
-          function_name: 'plaid-link-token',
-          ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
-          user_agent: req.headers.get('user-agent') || 'unknown',
-          success: false,
-          error_message: 'Rate limit exceeded: too many link token requests'
-        });
-
-      if (auditError) {
-        console.error('Failed to log audit entry:', auditError);
-      }
-
-      return new Response(JSON.stringify({ 
-        error: 'Too many link token requests. Please try again later.' 
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Creating link token for user:', user.id);
-
-    // Create link token
-    const linkTokenResponse = await fetch(`${plaidBaseUrl}/link/token/create`, {
+    // Call Plaid /item/remove endpoint
+    const removeResponse = await fetch(`${plaidBaseUrl}/item/remove`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -120,32 +116,26 @@ serve(async (req) => {
       body: JSON.stringify({
         client_id: plaidClientId,
         secret: plaidSecret,
-        user: {
-          client_user_id: user.id
-        },
-        client_name: 'Budget AI',
-        products: ['transactions'],
-        country_codes: ['US'],
-        language: 'en'
+        access_token: decryptedToken,
       }),
     });
 
-    const linkTokenData = await linkTokenResponse.json();
+    const removeData = await removeResponse.json();
     
-    if (!linkTokenResponse.ok) {
-      console.error('Plaid link token error:', linkTokenData);
+    if (!removeResponse.ok) {
+      console.error('Plaid item/remove error:', removeData);
       
-      // Log failed link token creation
+      // Log failed revocation
       const { error: auditError } = await supabase
         .from('plaid_token_audit_log')
         .insert({
           user_id: user.id,
-          access_type: 'link_token',
-          function_name: 'plaid-link-token',
+          access_type: 'revoke',
+          function_name: 'plaid-disconnect',
           ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
           user_agent: req.headers.get('user-agent') || 'unknown',
           success: false,
-          error_message: linkTokenData.error_message || 'Unknown Plaid error'
+          error_message: removeData.error_message || 'Unknown Plaid error'
         });
 
       if (auditError) {
@@ -153,21 +143,39 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ 
-        error: `Plaid link token failed: ${linkTokenData.error_message}`,
-        plaid_error_code: linkTokenData.error_code 
+        error: `Plaid disconnect failed: ${removeData.error_message}`,
+        plaid_error_code: removeData.error_code 
       }), {
-        status: linkTokenData.error_code === 'INVALID_REQUEST' ? 400 : 500,
+        status: removeData.error_code === 'INVALID_ACCESS_TOKEN' ? 404 : 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Log successful link token creation
+    // Clear encrypted token and token_iv from profile
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ 
+        encrypted_plaid_token: null,
+        token_iv: null,
+        last_token_rotation: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (updateError) {
+      console.error('Error clearing profile token:', updateError);
+      return new Response(JSON.stringify({ error: 'Failed to clear stored token' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Log successful revocation
     const { error: auditError } = await supabase
       .from('plaid_token_audit_log')
       .insert({
         user_id: user.id,
-        access_type: 'link_token',
-        function_name: 'plaid-link-token',
+        access_type: 'revoke',
+        function_name: 'plaid-disconnect',
         ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
         user_agent: req.headers.get('user-agent') || 'unknown',
         success: true
@@ -177,16 +185,14 @@ serve(async (req) => {
       console.error('Failed to log audit entry:', auditError);
     }
 
-    console.log('Successfully created link token for user:', user.id);
+    console.log('Successfully disconnected Plaid for user:', user.id);
 
-    return new Response(JSON.stringify({ 
-      link_token: linkTokenData.link_token 
-    }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in plaid-link-token:', error);
+    console.error('Error in plaid-disconnect:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

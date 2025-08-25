@@ -126,15 +126,27 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
   const disconnectBank = async () => {
     setIsDisconnecting(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          encrypted_plaid_token: null,
-          token_iv: null 
-        })
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+      const { data, error } = await supabase.functions.invoke('plaid-disconnect');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error disconnecting bank:', error);
+        toast({
+          title: "Disconnection Failed",
+          description: "Failed to disconnect your bank account. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.error) {
+        console.error('Plaid disconnect error:', data.error);
+        toast({
+          title: "Disconnection Failed",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Bank Disconnected",

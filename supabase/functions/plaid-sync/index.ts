@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.supabase.co',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -11,6 +11,14 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')!;
 const plaidSecret = Deno.env.get('PLAID_SECRET')!;
+const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox';
+
+// Environment URL mapping
+const envMap = {
+  sandbox: 'https://sandbox.plaid.com',
+  development: 'https://development.plaid.com',
+  production: 'https://production.plaid.com'
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,6 +26,29 @@ serve(async (req) => {
   }
 
   try {
+    // Validate secrets
+    if (!plaidClientId || !plaidSecret) {
+      console.error('Missing required Plaid configuration');
+      return new Response(JSON.stringify({ 
+        error: 'Plaid configuration incomplete. Please check your secrets.' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate environment
+    if (!envMap[plaidEnv as keyof typeof envMap]) {
+      console.error('Invalid PLAID_ENV:', plaidEnv);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid Plaid environment configuration' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const plaidBaseUrl = envMap[plaidEnv as keyof typeof envMap];
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get user from auth header
@@ -91,7 +122,7 @@ serve(async (req) => {
     }
 
     // Get accounts from Plaid
-    const accountsResponse = await fetch('https://production.plaid.com/accounts/get', {
+    const accountsResponse = await fetch(`${plaidBaseUrl}/accounts/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -135,7 +166,7 @@ serve(async (req) => {
     startDate.setMonth(startDate.getMonth() - 24);
     const endDate = new Date();
 
-    const transactionsResponse = await fetch('https://production.plaid.com/transactions/get', {
+    const transactionsResponse = await fetch(`${plaidBaseUrl}/transactions/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -612,6 +612,10 @@ export type Database = {
         Args: { ip_address: string; share_id: string }
         Returns: boolean
       }
+      check_link_token_rate: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       check_share_send_rate: {
         Args: {
           channel_type: string

@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.supabase.co',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -11,6 +11,14 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')!;
 const plaidSecret = Deno.env.get('PLAID_SECRET')!;
+const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox';
+
+// Environment URL mapping
+const envMap = {
+  sandbox: 'https://sandbox.plaid.com',
+  development: 'https://development.plaid.com',
+  production: 'https://production.plaid.com'
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,12 +26,38 @@ serve(async (req) => {
   }
 
   try {
+    // Validate secrets
+    if (!plaidClientId || !plaidSecret) {
+      console.error('Missing required Plaid configuration');
+      return new Response(JSON.stringify({ 
+        error: 'Plaid configuration incomplete. Please check your secrets.' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate environment
+    if (!envMap[plaidEnv as keyof typeof envMap]) {
+      console.error('Invalid PLAID_ENV:', plaidEnv);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid Plaid environment configuration' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const plaidBaseUrl = envMap[plaidEnv as keyof typeof envMap];
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get user from auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(
@@ -31,17 +65,23 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
-      throw new Error('Invalid auth token');
+      return new Response(JSON.stringify({ error: 'Invalid auth token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const { public_token } = await req.json();
     
     if (!public_token) {
-      throw new Error('No public_token provided');
+      return new Response(JSON.stringify({ error: 'No public_token provided' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Exchange public token for access token
-    const exchangeResponse = await fetch('https://production.plaid.com/item/public_token/exchange', {
+    const exchangeResponse = await fetch(`${plaidBaseUrl}/item/public_token/exchange`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,13 +97,22 @@ serve(async (req) => {
     
     if (!exchangeResponse.ok) {
       console.error('Plaid exchange error:', exchangeData);
-      throw new Error(`Plaid exchange failed: ${exchangeData.error_message}`);
+      return new Response(JSON.stringify({ 
+        error: `Plaid exchange failed: ${exchangeData.error_message}`,
+        plaid_error_code: exchangeData.error_code 
+      }), {
+        status: exchangeData.error_code === 'INVALID_PUBLIC_TOKEN' ? 400 : 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Encrypt and store the access token securely
     const encryptionKey = Deno.env.get('PLAID_ENCRYPTION_KEY');
     if (!encryptionKey) {
-      throw new Error('Encryption key not configured');
+      return new Response(JSON.stringify({ error: 'Encryption key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const { data: encryptionResult, error: encryptError } = await supabase
@@ -74,7 +123,10 @@ serve(async (req) => {
 
     if (encryptError || !encryptionResult) {
       console.error('Token encryption failed:', encryptError);
-      throw new Error('Failed to encrypt token');
+      return new Response(JSON.stringify({ error: 'Failed to encrypt token' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const { error: updateError } = await supabase
@@ -82,14 +134,16 @@ serve(async (req) => {
       .update({ 
         encrypted_plaid_token: encryptionResult.encrypted_token,
         token_iv: encryptionResult.iv,
-        plaid_access_token: null, // Ensure no plain text token
         last_token_rotation: new Date().toISOString()
       })
       .eq('user_id', user.id);
 
     if (updateError) {
       console.error('Error updating profile:', updateError);
-      throw new Error('Failed to store access token');
+      return new Response(JSON.stringify({ error: 'Failed to store access token' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Get client IP and User-Agent for audit logging
