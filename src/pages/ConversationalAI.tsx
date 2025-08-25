@@ -180,7 +180,53 @@ const ConversationalAI = () => {
     setIsLoading(true);
 
     try {
-      // Compute timezone-aware time information
+      // Handle demo mode with local responses
+      if (isDemo) {
+        // Simulate thinking time
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+        
+        // Generate demo response based on user input
+        const generateDemoResponse = (input: string): string => {
+          const lowerInput = input.toLowerCase();
+          
+          if (lowerInput.includes('budget') || lowerInput.includes('spending')) {
+            return "Based on your demo data, I can see you've spent $130.50 recently on groceries and gas. Your checking account balance is $2,850.75. I'd recommend creating a monthly budget with categories for essentials like food ($400), transportation ($200), and setting aside 20% for savings. Would you like me to help you create a detailed budget plan?";
+          }
+          
+          if (lowerInput.includes('save') || lowerInput.includes('emergency') || lowerInput.includes('goal')) {
+            return "Great question about savings! I see you already have an Emergency Fund goal with $3,500 saved toward your $10,000 target. You're 35% there! With your current savings account balance of $8,500, you're in a good position. I recommend aiming to save 3-6 months of expenses for emergencies. Would you like tips on how to accelerate your savings?";
+          }
+          
+          if (lowerInput.includes('bill') || lowerInput.includes('payment')) {
+            return "Looking at your upcoming bills, you have an Electric Bill of $120.50 due in 5 days and Internet bill of $79.99 due in 12 days. That's $200.49 in upcoming expenses. With your checking balance of $2,850.75, you're well covered. Consider setting up automatic payments to avoid late fees!";
+          }
+          
+          if (lowerInput.includes('invest') || lowerInput.includes('stock') || lowerInput.includes('401k')) {
+            return "Investment is a great way to build wealth! With your current financial position showing $8,500 in savings, you might consider starting with low-cost index funds. A common rule is to invest after you have an emergency fund (which you're working on). Start with 10-15% of your income in a diversified portfolio. Would you like to discuss different investment options?";
+          }
+          
+          if (lowerInput.includes('credit') || lowerInput.includes('score') || lowerInput.includes('debt')) {
+            return "Credit health is crucial for your financial future! To improve your credit score: pay bills on time (35% of score), keep credit utilization below 30% (30% of score), maintain older accounts, and monitor your credit report regularly. Your recent $2,500 direct deposit shows steady income, which helps with creditworthiness.";
+          }
+          
+          // Default response
+          return "Thank you for your question! In this demo mode, I can help you understand your financial picture using sample data. I see you have $2,850.75 in checking, $8,500 in savings, and you're working toward financial goals like your Emergency Fund ($3,500/$10,000) and Europe vacation ($1,200/$5,000). What specific area of your finances would you like to explore?";
+        };
+        
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: generateDemoResponse(inputMessage),
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        setAttachments([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Regular mode - call Gemini API
       const todayString = dateHelpers.getTodayString();
       const now = new Date();
       const nowUserLocal = timezone ? 
@@ -532,6 +578,38 @@ const ConversationalAI = () => {
                       Perfect for learning budgeting fundamentals or advancing your money management skills.
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Demo Mode Banner */}
+          {isDemo && (
+            <Card className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900">
+                      <MessageCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-amber-800 dark:text-amber-200">Demo Mode</h3>
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        Try the AI assistant with sample data • {promptsUsed}/{maxPrompts} messages used
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      exitDemo();
+                      navigate('/');
+                    }}
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900"
+                  >
+                    Exit Demo
+                  </Button>
                 </div>
               </CardContent>
             </Card>
