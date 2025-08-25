@@ -16,13 +16,13 @@ const TrustedByMarquee = () => {
         <h3 className="text-lg font-semibold mb-4">
           Built with privacy in mind
         </h3>
-        <div className="h-8 flex items-center justify-center overflow-hidden">
+        <div className="h-10 sm:h-12 flex items-center justify-center overflow-hidden">
           <div className="marquee-container w-full max-w-2xl">
-            <div className="marquee-content">
+            <div className="marquee-content items-center">
               {duplicatedPhrases.map((phrase, index) => (
                 <span 
                   key={`${phrase}-${index}`}
-                  className="marquee-item inline-flex items-center px-4 py-2 rounded-full bg-background/80 text-sm font-medium border border-border/50 whitespace-nowrap mx-4"
+                  className="marquee-item inline-flex items-center px-4 py-1.5 sm:py-2 rounded-full bg-background/80 text-sm font-medium border border-border/50 whitespace-nowrap text-foreground"
                 >
                   {phrase}
                 </span>
