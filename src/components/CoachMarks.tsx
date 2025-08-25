@@ -94,6 +94,11 @@ export function CoachMarks() {
   useEffect(() => {
     if (!tourActive || !currentStep) return;
 
+    // Don't navigate away from auth page - skip auth-interrupting tour steps
+    if (location.pathname === '/auth') {
+      return;
+    }
+
     // Navigate to the required route if needed
     if (currentStep.route && location.pathname !== currentStep.route) {
       navigate(currentStep.route);

@@ -147,17 +147,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, [demoState]);
 
   const startDemo = async () => {
-    // Check if user is already authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      // Sign in anonymously for demo mode
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        console.error('Failed to create anonymous session:', error);
-      }
-    }
-    
+    // Demo mode now works locally without authentication
     setDemoState(prev => ({
       ...prev,
       isDemo: true,
@@ -165,16 +155,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       conversationsUsed: 0,
       tourStep: 0,
       tourActive: true,
-      isAnonymousDemo: !session // True if we created anonymous session
+      isAnonymousDemo: false // No longer using anonymous auth
     }));
   };
 
   const exitDemo = async () => {
-    // Sign out if we created an anonymous session
-    if (demoState.isAnonymousDemo) {
-      await supabase.auth.signOut();
-    }
-    
+    // Demo mode is local-only, no authentication needed
     setDemoState(prev => ({
       ...prev,
       isDemo: false,

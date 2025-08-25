@@ -106,6 +106,10 @@ export default function Auth() {
 
   const handleDemoAccess = () => {
     navigate('/demo');
+    toast({
+      title: "Demo Mode",
+      description: "Starting local demo with sample data - your session won't be saved.",
+    });
   };
 
   return (

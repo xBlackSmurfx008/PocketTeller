@@ -8,8 +8,11 @@ export default function Demo() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    startDemo();
-    navigate('/', { replace: true });
+    const initDemo = async () => {
+      await startDemo();
+      navigate('/', { replace: true });
+    };
+    initDemo();
   }, [startDemo, navigate]);
 
   return <Dashboard />;
