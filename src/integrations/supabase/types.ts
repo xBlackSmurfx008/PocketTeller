@@ -711,9 +711,7 @@ export type Database = {
         Returns: boolean
       }
       validate_share_access: {
-        Args:
-          | { request_ip?: string; share_token: string }
-          | { request_ip?: string; share_token: string; user_email?: string }
+        Args: { request_ip?: string; share_token: string; user_email?: string }
         Returns: Json
       }
       validate_sms_content: {
