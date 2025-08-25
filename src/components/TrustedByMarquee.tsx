@@ -2,7 +2,7 @@ const TrustedByMarquee = () => {
   const companies = [
     "🔒 Bank-level security",
     "Built with privacy in mind",
-    "Updated with the best financial knowledge available"
+    "Updated with best financial practices"
   ];
 
   return (
