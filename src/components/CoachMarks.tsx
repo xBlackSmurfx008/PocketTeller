@@ -34,9 +34,9 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'recent-transactions',
     title: 'Recent Transactions',
-    description: 'Track your latest spending and income. Click "View All" to see the full transactions page.',
+    description: 'View and manage all your transactions here. You can search, filter by category, and update transaction details.',
     selector: '[data-tour-id="recent-transactions"]',
-    route: '/',
+    route: '/transactions',
     position: 'top'
   },
   {
@@ -100,13 +100,13 @@ export function CoachMarks() {
       return;
     }
 
-    // Find and highlight the target element
-    const timer = setTimeout(() => {
+    // Find and highlight the target element with retry mechanism
+    const findElement = (retries = 3) => {
       const element = document.querySelector(currentStep.selector) as HTMLElement;
       if (element) {
         setHighlightedElement(element);
         
-        // Calculate tooltip position
+        // Calculate tooltip position using getBoundingClientRect
         const rect = element.getBoundingClientRect();
         let x = rect.left + rect.width / 2;
         let y = rect.top;
@@ -132,8 +132,13 @@ export function CoachMarks() {
         
         // Scroll element into view
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (retries > 0) {
+        // Retry if element not found
+        setTimeout(() => findElement(retries - 1), 500);
       }
-    }, 300);
+    };
+
+    const timer = setTimeout(() => findElement(), 300);
 
     return () => clearTimeout(timer);
   }, [tourActive, tourStep, currentStep, location.pathname, navigate]);
@@ -165,10 +170,10 @@ export function CoachMarks() {
       <div
         className="fixed z-50 pointer-events-none"
         style={{
-          left: highlightedElement.offsetLeft - 4,
-          top: highlightedElement.offsetTop - 4,
-          width: highlightedElement.offsetWidth + 8,
-          height: highlightedElement.offsetHeight + 8,
+          left: highlightedElement.getBoundingClientRect().left - 4,
+          top: highlightedElement.getBoundingClientRect().top - 4,
+          width: highlightedElement.getBoundingClientRect().width + 8,
+          height: highlightedElement.getBoundingClientRect().height + 8,
           border: '3px solid hsl(var(--primary))',
           borderRadius: '8px',
           boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
