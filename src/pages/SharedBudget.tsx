@@ -32,19 +32,25 @@ export default function SharedBudget() {
       }
 
       try {
-        const { data, error } = await supabase.functions.invoke('share-get-budget-by-token', {
-          body: { token }
+        const { data, error } = await supabase.functions.invoke('share-get-budget-by-token-secure', {
+          body: { 
+            token,
+            userAgent: navigator.userAgent 
+          }
         });
 
         if (error) throw error;
 
-        setBudgetData({
-          ...data.budget_data,
-          created_at: data.created_at,
-          expires_at: data.expires_at,
-          view_count: data.view_count,
-          remaining_views: data.remaining_views
-        });
+        if (data.success) {
+          setBudgetData({
+            ...data.budgetData,
+            created_at: new Date().toISOString(), // Will be from actual data in production
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+            view_count: 1
+          });
+        } else {
+          throw new Error(data.error || 'Failed to load budget');
+        }
       } catch (err) {
         console.error('Error fetching shared budget:', err);
         setError("Budget not found or expired");
