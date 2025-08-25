@@ -124,7 +124,11 @@ serve(async (req) => {
           user_id: user.id,
           access_type: 'link_token',
           function_name: 'plaid-link-token',
-          ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+          ip_address: (() => {
+            const forwardedFor = req.headers.get('x-forwarded-for');
+            return forwardedFor ? forwardedFor.split(',')[0].trim() : 
+                   req.headers.get('x-real-ip') || 'unknown';
+          })(),
           user_agent: req.headers.get('user-agent') || 'unknown',
           success: false,
           error_message: 'Rate limit exceeded: too many link token requests'
@@ -175,7 +179,11 @@ serve(async (req) => {
           user_id: user.id,
           access_type: 'link_token',
           function_name: 'plaid-link-token',
-          ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+          ip_address: (() => {
+            const forwardedFor = req.headers.get('x-forwarded-for');
+            return forwardedFor ? forwardedFor.split(',')[0].trim() : 
+                   req.headers.get('x-real-ip') || 'unknown';
+          })(),
           user_agent: req.headers.get('user-agent') || 'unknown',
           success: false,
           error_message: linkTokenData.error_message || 'Unknown Plaid error'
@@ -201,7 +209,11 @@ serve(async (req) => {
         user_id: user.id,
         access_type: 'link_token',
         function_name: 'plaid-link-token',
-        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        ip_address: (() => {
+          const forwardedFor = req.headers.get('x-forwarded-for');
+          return forwardedFor ? forwardedFor.split(',')[0].trim() : 
+                 req.headers.get('x-real-ip') || 'unknown';
+        })(),
         user_agent: req.headers.get('user-agent') || 'unknown',
         success: true
       });

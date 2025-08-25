@@ -239,9 +239,14 @@ serve(async (req) => {
       console.error('Failed to log audit entry:', auditError);
     }
 
-    console.log('Successfully exchanged token for user:', user.id);
+    console.log('Token successfully saved and verified for user:', user.id);
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: 'Bank account connected successfully',
+      hasPlaidConnection: true,
+      saved: true
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

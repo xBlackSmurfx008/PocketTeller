@@ -41,15 +41,21 @@ export default function Account() {
     if (!user) return;
     
     try {
-      // Use the secure function to check Plaid connection
+      // Use direct profiles query for consistency with Dashboard
       const { data, error } = await supabase
-        .rpc('get_user_profile_secure', { target_user_id: user.id });
+        .from('profiles')
+        .select('encrypted_plaid_token')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (!error && data?.[0]?.has_plaid_connection) {
+      if (!error && data?.encrypted_plaid_token) {
         setHasPlaidToken(true);
+      } else {
+        setHasPlaidToken(false);
       }
     } catch (error) {
       console.error('Error checking Plaid connection:', error);
+      setHasPlaidToken(false);
     }
   };
 
