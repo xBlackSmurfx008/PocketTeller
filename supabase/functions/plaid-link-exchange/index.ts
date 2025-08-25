@@ -13,11 +13,26 @@ const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')!;
 const plaidSecret = Deno.env.get('PLAID_SECRET')!;
 const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox';
 
-// Normalize PLAID_ENV to base URL
+// Normalize and sanitize PLAID_ENV to base URL
 const getPlaidBaseUrl = (env: string) => {
-  // If it's already a full URL, return as-is
-  if (env.startsWith('https://')) {
-    return env;
+  // Sanitize input: trim whitespace and remove quotes
+  const sanitized = env.trim().replace(/^["']|["']$/g, '');
+  
+  console.log('Original PLAID_ENV:', env);
+  console.log('Sanitized PLAID_ENV:', sanitized);
+  
+  // If it's already a full URL, normalize it
+  if (sanitized.includes('://')) {
+    // Ensure it starts with https://
+    let normalizedUrl = sanitized.startsWith('https://') 
+      ? sanitized 
+      : sanitized.replace(/^https?:\/\//, 'https://');
+    
+    // Remove trailing slash
+    normalizedUrl = normalizedUrl.replace(/\/$/, '');
+    
+    console.log('Normalized URL:', normalizedUrl);
+    return normalizedUrl;
   }
   
   // Environment URL mapping for short names
@@ -27,7 +42,10 @@ const getPlaidBaseUrl = (env: string) => {
     production: 'https://production.plaid.com'
   };
   
-  return envMap[env] || null;
+  const mappedUrl = envMap[sanitized.toLowerCase()];
+  console.log('Mapped URL for', sanitized, ':', mappedUrl);
+  
+  return mappedUrl || null;
 };
 
 serve(async (req) => {
@@ -49,10 +67,16 @@ serve(async (req) => {
 
     // Validate and normalize environment
     const plaidBaseUrl = getPlaidBaseUrl(plaidEnv);
+    console.log('Final Plaid base URL:', plaidBaseUrl);
+    
     if (!plaidBaseUrl) {
-      console.error('Invalid PLAID_ENV:', plaidEnv);
+      console.error('Failed to determine Plaid base URL from PLAID_ENV:', plaidEnv);
       return new Response(JSON.stringify({ 
-        error: 'Invalid Plaid environment configuration. Use "sandbox", "development", "production", or a full URL.' 
+        error: `Invalid Plaid environment configuration. Got: "${plaidEnv}". Use "sandbox", "development", "production", or a full HTTPS URL.`,
+        debug: {
+          original_env: plaidEnv,
+          sanitized_env: plaidEnv.trim().replace(/^["']|["']$/g, '')
+        }
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
