@@ -71,7 +71,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer hover-scale text-foreground"
+              className="text-lg px-8 py-3 h-auto btn-shimmer hover-scale"
             >
               Get Started Free
             </Button>
@@ -79,7 +79,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale text-foreground"
+              className="text-lg px-8 py-3 h-auto hover-scale"
             >
               Try Demo
             </Button>
