@@ -8,11 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const SUGGESTED_CATEGORIES = [
   'Housing', 'Transportation', 'Food & Dining', 'Utilities', 'Healthcare', 
@@ -32,6 +35,13 @@ interface BudgetData {
   categories: CategoryBudget[];
 }
 
+interface YearlyTotal {
+  month: string;
+  income: number;
+  expenses: number;
+  net: number;
+}
+
 export default function Budget() {
   const { user } = useAuth();
   const { isDemo, sampleData } = useDemo();
@@ -41,8 +51,10 @@ export default function Budget() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [budgetData, setBudgetData] = useState<BudgetData>({ income: 0, categories: [] });
   const [actualTransactions, setActualTransactions] = useState<Record<string, number>>({});
+  const [yearlyTotals, setYearlyTotals] = useState<YearlyTotal[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [chartsLoading, setChartsLoading] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
   const [hasExistingBudget, setHasExistingBudget] = useState(false);
 
@@ -129,9 +141,92 @@ export default function Budget() {
     }
   }, [user, isDemo, sampleData, selectedMonth, toast]);
 
+  const fetchYearlyTotals = useCallback(async (year: number) => {
+    setChartsLoading(true);
+    
+    if (isDemo) {
+      // Generate demo yearly data
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const demoYearlyData = monthNames.map((month, index) => {
+        const monthTransactions = sampleData.transactions?.filter((t: any) => {
+          const transactionDate = new Date(t.date);
+          return transactionDate.getFullYear() === year && transactionDate.getMonth() === index;
+        }) || [];
+        
+        const income = monthTransactions
+          .filter((t: any) => t.category === 'Income')
+          .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+        
+        const expenses = monthTransactions
+          .filter((t: any) => t.category !== 'Income')
+          .reduce((sum: number, t: any) => sum + Math.abs(Number(t.amount)), 0);
+        
+        return {
+          month,
+          income,
+          expenses,
+          net: income - expenses
+        };
+      });
+      
+      setYearlyTotals(demoYearlyData);
+      setChartsLoading(false);
+      return;
+    }
+
+    if (!user) {
+      setChartsLoading(false);
+      return;
+    }
+
+    try {
+      const yearStart = startOfYear(new Date(year, 0, 1));
+      const yearEnd = endOfYear(new Date(year, 0, 1));
+
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('date, category, amount')
+        .eq('user_id', user.id)
+        .eq('pending', false)
+        .gte('date', format(yearStart, 'yyyy-MM-dd'))
+        .lte('date', format(yearEnd, 'yyyy-MM-dd'));
+
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const yearlyData = monthNames.map((month, index) => {
+        const monthTransactions = transactions?.filter(t => {
+          const transactionDate = new Date(t.date);
+          return transactionDate.getMonth() === index;
+        }) || [];
+
+        const income = monthTransactions
+          .filter(t => t.category === 'Income')
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+        
+        const expenses = monthTransactions
+          .filter(t => t.category !== 'Income')
+          .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+
+        return {
+          month,
+          income,
+          expenses,
+          net: income - expenses
+        };
+      });
+
+      setYearlyTotals(yearlyData);
+    } catch (error) {
+      console.error('Error fetching yearly totals:', error);
+    } finally {
+      setChartsLoading(false);
+    }
+  }, [user, isDemo, sampleData]);
+
   useEffect(() => {
     fetchBudgetData();
-  }, [fetchBudgetData]);
+    const selectedYear = new Date(selectedMonth).getFullYear();
+    fetchYearlyTotals(selectedYear);
+  }, [fetchBudgetData, fetchYearlyTotals, selectedMonth]);
 
   const handleQuickStart = () => {
     const starterCategories: CategoryBudget[] = [
@@ -266,6 +361,21 @@ export default function Budget() {
     };
   };
 
+  const chartConfig = {
+    income: {
+      label: "Income",
+      color: "hsl(var(--chart-1))",
+    },
+    expenses: {
+      label: "Expenses",
+      color: "hsl(var(--chart-2))",
+    },
+    net: {
+      label: "Net",
+      color: "hsl(var(--chart-3))",
+    },
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -383,6 +493,99 @@ export default function Budget() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Totals Visuals */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Financial Overview</CardTitle>
+            <CardDescription>View your income, expenses, and net totals</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="monthly" className="w-full">
+              <TabsList>
+                <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                <TabsTrigger value="yearly">Yearly</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="monthly" className="space-y-4">
+                <div className="h-80">
+                  {chartsLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : (
+                    <ChartContainer config={chartConfig}>
+                      <BarChart
+                        data={[{
+                          period: 'This Month',
+                          income: summary.plannedIncome,
+                          expenses: summary.actualExpenses,
+                          net: summary.actualNet
+                        }]}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="period" />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="income" fill="var(--color-income)" />
+                        <Bar dataKey="expenses" fill="var(--color-expenses)" />
+                        <Bar dataKey="net" fill="var(--color-net)" />
+                      </BarChart>
+                    </ChartContainer>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="yearly" className="space-y-4">
+                <div className="h-80">
+                  {chartsLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : yearlyTotals.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      No data available for this year
+                    </div>
+                  ) : (
+                    <ChartContainer config={chartConfig}>
+                      <LineChart
+                        data={yearlyTotals}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="income" 
+                          stroke="var(--color-income)" 
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="expenses" 
+                          stroke="var(--color-expenses)" 
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="net" 
+                          stroke="var(--color-net)" 
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                        />
+                      </LineChart>
+                    </ChartContainer>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
         {/* Income Input */}
         <Card>
