@@ -108,6 +108,38 @@ export default function RecentTransactions() {
     }
   }, [viewMode, filteredTransactions]);
 
+  // Auto-categorize transactions
+  useEffect(() => {
+    if (isDemo || !user) return;
+    
+    const uncategorizedCount = transactions.filter(t => 
+      t.category === 'Other' || t.category === null
+    ).length;
+    
+    if (uncategorizedCount === 0) return;
+    
+    const lastRun = localStorage.getItem('aiCatLastRun');
+    if (lastRun) {
+      const lastRunTime = new Date(lastRun);
+      const now = new Date();
+      const hoursSinceLastRun = (now.getTime() - lastRunTime.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursSinceLastRun < 12) return; // Throttle to 12 hours
+    }
+    
+    // Auto-run categorization
+    const timer = setTimeout(() => {
+      autoCategorizeAllTransactions(true); // Silent auto-run
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [transactions, isDemo, user]);
+
+  // Count uncategorized transactions
+  const uncategorizedCount = transactions.filter(t => 
+    t.category === 'Other' || t.category === null
+  ).length;
+
   const fetchTransactions = async () => {
     try {
       const { data, error } = await supabase
@@ -180,7 +212,7 @@ export default function RecentTransactions() {
     }
   };
 
-  const autoCategorizeAllTransactions = async () => {
+  const autoCategorizeAllTransactions = async (silent = false) => {
     if (isDemo) {
       // Fallback to keyword-based categorization in demo mode
       const uncategorizedTransactions = transactions.filter(
@@ -221,10 +253,15 @@ export default function RecentTransactions() {
       // Refresh transactions to get updated data
       await fetchTransactions();
       
-      toast({
-        title: "AI categorization complete",
-        description: data.details || `Updated ${data.updatedCount} transactions`,
-      });
+      // Store timestamp for throttling
+      localStorage.setItem('aiCatLastRun', new Date().toISOString());
+      
+      if (!silent) {
+        toast({
+          title: "AI categorization complete",
+          description: data.details || `Updated ${data.updatedCount} transactions`,
+        });
+      }
 
       // If some transactions still need categorization, fall back to keyword-based
       if (data.updatedCount === 0) {
@@ -314,14 +351,14 @@ export default function RecentTransactions() {
               <>
                 <TransactionSyncButton onSyncComplete={fetchTransactions} />
                 <Button
-                  onClick={autoCategorizeAllTransactions}
+                  onClick={() => autoCategorizeAllTransactions()}
                   size="sm"
                   variant="outline"
                   disabled={isLoading}
                   className="gap-2"
                 >
                   <Sparkles className="h-4 w-4" />
-                  {isLoading ? 'Categorizing with AI...' : 'AI Auto-Categorize'}
+                  {isLoading ? 'Categorizing with AI...' : `AI Auto-Categorize ${uncategorizedCount > 0 ? `(${uncategorizedCount})` : ''}`}
                 </Button>
               </>
             )}
