@@ -317,16 +317,17 @@ export default function RecentTransactions() {
         });
       } else {
         const errorMessage = error?.message || "Unknown error";
-        let description = "Unable to categorize transactions. Please try again.";
+        const remainingCount = uncategorizedTransactions.length;
+        let description = `${remainingCount} transactions still need categorization. Please categorize them manually using the dropdown menus.`;
         
         if (errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid session')) {
           description = "Please refresh the page and try again. Your session may have expired.";
         } else if (errorMessage.includes('not configured')) {
-          description = "AI service is temporarily unavailable. Please try keyword categorization by clicking 'Filter to Other' and updating categories manually.";
+          description = `AI service is temporarily unavailable. Please categorize the remaining ${remainingCount} transactions manually using the dropdown menus below.`;
         }
         
         toast({
-          title: "Categorization failed",
+          title: "Please categorize remaining transactions",
           description,
           variant: "destructive",
         });
