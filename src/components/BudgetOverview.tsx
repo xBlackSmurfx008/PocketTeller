@@ -143,7 +143,7 @@ export default function BudgetOverview() {
     }
   }, [user, isDemo, sampleData]);
 
-  const handleCreateBudget = async () => {
+  async function handleCreateBudget() {
     if (isDemo) {
       navigate('/demo');
       return;
@@ -194,7 +194,7 @@ export default function BudgetOverview() {
     } finally {
       setCreating(false);
     }
-  };
+  }
 
   useEffect(() => {
     fetchBudgetData();
