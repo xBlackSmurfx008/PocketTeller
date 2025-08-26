@@ -124,7 +124,8 @@ export default function RecentTransactions() {
       const now = new Date();
       const hoursSinceLastRun = (now.getTime() - lastRunTime.getTime()) / (1000 * 60 * 60);
       
-      if (hoursSinceLastRun < 12) return; // Throttle to 12 hours
+      // Reduced throttle to 1 hour instead of 12 for better UX
+      if (hoursSinceLastRun < 1) return; 
     }
     
     // Auto-run categorization
@@ -324,6 +325,13 @@ export default function RecentTransactions() {
           description = "Please refresh the page and try again. Your session may have expired.";
         } else if (errorMessage.includes('not configured')) {
           description = `AI service is temporarily unavailable. Please categorize the remaining ${remainingCount} transactions manually using the dropdown menus below.`;
+        } else if (errorMessage.includes('rate limited') || errorMessage.includes('429')) {
+          description = `AI service is temporarily rate limited. Please try again in a few minutes, or categorize the remaining ${remainingCount} transactions manually.`;
+        } else if (errorMessage.includes('quota') || errorMessage.includes('limit exceeded')) {
+          description = `AI service quota exceeded. Please try again later, or categorize the remaining ${remainingCount} transactions manually.`;
+        } else {
+          console.error('Categorization error details:', error);
+          description = `AI categorization failed: ${errorMessage}. Please categorize the remaining ${remainingCount} transactions manually.`;
         }
         
         toast({
@@ -367,7 +375,11 @@ export default function RecentTransactions() {
               <>
                 <TransactionSyncButton onSyncComplete={fetchTransactions} />
                 <Button
-                  onClick={() => autoCategorizeAllTransactions()}
+                  onClick={() => {
+                    // Clear any restrictive cache and run immediately
+                    localStorage.removeItem('aiCatLastRun');
+                    autoCategorizeAllTransactions();
+                  }}
                   size="sm"
                   variant="outline"
                   disabled={isLoading}

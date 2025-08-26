@@ -137,8 +137,17 @@ Return only a JSON array of objects, no additional text.`;
     );
 
     if (!geminiResponse.ok) {
-      console.error('Gemini API error:', await geminiResponse.text());
-      throw new Error('Gemini API request failed');
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error - Status:', geminiResponse.status, 'Response:', errorText);
+      
+      // Handle specific Gemini API errors
+      if (geminiResponse.status === 429) {
+        throw new Error('AI service is temporarily rate limited. Please try again in a few minutes.');
+      } else if (geminiResponse.status === 403) {
+        throw new Error('AI service access denied. Please check your API configuration.');
+      } else {
+        throw new Error(`AI service error (${geminiResponse.status}): ${errorText}`);
+      }
     }
 
     const geminiData = await geminiResponse.json();
