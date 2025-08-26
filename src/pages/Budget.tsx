@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,9 +32,11 @@ export default function Budget() {
   } = useBudgetData(selectedMonth);
 
   // Check if we need to show setup screen
-  if (!hasExistingBudget && !loading && !isDemo) {
-    setShowSetup(true);
-  }
+  useEffect(() => {
+    if (!hasExistingBudget && !loading && !isDemo) {
+      setShowSetup(true);
+    }
+  }, [hasExistingBudget, loading, isDemo]);
 
   const handleQuickStart = () => {
     setBudgetData({
