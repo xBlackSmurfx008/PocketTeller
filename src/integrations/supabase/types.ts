@@ -637,13 +637,22 @@ export type Database = {
         Returns: string
       }
       decrypt_plaid_token_with_audit: {
-        Args: {
-          encrypted_data: Json
-          encryption_key: string
-          function_name?: string
-          ip_address?: string
-          user_agent?: string
-        }
+        Args:
+          | {
+              encrypted_data: Json
+              encryption_key: string
+              function_name?: string
+              ip_address?: string
+              target_user_id?: string
+              user_agent?: string
+            }
+          | {
+              encrypted_data: Json
+              encryption_key: string
+              function_name?: string
+              ip_address?: string
+              user_agent?: string
+            }
         Returns: string
       }
       encrypt_plaid_token: {

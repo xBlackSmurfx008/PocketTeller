@@ -49,6 +49,23 @@ const getPlaidBaseUrl = (env: string) => {
   return mappedUrl || null;
 };
 
+// Safely parse client IP from headers
+const getClientIP = (req: Request): string | null => {
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : 
+                   req.headers.get('x-real-ip');
+  
+  // Validate that it's a valid IP format before returning
+  if (clientIP && (
+    /^(\d{1,3}\.){3}\d{1,3}$/.test(clientIP) ||  // IPv4
+    /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/.test(clientIP) // Basic IPv6 check
+  )) {
+    return clientIP;
+  }
+  
+  return null;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -128,8 +145,9 @@ serve(async (req) => {
         },
         encryption_key: plaidEncryptionKey,
         function_name: 'plaid-disconnect',
-        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
-        user_agent: req.headers.get('user-agent') || 'unknown'
+        ip_address: getClientIP(req),
+        user_agent: req.headers.get('user-agent') || 'unknown',
+        target_user_id: user.id
       });
 
     if (decryptError || !decryptedToken) {
@@ -165,7 +183,7 @@ serve(async (req) => {
           user_id: user.id,
           access_type: 'revoke',
           function_name: 'plaid-disconnect',
-          ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+          ip_address: getClientIP(req),
           user_agent: req.headers.get('user-agent') || 'unknown',
           success: false,
           error_message: removeData.error_message || 'Unknown Plaid error'
@@ -209,7 +227,7 @@ serve(async (req) => {
         user_id: user.id,
         access_type: 'revoke',
         function_name: 'plaid-disconnect',
-        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        ip_address: getClientIP(req),
         user_agent: req.headers.get('user-agent') || 'unknown',
         success: true
       });

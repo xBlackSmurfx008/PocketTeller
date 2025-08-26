@@ -19,23 +19,38 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
 
   const onSuccess = useCallback(async (public_token: string, metadata: any) => {
     setIsConnecting(true);
+    
+    // Show saving toast immediately
+    toast({
+      title: "Saving connection...",
+      description: "Encrypting and storing your bank connection securely.",
+    });
+
     try {
+      console.log('Starting Plaid token exchange...');
       const { data, error } = await supabase.functions.invoke('plaid-link-exchange', {
         body: { public_token }
       });
 
-      if (error) throw error;
+      console.log('Plaid token exchange response:', { data, error });
 
+      if (error) {
+        console.error('Plaid exchange error:', error);
+        throw new Error(error.message || 'Failed to exchange token');
+      }
+
+      console.log('Bank connection successful');
       toast({
         title: "Bank Connected",
         description: `Successfully connected ${metadata.institution.name}`,
       });
       onConnectionChange();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error connecting bank:', error);
+      const errorMessage = error?.message || error?.toString() || "Failed to connect your bank account";
       toast({
         title: "Connection Failed",
-        description: "Failed to connect your bank account. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
