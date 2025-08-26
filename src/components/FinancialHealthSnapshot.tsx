@@ -81,12 +81,30 @@ export default function FinancialHealthSnapshot() {
         )
         .subscribe();
 
+      const transactionsChannel = supabase
+        .channel('transactions-changes-snapshot')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'transactions',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            console.log('Transactions updated, refreshing financial data');
+            debouncedFetchFinancialData();
+          }
+        )
+        .subscribe();
+
       return () => {
         if (debounceRef.current) {
           clearTimeout(debounceRef.current);
         }
         supabase.removeChannel(accountsChannel);
         supabase.removeChannel(budgetChannel);
+        supabase.removeChannel(transactionsChannel);
       };
     } else {
       setLoading(false);
@@ -105,22 +123,53 @@ export default function FinancialHealthSnapshot() {
 
       const totalBalance = accounts?.reduce((sum, account) => sum + Number(account.balance), 0) || 0;
 
-      // Fetch budget data for monthly income/expenses
+      // Fetch budget for fallback values
       const { data: budget, error: budgetError } = await supabase
         .from('budget')
         .select('income, expenses')
         .eq('user_id', user?.id)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (budgetError && budgetError.code !== 'PGRST116') {
         console.error('Budget fetch error:', budgetError);
       }
 
+      // Compute monthly income/expenses from transactions for current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const start = startOfMonth.toISOString().split('T')[0];
+      const end = now.toISOString().split('T')[0];
+
+      const { data: monthlyTxns, error: txnsError } = await supabase
+        .from('transactions')
+        .select('amount, category, date')
+        .eq('user_id', user?.id)
+        .gte('date', start)
+        .lte('date', end);
+
+      if (txnsError) {
+        console.error('Transactions fetch error:', txnsError);
+      }
+
+      let monthlyIncomeCalc = 0;
+      let monthlyExpensesCalc = 0;
+      if (monthlyTxns && monthlyTxns.length > 0) {
+        for (const t of monthlyTxns as any[]) {
+          const amtNum = Number(t.amount) || 0;
+          const absAmt = Math.abs(amtNum);
+          if ((t.category || '').toLowerCase() === 'income') {
+            monthlyIncomeCalc += absAmt;
+          } else {
+            monthlyExpensesCalc += amtNum < 0 ? -amtNum : absAmt;
+          }
+        }
+      }
+
       setData({
         totalBalance,
-        monthlyIncome: budget?.income ? Number(budget.income) : 0,
-        monthlyExpenses: budget?.expenses ? Number(budget.expenses) : 0,
+        monthlyIncome: (monthlyTxns && monthlyTxns.length > 0) ? monthlyIncomeCalc : (budget?.income ? Number(budget.income) : 0),
+        monthlyExpenses: (monthlyTxns && monthlyTxns.length > 0) ? monthlyExpensesCalc : (budget?.expenses ? Number(budget.expenses) : 0),
       });
     } catch (error) {
       console.error('Error fetching financial data:', error);
