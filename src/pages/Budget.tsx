@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { autoCategorizeTransaction } from '@/utils/transactionCategorizer';
 
 const SUGGESTED_CATEGORIES = [
   'Housing', 'Transportation', 'Food & Dining', 'Utilities', 'Healthcare', 
@@ -69,24 +70,49 @@ export default function Budget() {
           { id: '6', name: 'Savings', planned: 500, actual: 0 }
         ]
       });
-      // Calculate demo actuals from sample transactions
+      // Calculate demo actuals from sample transactions - filter to selected month only
       const demoActuals: Record<string, number> = {};
       let monthlyIncome = 0, monthlyExpenses = 0;
       let yearlyIncome = 0, yearlyExpenses = 0;
       
+      // Category name aliasing for consistency
+      const normalizeCategory = (category: string) => {
+        const aliases: Record<string, string> = {
+          'Bills & Utilities': 'Utilities',
+          'Food & Dining': 'Food & Dining',
+          'Transportation': 'Transportation',
+          'Entertainment': 'Entertainment',
+          'Healthcare': 'Healthcare',
+          'Shopping': 'Shopping',
+          'Travel': 'Travel',
+          'Education': 'Education',
+          'Savings': 'Savings',
+          'Investments': 'Investments',
+          'Income': 'Income'
+        };
+        return aliases[category] || category;
+      };
+      
       sampleData.transactions?.forEach((transaction: any) => {
-        const category = transaction.category || 'Other';
+        const rawCategory = transaction.category || autoCategorizeTransaction(transaction.description || '', transaction.amount);
+        const category = normalizeCategory(rawCategory);
         const amount = Math.abs(Number(transaction.amount));
         const transactionDate = new Date(transaction.date);
         const transactionMonth = format(transactionDate, 'yyyy-MM');
         const transactionYear = transactionDate.getFullYear();
         const currentYear = new Date(selectedMonth).getFullYear();
         
-        demoActuals[category] = (demoActuals[category] || 0) + amount;
+        // Only include expense categories in actuals (exclude Income)
+        if (category !== 'Income') {
+          // For selected month actuals only
+          if (transactionMonth === selectedMonth) {
+            demoActuals[category] = (demoActuals[category] || 0) + amount;
+          }
+        }
         
         // Calculate monthly totals for selected month
         if (transactionMonth === selectedMonth) {
-          if (category === 'Income' || Number(transaction.amount) < 0) {
+          if (category === 'Income') {
             monthlyIncome += amount;
           } else {
             monthlyExpenses += amount;
@@ -95,7 +121,7 @@ export default function Budget() {
         
         // Calculate yearly totals for selected year
         if (transactionYear === currentYear) {
-          if (category === 'Income' || Number(transaction.amount) < 0) {
+          if (category === 'Income') {
             yearlyIncome += amount;
           } else {
             yearlyExpenses += amount;
@@ -120,7 +146,7 @@ export default function Budget() {
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (budget) {
         setHasExistingBudget(true);
@@ -155,9 +181,13 @@ export default function Budget() {
       transactions?.forEach(transaction => {
         const category = transaction.category;
         const amount = Math.abs(Number(transaction.amount));
-        actuals[category] = (actuals[category] || 0) + amount;
         
-        if (category === 'Income' || Number(transaction.amount) < 0) {
+        // Only include expense categories in actuals (exclude Income)
+        if (category !== 'Income') {
+          actuals[category] = (actuals[category] || 0) + amount;
+        }
+        
+        if (category === 'Income') {
           monthlyIncome += amount;
         } else {
           monthlyExpenses += amount;
@@ -183,7 +213,7 @@ export default function Budget() {
       let yearlyIncome = 0, yearlyExpenses = 0;
       yearlyTransactions?.forEach(transaction => {
         const amount = Math.abs(Number(transaction.amount));
-        if (transaction.category === 'Income' || Number(transaction.amount) < 0) {
+        if (transaction.category === 'Income') {
           yearlyIncome += amount;
         } else {
           yearlyExpenses += amount;
@@ -330,7 +360,10 @@ export default function Budget() {
 
   const calculateSummary = () => {
     const plannedExpenses = budgetData.categories.reduce((sum, cat) => sum + cat.planned, 0);
-    const actualExpenses = Object.values(actualTransactions).reduce((sum, val) => sum + val, 0);
+    // Only sum expense categories, excluding Income
+    const actualExpenses = Object.entries(actualTransactions)
+      .filter(([category]) => category !== 'Income')
+      .reduce((sum, [_, amount]) => sum + amount, 0);
     
     return {
       plannedIncome: budgetData.income,
