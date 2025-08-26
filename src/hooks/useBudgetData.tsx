@@ -5,6 +5,7 @@ import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { autoCategorizeTransaction } from '@/utils/transactionCategorizer';
+import { normalizeCategoryName } from '@/utils/categoryNormalizer';
 
 export interface CategoryBudget {
   id: string;
@@ -36,22 +37,9 @@ export const useBudgetData = (selectedMonth: string) => {
   const [loading, setLoading] = useState(true);
   const [hasExistingBudget, setHasExistingBudget] = useState(false);
 
-  // Category name aliasing for consistency
+  // Use centralized category normalization
   const normalizeCategory = useCallback((category: string) => {
-    const aliases: Record<string, string> = {
-      'Bills & Utilities': 'Utilities',
-      'Food & Dining': 'Food & Dining',
-      'Transportation': 'Transportation',
-      'Entertainment': 'Entertainment',
-      'Healthcare': 'Healthcare',
-      'Shopping': 'Shopping',
-      'Travel': 'Travel',
-      'Education': 'Education',
-      'Savings': 'Savings',
-      'Investments': 'Investments',
-      'Income': 'Income'
-    };
-    return aliases[category] || category;
+    return normalizeCategoryName(category);
   }, []);
 
   const fetchBudgetData = useCallback(async () => {
