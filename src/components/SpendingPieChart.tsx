@@ -114,38 +114,36 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
         <CardTitle className="text-xl font-semibold">Spending by Category</CardTitle>
       </CardHeader>
       <CardContent className="pb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-          <div className="flex-shrink-0">
-            <div className="h-72 w-72 mx-auto">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    dataKey="value"
-                    nameKey="category"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    innerRadius={50}
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={2}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={CATEGORY_COLORS[entry.category] || '#C8C8C8'} 
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="flex flex-col items-center space-y-6">
+          <div className="h-72 w-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="category"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  innerRadius={50}
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                  stroke="rgba(255,255,255,0.2)"
+                  strokeWidth={2}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={CATEGORY_COLORS[entry.category] || '#C8C8C8'} 
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
           
-          <div className="flex-1">
+          <div className="w-full">
             <CustomLegend />
           </div>
         </div>
