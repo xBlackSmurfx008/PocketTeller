@@ -46,15 +46,19 @@ export const useFileUpload = () => {
         throw uploadError;
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL for private bucket (valid for 1 hour)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('chat-uploads')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 3600);
+
+      if (signedUrlError) {
+        throw signedUrlError;
+      }
 
       const attachment: FileAttachment = {
         name: file.name,
         type: file.type,
-        url: publicUrl,
+        url: signedUrlData.signedUrl,
         path: filePath,
         status: 'ready'
       };
