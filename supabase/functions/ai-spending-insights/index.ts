@@ -37,24 +37,37 @@ serve(async (req) => {
   }
 
   try {
+    // Extract JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Unauthorized',
+          details: 'Authorization header missing'
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Verify user authentication using the JWT
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     if (authError || !user) {
       console.error('Auth error:', authError);
       return new Response(
         JSON.stringify({ 
           error: 'Unauthorized',
-          details: 'Authentication required to generate spending insights'
+          details: authError?.message || 'Invalid session'
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -62,7 +75,7 @@ serve(async (req) => {
 
     const { days = 60, topN = 6 }: InsightsRequest = await req.json();
     
-    // Fetch recent transactions (expenses only)
+    // Fetch recent transactions (expenses only - exclude Income category)
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     
@@ -71,7 +84,7 @@ serve(async (req) => {
       .select('id, description, amount, date, category, merchant_name')
       .eq('user_id', user.id)
       .eq('pending', false)
-      .lt('amount', 0) // Expenses only
+      .neq('category', 'Income') // Exclude income transactions
       .gte('date', cutoffDate.toISOString().split('T')[0])
       .order('date', { ascending: false });
 

@@ -27,9 +27,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function SpendingPieChart({ transactions }: SpendingPieChartProps) {
-  // Calculate category totals for expenses only (negative amounts)
+  // Calculate category totals for expenses only (exclude Income category)
   const categoryTotals = transactions
-    .filter(t => t.amount < 0) // Expenses only
+    .filter(t => t.category !== 'Income') // Exclude income transactions
     .reduce((acc, transaction) => {
       const category = transaction.category || 'Other';
       const amount = Math.abs(transaction.amount);

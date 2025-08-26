@@ -247,7 +247,8 @@ export default function RecentTransactions() {
 
       if (error) {
         console.error('AI categorization error:', error);
-        throw new Error('AI categorization failed');
+        const errorMessage = error.details || error.message || "AI categorization failed";
+        throw new Error(errorMessage);
       }
 
       // Refresh transactions to get updated data
@@ -257,9 +258,14 @@ export default function RecentTransactions() {
       localStorage.setItem('aiCatLastRun', new Date().toISOString());
       
       if (!silent) {
+        let description = data.details || `Updated ${data.updatedCount} transactions`;
+        if (data.remainingUncategorized > 0) {
+          description += `. ${data.remainingUncategorized} transactions still need manual categorization.`;
+        }
+        
         toast({
           title: "AI categorization complete",
-          description: data.details || `Updated ${data.updatedCount} transactions`,
+          description,
         });
       }
 
@@ -310,9 +316,18 @@ export default function RecentTransactions() {
           description: `Categorized ${categorizedCount} transactions using keywords`,
         });
       } else {
+        const errorMessage = error?.message || "Unknown error";
+        let description = "Unable to categorize transactions. Please try again.";
+        
+        if (errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid session')) {
+          description = "Please refresh the page and try again. Your session may have expired.";
+        } else if (errorMessage.includes('not configured')) {
+          description = "AI service is temporarily unavailable. Please try keyword categorization by clicking 'Filter to Other' and updating categories manually.";
+        }
+        
         toast({
           title: "Categorization failed",
-          description: "Unable to categorize transactions. Please try again.",
+          description,
           variant: "destructive",
         });
       }
