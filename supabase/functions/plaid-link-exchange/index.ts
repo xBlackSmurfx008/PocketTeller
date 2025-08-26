@@ -100,6 +100,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get user from auth header
@@ -131,6 +132,8 @@ serve(async (req) => {
       });
     }
 
+    console.log('Starting Plaid token exchange for user:', user.id);
+
     // Exchange public token for access token
     const exchangeResponse = await fetch(`${plaidBaseUrl}/item/public_token/exchange`, {
       method: 'POST',
@@ -157,28 +160,45 @@ serve(async (req) => {
       });
     }
 
+    console.log('Plaid token exchange successful, proceeding with encryption');
+
     // Encrypt and store the access token securely
     const encryptionKey = Deno.env.get('PLAID_ENCRYPTION_KEY');
     if (!encryptionKey) {
+      console.error('PLAID_ENCRYPTION_KEY not found in environment');
       return new Response(JSON.stringify({ error: 'Encryption key not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('Calling encrypt_plaid_token function');
     const { data: encryptionResult, error: encryptError } = await supabase
       .rpc('encrypt_plaid_token', { 
         token: exchangeData.access_token,
         encryption_key: encryptionKey
       });
 
-    if (encryptError || !encryptionResult) {
+    if (encryptError) {
       console.error('Token encryption failed:', encryptError);
-      return new Response(JSON.stringify({ error: 'Failed to encrypt token' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Failed to encrypt token',
+        details: encryptError.message 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    if (!encryptionResult) {
+      console.error('Encryption result is null or empty');
+      return new Response(JSON.stringify({ error: 'Encryption returned no result' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Token encryption successful, saving to profile');
 
     // Try to update existing profile first
     const { data: updateResult, error: updateError } = await supabase
@@ -267,7 +287,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in plaid-link-exchange:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      stack: error.stack 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
