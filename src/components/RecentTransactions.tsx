@@ -4,36 +4,23 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ChevronDown, ChevronRight, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 import AddTransactionDialog from '@/components/AddTransactionDialog';
 import { TransactionSyncButton } from '@/components/TransactionSyncButton';
-
-interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  category: string;
-  account_id?: string;
-}
-
-const CATEGORIES = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Bills & Utilities',
-  'Healthcare',
-  'Travel',
-  'Education',
-  'Income',
-  'Other'
-];
+import { 
+  CATEGORIES, 
+  autoCategorizeTransaction, 
+  groupTransactionsByCategory, 
+  getCategoryTotals,
+  type Transaction,
+  type GroupedTransactions 
+} from '@/utils/transactionCategorizer';
 
 export default function RecentTransactions() {
   const { user } = useAuth();
@@ -41,10 +28,14 @@ export default function RecentTransactions() {
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [groupedTransactions, setGroupedTransactions] = useState<GroupedTransactions>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grouped'>('grouped');
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+  const [autoCategorizingCount, setAutoCategorizingCount] = useState(0);
 
   useEffect(() => {
     if (isDemo && !user) {
@@ -101,7 +92,17 @@ export default function RecentTransactions() {
 
   useEffect(() => {
     filterTransactions();
-  }, [transactions, searchTerm, categoryFilter]);
+    if (viewMode === 'grouped') {
+      const grouped = groupTransactionsByCategory(filteredTransactions);
+      setGroupedTransactions(grouped);
+      // Auto-open categories that have transactions
+      const newOpenCategories: Record<string, boolean> = {};
+      Object.keys(grouped).forEach(category => {
+        newOpenCategories[category] = true;
+      });
+      setOpenCategories(newOpenCategories);
+    }
+  }, [transactions, searchTerm, categoryFilter, viewMode, filteredTransactions]);
 
   const fetchTransactions = async () => {
     try {
@@ -175,6 +176,82 @@ export default function RecentTransactions() {
     }
   };
 
+  const autoCategorizeAllTransactions = async () => {
+    if (!user || isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Auto-categorization disabled in demo",
+      });
+      return;
+    }
+
+    const uncategorizedTransactions = transactions.filter(t => 
+      !t.category_source || t.category_source === 'auto' || t.category === 'Other'
+    );
+
+    if (uncategorizedTransactions.length === 0) {
+      toast({
+        title: "No transactions to categorize",
+        description: "All transactions are already categorized",
+      });
+      return;
+    }
+
+    setAutoCategorizingCount(uncategorizedTransactions.length);
+    
+    try {
+      const updates = uncategorizedTransactions.map(transaction => {
+        const newCategory = autoCategorizeTransaction(transaction.description, transaction.amount);
+        return {
+          id: transaction.id,
+          category: newCategory,
+          category_source: 'auto'
+        };
+      });
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('transactions')
+          .update({ 
+            category: update.category,
+            category_source: update.category_source
+          })
+          .eq('id', update.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setTransactions(prev => 
+          prev.map(t => 
+            t.id === update.id ? { ...t, category: update.category } : t
+          )
+        );
+      }
+
+      toast({
+        title: "Success",
+        description: `Auto-categorized ${updates.length} transactions`,
+      });
+    } catch (error) {
+      console.error('Error auto-categorizing transactions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to auto-categorize transactions",
+        variant: "destructive",
+      });
+    } finally {
+      setAutoCategorizingCount(0);
+    }
+  };
+
+  const toggleCategory = (category: string) => {
+    setOpenCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
   if (loading) {
     return (
       <Card>
@@ -195,7 +272,19 @@ export default function RecentTransactions() {
           <CardTitle>Recent Transactions</CardTitle>
           <div className="flex gap-2 w-full sm:w-auto">
             {user && !isDemo && (
-              <TransactionSyncButton onSyncComplete={fetchTransactions} />
+              <>
+                <TransactionSyncButton onSyncComplete={fetchTransactions} />
+                <Button
+                  onClick={autoCategorizeAllTransactions}
+                  size="sm"
+                  variant="outline"
+                  disabled={autoCategorizingCount > 0}
+                  className="gap-2"
+                >
+                  <Zap className="h-4 w-4" />
+                  {autoCategorizingCount > 0 ? `Categorizing ${autoCategorizingCount}...` : 'Auto-Categorize'}
+                </Button>
+              </>
             )}
             <Button 
               onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding transactions disabled in demo" }) : setShowAddDialog(true)} 
@@ -209,29 +298,48 @@ export default function RecentTransactions() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search transactions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border shadow-lg z-50">
+                <SelectItem value="all">All Categories</SelectItem>
+                {CATEGORIES.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border border-border shadow-lg z-50">
-              <SelectItem value="all">All Categories</SelectItem>
-              {CATEGORIES.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              List View
+            </Button>
+            <Button
+              variant={viewMode === 'grouped' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grouped')}
+            >
+              Group by Category
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2 max-h-[50vh] sm:max-h-[400px] overflow-y-auto">
@@ -239,7 +347,7 @@ export default function RecentTransactions() {
             <div className="text-center text-muted-foreground py-8">
               No transactions found
             </div>
-          ) : (
+          ) : viewMode === 'list' ? (
             filteredTransactions.map((transaction) => (
               <div key={transaction.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border border-border rounded-lg gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
@@ -270,6 +378,68 @@ export default function RecentTransactions() {
                 </Badge>
               </div>
             ))
+          ) : (
+            Object.entries(groupedTransactions)
+              .sort(([a], [b]) => {
+                const totalsA = getCategoryTotals(groupedTransactions)[a] || 0;
+                const totalsB = getCategoryTotals(groupedTransactions)[b] || 0;
+                return totalsB - totalsA; // Sort by total amount descending
+              })
+              .map(([category, categoryTransactions]) => {
+                const categoryTotal = getCategoryTotals(groupedTransactions)[category] || 0;
+                const isOpen = openCategories[category];
+                
+                return (
+                  <Collapsible key={category} open={isOpen} onOpenChange={() => toggleCategory(category)}>
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-2">
+                          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          <span className="font-medium">{category}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {categoryTransactions.length} transaction{categoryTransactions.length !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                        <Badge variant="outline" className="text-sm">
+                          ${categoryTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </Badge>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2 mt-2">
+                      {categoryTransactions.map((transaction) => (
+                        <div key={transaction.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 ml-6 border border-border rounded-lg gap-3 sm:gap-4 bg-muted/20">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+                              <span className="font-medium text-sm sm:text-base truncate">{transaction.description}</span>
+                              <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
+                                {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                              </span>
+                            </div>
+                            <Select
+                              value={transaction.category}
+                              onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
+                            >
+                              <SelectTrigger className="w-full sm:w-fit h-8 sm:h-6 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background border border-border shadow-lg z-50">
+                                {CATEGORIES.map(cat => (
+                                  <SelectItem key={cat} value={cat}>
+                                    {cat}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Badge variant={transaction.amount >= 0 ? "default" : "destructive"} className="shrink-0 text-xs sm:text-sm">
+                            {transaction.amount >= 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </Badge>
+                        </div>
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })
           )}
         </div>
       </CardContent>
