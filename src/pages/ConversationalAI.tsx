@@ -724,9 +724,9 @@ const ConversationalAI = () => {
           )}
 
           {/* Messages Display */}
-          <div className={`flex-1 ${isMobile ? 'px-4 pb-2' : ''}`}>
-            <Card className={`${isMobile ? 'h-full' : 'mb-4'}`}>
-              <CardContent className="p-4 h-full">
+          <div className={`flex-1 ${isMobile ? 'px-4 pb-0' : ''}`}>
+            <Card className={`${isMobile ? 'h-full' : ''}`}>
+              <CardContent className="p-4 pb-0 h-full">
                 <ScrollArea className={`${isMobile ? 'h-full' : 'h-[400px]'} pr-4`}>
                   {/* Prompt Suggestions in Chat */}
                   {showPromptSuggestions && messages.length === 0 && (
