@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
@@ -46,6 +47,23 @@ const getPlaidBaseUrl = (env: string) => {
   console.log('Mapped URL for', sanitized, ':', mappedUrl);
   
   return mappedUrl || null;
+};
+
+// Safely parse client IP from headers
+const getClientIP = (req: Request): string | null => {
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : 
+                   req.headers.get('x-real-ip');
+  
+  // Validate that it's a valid IP format before returning
+  if (clientIP && (
+    /^(\d{1,3}\.){3}\d{1,3}$/.test(clientIP) ||  // IPv4
+    /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/.test(clientIP) // Basic IPv6 check
+  )) {
+    return clientIP;
+  }
+  
+  return null;
 };
 
 serve(async (req) => {
@@ -216,11 +234,8 @@ serve(async (req) => {
       });
     }
 
-    // Safely parse client IP from x-forwarded-for (may contain multiple IPs)
-    const forwardedFor = req.headers.get('x-forwarded-for');
-    const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
+    // Safely get client IP for audit logging
+    const clientIP = getClientIP(req);
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
     // Log the encryption in audit trail
@@ -230,7 +245,7 @@ serve(async (req) => {
         user_id: user.id,
         access_type: 'encrypt',
         function_name: 'plaid-link-exchange',
-        ip_address: clientIP,
+        ip_address: clientIP, // Will be null if invalid IP, which is fine for inet type
         user_agent: userAgent,
         success: true
       });
