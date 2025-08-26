@@ -124,6 +124,9 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
   };
 
   const connectBank = async () => {
+    // Prevent double invocation
+    if (isConnecting) return;
+    
     if (!linkToken) {
       const token = await fetchLinkToken();
       if (!token) return;
@@ -133,11 +136,10 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       open();
     } else {
       toast({
-        title: "Plaid Not Ready",
-        description: "Please wait a moment and try again.",
-        variant: "destructive",
+        title: "Initializing Connection",
+        description: "Preparing your bank connection...",
       });
-      setIsConnecting(false);
+      // Don't reset isConnecting here - let useEffect handle the auto-open
     }
   };
 
