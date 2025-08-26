@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 
 const SUGGESTED_CATEGORIES = [
   'Housing', 'Transportation', 'Food & Dining', 'Utilities', 'Healthcare', 
@@ -32,6 +33,12 @@ interface BudgetData {
   categories: CategoryBudget[];
 }
 
+interface TotalsData {
+  income: number;
+  expenses: number;
+  net: number;
+}
+
 export default function Budget() {
   const { user } = useAuth();
   const { isDemo, sampleData } = useDemo();
@@ -41,6 +48,8 @@ export default function Budget() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [budgetData, setBudgetData] = useState<BudgetData>({ income: 0, categories: [] });
   const [actualTransactions, setActualTransactions] = useState<Record<string, number>>({});
+  const [monthlyTotals, setMonthlyTotals] = useState<TotalsData>({ income: 0, expenses: 0, net: 0 });
+  const [yearlyTotals, setYearlyTotals] = useState<TotalsData>({ income: 0, expenses: 0, net: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
@@ -62,11 +71,41 @@ export default function Budget() {
       });
       // Calculate demo actuals from sample transactions
       const demoActuals: Record<string, number> = {};
+      let monthlyIncome = 0, monthlyExpenses = 0;
+      let yearlyIncome = 0, yearlyExpenses = 0;
+      
       sampleData.transactions?.forEach((transaction: any) => {
         const category = transaction.category || 'Other';
-        demoActuals[category] = (demoActuals[category] || 0) + Math.abs(Number(transaction.amount));
+        const amount = Math.abs(Number(transaction.amount));
+        const transactionDate = new Date(transaction.date);
+        const transactionMonth = format(transactionDate, 'yyyy-MM');
+        const transactionYear = transactionDate.getFullYear();
+        const currentYear = new Date(selectedMonth).getFullYear();
+        
+        demoActuals[category] = (demoActuals[category] || 0) + amount;
+        
+        // Calculate monthly totals for selected month
+        if (transactionMonth === selectedMonth) {
+          if (category === 'Income' || Number(transaction.amount) < 0) {
+            monthlyIncome += amount;
+          } else {
+            monthlyExpenses += amount;
+          }
+        }
+        
+        // Calculate yearly totals for selected year
+        if (transactionYear === currentYear) {
+          if (category === 'Income' || Number(transaction.amount) < 0) {
+            yearlyIncome += amount;
+          } else {
+            yearlyExpenses += amount;
+          }
+        }
       });
+      
       setActualTransactions(demoActuals);
+      setMonthlyTotals({ income: monthlyIncome, expenses: monthlyExpenses, net: monthlyIncome - monthlyExpenses });
+      setYearlyTotals({ income: yearlyIncome, expenses: yearlyExpenses, net: yearlyIncome - yearlyExpenses });
       setHasExistingBudget(true);
       setLoading(false);
       return;
@@ -111,11 +150,47 @@ export default function Budget() {
         .lte('date', format(monthEnd, 'yyyy-MM-dd'));
 
       const actuals: Record<string, number> = {};
+      let monthlyIncome = 0, monthlyExpenses = 0;
+      
       transactions?.forEach(transaction => {
         const category = transaction.category;
-        actuals[category] = (actuals[category] || 0) + Math.abs(Number(transaction.amount));
+        const amount = Math.abs(Number(transaction.amount));
+        actuals[category] = (actuals[category] || 0) + amount;
+        
+        if (category === 'Income' || Number(transaction.amount) < 0) {
+          monthlyIncome += amount;
+        } else {
+          monthlyExpenses += amount;
+        }
       });
+      
       setActualTransactions(actuals);
+      setMonthlyTotals({ income: monthlyIncome, expenses: monthlyExpenses, net: monthlyIncome - monthlyExpenses });
+      
+      // Fetch yearly totals
+      const currentYear = new Date(selectedMonth).getFullYear();
+      const yearStart = startOfYear(new Date(currentYear, 0, 1));
+      const yearEnd = endOfYear(new Date(currentYear, 11, 31));
+      
+      const { data: yearlyTransactions } = await supabase
+        .from('transactions')
+        .select('category, amount')
+        .eq('user_id', user.id)
+        .eq('pending', false)
+        .gte('date', format(yearStart, 'yyyy-MM-dd'))
+        .lte('date', format(yearEnd, 'yyyy-MM-dd'));
+      
+      let yearlyIncome = 0, yearlyExpenses = 0;
+      yearlyTransactions?.forEach(transaction => {
+        const amount = Math.abs(Number(transaction.amount));
+        if (transaction.category === 'Income' || Number(transaction.amount) < 0) {
+          yearlyIncome += amount;
+        } else {
+          yearlyExpenses += amount;
+        }
+      });
+      
+      setYearlyTotals({ income: yearlyIncome, expenses: yearlyExpenses, net: yearlyIncome - yearlyExpenses });
 
     } catch (error) {
       console.error('Error fetching budget data:', error);
@@ -384,6 +459,66 @@ export default function Budget() {
           </Card>
         </div>
 
+        {/* Totals Visuals */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Totals Overview</CardTitle>
+            <CardDescription>View your income and expenses breakdown</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="monthly" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                <TabsTrigger value="yearly">Yearly</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="monthly" className="mt-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <span className="text-sm font-medium">Income</span>
+                    <span className="text-sm font-semibold text-primary">${monthlyTotals.income.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <span className="text-sm font-medium">Expenses</span>
+                    <span className="text-sm font-semibold">${monthlyTotals.expenses.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <span className="text-sm font-medium">Net</span>
+                    <span className={`text-sm font-semibold ${monthlyTotals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      ${monthlyTotals.net.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {format(new Date(selectedMonth), 'MMMM yyyy')} totals
+                  </p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="yearly" className="mt-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <span className="text-sm font-medium">Income</span>
+                    <span className="text-sm font-semibold text-primary">${yearlyTotals.income.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <span className="text-sm font-medium">Expenses</span>
+                    <span className="text-sm font-semibold">${yearlyTotals.expenses.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <span className="text-sm font-medium">Net</span>
+                    <span className={`text-sm font-semibold ${yearlyTotals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      ${yearlyTotals.net.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {new Date(selectedMonth).getFullYear()} totals
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
         {/* Income Input */}
         <Card>
           <CardHeader>
@@ -406,8 +541,16 @@ export default function Budget() {
         {/* Budget Categories */}
         <Card>
           <CardHeader>
-            <CardTitle>Budget Categories</CardTitle>
-            <CardDescription>Plan your spending by category</CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>Budget Categories</CardTitle>
+                <CardDescription>Plan your spending by category</CardDescription>
+              </div>
+              <Button onClick={addCategory} variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Category
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {budgetData.categories.map((category) => {
@@ -489,10 +632,6 @@ export default function Budget() {
               );
             })}
 
-            <Button onClick={addCategory} variant="outline" className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
           </CardContent>
         </Card>
 
