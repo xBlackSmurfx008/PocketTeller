@@ -386,7 +386,9 @@ export type Database = {
           institution_id: string | null
           institution_name: string | null
           item_id: string
+          last_synced_at: string | null
           products: string[] | null
+          sync_cursor: string | null
           update_type: string | null
           updated_at: string
           user_id: string
@@ -401,7 +403,9 @@ export type Database = {
           institution_id?: string | null
           institution_name?: string | null
           item_id: string
+          last_synced_at?: string | null
           products?: string[] | null
+          sync_cursor?: string | null
           update_type?: string | null
           updated_at?: string
           user_id: string
@@ -416,7 +420,9 @@ export type Database = {
           institution_id?: string | null
           institution_name?: string | null
           item_id?: string
+          last_synced_at?: string | null
           products?: string[] | null
+          sync_cursor?: string | null
           update_type?: string | null
           updated_at?: string
           user_id?: string

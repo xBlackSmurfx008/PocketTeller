@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
@@ -15,27 +16,22 @@ const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox';
 
 // Normalize and sanitize PLAID_ENV to base URL
 const getPlaidBaseUrl = (env: string) => {
-  // Sanitize input: trim whitespace and remove quotes
   const sanitized = env.trim().replace(/^["']|["']$/g, '');
   
   console.log('Original PLAID_ENV:', env);
   console.log('Sanitized PLAID_ENV:', sanitized);
   
-  // If it's already a full URL, normalize it
   if (sanitized.includes('://')) {
-    // Ensure it starts with https://
     let normalizedUrl = sanitized.startsWith('https://') 
       ? sanitized 
       : sanitized.replace(/^https?:\/\//, 'https://');
     
-    // Remove trailing slash
     normalizedUrl = normalizedUrl.replace(/\/$/, '');
     
     console.log('Normalized URL:', normalizedUrl);
     return normalizedUrl;
   }
   
-  // Environment URL mapping for short names
   const envMap: { [key: string]: string } = {
     sandbox: 'https://sandbox.plaid.com',
     development: 'https://development.plaid.com', 
@@ -54,15 +50,93 @@ const getClientIP = (req: Request): string | null => {
   const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : 
                    req.headers.get('x-real-ip');
   
-  // Validate that it's a valid IP format before returning
   if (clientIP && (
-    /^(\d{1,3}\.){3}\d{1,3}$/.test(clientIP) ||  // IPv4
-    /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/.test(clientIP) // Basic IPv6 check
+    /^(\d{1,3}\.){3}\d{1,3}$/.test(clientIP) ||
+    /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/.test(clientIP)
   )) {
     return clientIP;
   }
   
   return null;
+};
+
+// Map Plaid categories to our app categories
+const mapPlaidCategory = (plaidCategories: string[]): string => {
+  if (!plaidCategories || plaidCategories.length === 0) {
+    return 'Other';
+  }
+
+  const primary = plaidCategories[0]?.toLowerCase() || '';
+  
+  // Category mapping from Plaid to our categories
+  const categoryMap: { [key: string]: string } = {
+    'food and drink': 'Food & Dining',
+    'restaurants': 'Food & Dining',
+    'fast food': 'Food & Dining',
+    'coffee shops': 'Food & Dining',
+    'groceries': 'Food & Dining',
+    
+    'transportation': 'Transportation',
+    'gas stations': 'Transportation',
+    'parking': 'Transportation',
+    'public transportation': 'Transportation',
+    'taxi': 'Transportation',
+    'car service': 'Transportation',
+    
+    'shops': 'Shopping',
+    'general merchandise': 'Shopping',
+    'clothing and accessories': 'Shopping',
+    'electronics': 'Shopping',
+    'home improvement': 'Shopping',
+    
+    'recreation': 'Entertainment',
+    'entertainment': 'Entertainment',
+    'arts and entertainment': 'Entertainment',
+    'gyms and fitness centers': 'Entertainment',
+    
+    'service': 'Bills & Utilities',
+    'utilities': 'Bills & Utilities',
+    'telecommunication services': 'Bills & Utilities',
+    'internet and cable': 'Bills & Utilities',
+    'phone': 'Bills & Utilities',
+    
+    'healthcare': 'Healthcare',
+    'medical': 'Healthcare',
+    'dentists': 'Healthcare',
+    'hospitals': 'Healthcare',
+    
+    'travel': 'Travel',
+    'airlines and aviation services': 'Travel',
+    'lodging': 'Travel',
+    'car rental': 'Travel',
+    
+    'payment': 'Income',
+    'payroll': 'Income',
+    'deposit': 'Income',
+    'transfer': 'Income',
+    
+    'bank fees': 'Bills & Utilities',
+    'overdraft': 'Bills & Utilities'
+  };
+
+  // Check for exact matches first
+  for (const [plaidCat, appCat] of Object.entries(categoryMap)) {
+    if (primary.includes(plaidCat)) {
+      return appCat;
+    }
+  }
+
+  // Check subcategory if available
+  if (plaidCategories.length > 1) {
+    const subcategory = plaidCategories[1]?.toLowerCase() || '';
+    for (const [plaidCat, appCat] of Object.entries(categoryMap)) {
+      if (subcategory.includes(plaidCat)) {
+        return appCat;
+      }
+    }
+  }
+
+  return 'Other';
 };
 
 serve(async (req) => {
@@ -99,6 +173,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get user from auth header
@@ -170,7 +245,18 @@ serve(async (req) => {
       throw new Error('Failed to decrypt token');
     }
 
-    // Get accounts from Plaid
+    // Get or create Plaid item entry to track sync cursor
+    let { data: plaidItem, error: itemError } = await supabase
+      .from('plaid_items')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (itemError && itemError.code !== 'PGRST116') {
+      console.error('Error fetching Plaid item:', itemError);
+    }
+
+    // Get accounts from Plaid first to get item info
     const accountsResponse = await fetch(`${plaidBaseUrl}/accounts/get`, {
       method: 'POST',
       headers: {
@@ -192,7 +278,7 @@ serve(async (req) => {
 
     // Update Plaid item metadata
     if (accountsData.item) {
-      await supabase
+      const { data: upsertedItem, error: itemUpsertError } = await supabase
         .from('plaid_items')
         .upsert({
           user_id: user.id,
@@ -201,10 +287,17 @@ serve(async (req) => {
           available_products: accountsData.item.available_products || [],
           billed_products: accountsData.item.billed_products || [],
           products: accountsData.item.products || [],
-          update_type: 'sync'
+          update_type: 'sync',
+          last_synced_at: new Date().toISOString()
         }, {
           onConflict: 'item_id'
-        });
+        })
+        .select()
+        .single();
+
+      if (!itemUpsertError) {
+        plaidItem = upsertedItem;
+      }
     }
 
     // Sync accounts using enhanced schema
@@ -214,7 +307,7 @@ serve(async (req) => {
         .from('accounts')
         .upsert({
           user_id: user.id,
-          account_id: account.account_id, // For compatibility
+          account_id: account.account_id,
           plaid_account_id: account.account_id,
           plaid_item_id_ref: accountsData.item?.item_id,
           name: account.name,
@@ -222,7 +315,7 @@ serve(async (req) => {
           type: account.type,
           subtype: account.subtype,
           mask: account.mask,
-          balance: account.balances.current || account.balances.available || 0, // For compatibility
+          balance: account.balances.current || account.balances.available || 0,
           available_balance: account.balances.available,
           current_balance: account.balances.current,
           credit_limit: account.balances.limit,
@@ -249,66 +342,129 @@ serve(async (req) => {
       }
     }
 
-    // Get transactions for last 3 months (more reasonable for sync)
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 3);
-    const endDate = new Date();
-
-    const transactionsResponse = await fetch(`${plaidBaseUrl}/transactions/get`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: plaidClientId,
-        secret: plaidSecret,
-        access_token: decryptedToken,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
-        count: 500,
-        offset: 0,
-      }),
-    });
-
-    const transactionsData = await transactionsResponse.json();
-    
-    if (!transactionsResponse.ok) {
-      console.error('Plaid transactions error:', transactionsData);
-      throw new Error(`Failed to fetch transactions: ${transactionsData.error_message}`);
-    }
-
-    // Sync transactions using enhanced schema
+    // Use cursor-based transactions sync for better performance
     let syncedTransactions = 0;
-    for (const transaction of transactionsData.transactions) {
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .upsert({
-          user_id: user.id,
-          transaction_id: transaction.transaction_id, // For compatibility
-          plaid_transaction_id: transaction.transaction_id,
-          plaid_account_id: transaction.account_id,
-          amount: Math.abs(transaction.amount), // Store positive amount
-          date: transaction.date,
-          datetime: transaction.datetime || null,
-          authorized_date: transaction.authorized_date || null,
-          authorized_datetime: transaction.authorized_datetime || null,
-          description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
-          merchant_name: transaction.merchant_name,
-          category: transaction.category?.[0] || 'Other',
-          subcategory: transaction.category?.[1] || null,
-          pending: transaction.pending || false,
-          iso_currency_code: transaction.iso_currency_code || 'USD',
-          unofficial_currency_code: transaction.unofficial_currency_code,
-          location: transaction.location || null,
-          payment_meta: transaction.payment_meta || null,
-        }, {
-          onConflict: 'user_id,plaid_transaction_id',
-        });
+    let hasMore = true;
+    let cursor = plaidItem?.sync_cursor;
 
-      if (transactionError) {
-        console.error('Error upserting transaction:', transactionError);
-      } else {
-        syncedTransactions++;
+    while (hasMore) {
+      const transactionsSyncResponse = await fetch(`${plaidBaseUrl}/transactions/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: plaidClientId,
+          secret: plaidSecret,
+          access_token: decryptedToken,
+          cursor: cursor,
+          count: 100
+        }),
+      });
+
+      const syncData = await transactionsSyncResponse.json();
+      
+      if (!transactionsSyncResponse.ok) {
+        console.error('Plaid transactions sync error:', syncData);
+        throw new Error(`Failed to sync transactions: ${syncData.error_message}`);
+      }
+
+      // Process added transactions
+      for (const transaction of syncData.added) {
+        const mappedCategory = mapPlaidCategory(transaction.category);
+        
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .upsert({
+            user_id: user.id,
+            transaction_id: transaction.transaction_id,
+            plaid_transaction_id: transaction.transaction_id,
+            plaid_account_id: transaction.account_id,
+            amount: Math.abs(transaction.amount),
+            date: transaction.date,
+            datetime: transaction.datetime || null,
+            authorized_date: transaction.authorized_date || null,
+            authorized_datetime: transaction.authorized_datetime || null,
+            description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
+            merchant_name: transaction.merchant_name,
+            category: mappedCategory,
+            subcategory: transaction.category?.[1] || null,
+            pending: transaction.pending || false,
+            iso_currency_code: transaction.iso_currency_code || 'USD',
+            unofficial_currency_code: transaction.unofficial_currency_code,
+            location: transaction.location || null,
+            payment_meta: transaction.payment_meta || null,
+          }, {
+            onConflict: 'user_id,plaid_transaction_id',
+          });
+
+        if (transactionError) {
+          console.error('Error upserting transaction:', transactionError);
+        } else {
+          syncedTransactions++;
+        }
+      }
+
+      // Process modified transactions
+      for (const transaction of syncData.modified) {
+        const mappedCategory = mapPlaidCategory(transaction.category);
+        
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .upsert({
+            user_id: user.id,
+            transaction_id: transaction.transaction_id,
+            plaid_transaction_id: transaction.transaction_id,
+            plaid_account_id: transaction.account_id,
+            amount: Math.abs(transaction.amount),
+            date: transaction.date,
+            datetime: transaction.datetime || null,
+            authorized_date: transaction.authorized_date || null,
+            authorized_datetime: transaction.authorized_datetime || null,
+            description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
+            merchant_name: transaction.merchant_name,
+            category: mappedCategory,
+            subcategory: transaction.category?.[1] || null,
+            pending: transaction.pending || false,
+            iso_currency_code: transaction.iso_currency_code || 'USD',
+            unofficial_currency_code: transaction.unofficial_currency_code,
+            location: transaction.location || null,
+            payment_meta: transaction.payment_meta || null,
+          }, {
+            onConflict: 'user_id,plaid_transaction_id',
+          });
+
+        if (transactionError) {
+          console.error('Error updating transaction:', transactionError);
+        }
+      }
+
+      // Process removed transactions
+      if (syncData.removed && syncData.removed.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('user_id', user.id)
+          .in('plaid_transaction_id', syncData.removed.map((t: any) => t.transaction_id));
+
+        if (deleteError) {
+          console.error('Error deleting transactions:', deleteError);
+        }
+      }
+
+      // Update cursor and check if more data exists
+      cursor = syncData.next_cursor;
+      hasMore = syncData.has_more;
+
+      // Update the plaid item with new cursor
+      if (plaidItem) {
+        await supabase
+          .from('plaid_items')
+          .update({
+            sync_cursor: cursor,
+            last_synced_at: new Date().toISOString()
+          })
+          .eq('id', plaidItem.id);
       }
     }
 
@@ -317,7 +473,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       accounts: syncedAccounts,
-      transactions: syncedTransactions 
+      transactions: syncedTransactions,
+      cursor_updated: !!cursor
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Search, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import AddTransactionDialog from '@/components/AddTransactionDialog';
+import { TransactionSyncButton } from '@/components/TransactionSyncButton';
 
 interface Transaction {
   id: string;
@@ -189,14 +190,19 @@ export default function RecentTransactions() {
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <CardTitle>Recent Transactions</CardTitle>
-          <Button 
-            onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding transactions disabled in demo" }) : setShowAddDialog(true)} 
-            size="sm"
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="sm:inline">Add Transaction</span>
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            {user && !isDemo && (
+              <TransactionSyncButton onSyncComplete={fetchTransactions} />
+            )}
+            <Button 
+              onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding transactions disabled in demo" }) : setShowAddDialog(true)} 
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="sm:inline">Add Transaction</span>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
