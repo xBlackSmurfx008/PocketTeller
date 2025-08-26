@@ -19,6 +19,7 @@ const ConversationalAI = lazy(() => import("./pages/ConversationalAI"));
 const Goals = lazy(() => import("./pages/Goals"));
 const Account = lazy(() => import("./pages/Account"));
 const Transactions = lazy(() => import("./pages/Transactions"));
+const Budget = lazy(() => import("./pages/Budget"));
 const SharedBudget = lazy(() => import("./pages/SharedBudget"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -50,6 +51,7 @@ const App = () => (
                     <Route path="/chat/:threadId" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
                     <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
                     <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+                    <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
                     <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                     <Route path="/share/budget/:token" element={<SharedBudget />} />
                     <Route path="/privacy" element={<Privacy />} />

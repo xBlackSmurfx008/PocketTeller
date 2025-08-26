@@ -144,56 +144,7 @@ export default function BudgetOverview() {
   }, [user, isDemo, sampleData]);
 
   async function handleCreateBudget() {
-    if (isDemo) {
-      navigate('/demo');
-      return;
-    }
-
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    setCreating(true);
-    try {
-      // Create a basic budget with starter values
-      const { error } = await supabase
-        .from('budget')
-        .insert({
-          user_id: user.id,
-          income: 4000, // Starter income
-          expenses: 0,
-          categories: {
-            'Food & Dining': 600,
-            'Transportation': 300,
-            'Shopping': 400,
-            'Entertainment': 200,
-            'Bills & Utilities': 800,
-            'Savings': 500
-          },
-          time_period: 'monthly',
-          status: 'active'
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Budget Created!",
-        description: "Your starter budget has been created. You can customize it anytime.",
-      });
-
-      // Refresh data to show the new budget
-      fetchBudgetData();
-    } catch (error) {
-      console.error('Error creating budget:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create budget. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setCreating(false);
-    }
+    navigate('/budget');
   }
 
   useEffect(() => {
