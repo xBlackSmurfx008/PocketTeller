@@ -98,6 +98,7 @@ const ConversationalAI = () => {
   const [autoAskQuestions, setAutoAskQuestions] = useState(false);
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [shareUserData, setShareUserData] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -238,7 +239,8 @@ const ConversationalAI = () => {
           timezone: timezone,
           todayString: todayString,
           nowUserLocal: nowUserLocal,
-          clientNowISO: now.toISOString()
+          clientNowISO: now.toISOString(),
+          include_user_data: shareUserData
         }
       });
 
@@ -268,7 +270,7 @@ const ConversationalAI = () => {
 
       // Check for backend error field
       if (data?.error) {
-        toast.error('AI error: ' + data.error);
+        toast.error(`AI Assistant Error: ${data.error}`);
         return;
       }
 
@@ -305,7 +307,8 @@ const ConversationalAI = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Failed to send message: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -968,18 +971,39 @@ const ConversationalAI = () => {
               </Card>
             )}
 
-            {/* New Conversation Button - Mobile */}
-            {isMobile && (
-               <Button 
-                 onClick={createNewThread}
-                 variant="outline"
-                 className="w-full flex items-center gap-2"
-                 disabled={isDemo && conversationsUsed >= maxConversations}
-               >
-                 <Plus className="h-4 w-4" />
-                 New Conversation
-               </Button>
-            )}
+             {/* Share Data Settings */}
+             <Card>
+               <CardContent className="p-4">
+                 <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                     <Label htmlFor="share-data" className="text-sm font-medium">
+                       Share my data with AI
+                     </Label>
+                   </div>
+                   <Switch
+                     id="share-data"
+                     checked={shareUserData}
+                     onCheckedChange={setShareUserData}
+                   />
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-2">
+                   When enabled, the AI can access your accounts, transactions, and goals to provide personalized advice.
+                 </p>
+               </CardContent>
+             </Card>
+
+             {/* New Conversation Button - Mobile */}
+             {isMobile && (
+                <Button 
+                  onClick={createNewThread}
+                  variant="outline"
+                  className="w-full flex items-center gap-2"
+                  disabled={isDemo && conversationsUsed >= maxConversations}
+                >
+                  <Plus className="h-4 w-4" />
+                  New Conversation
+                </Button>
+             )}
             {/* Education Suggestions */}
             {showSuggestions && educationSuggestions.length > 0 && (
               <Card className="border-primary/20 bg-primary/5">

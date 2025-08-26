@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { Configuration, OpenAIApi } from "https://esm.sh/openai@3";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY')
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
 
 const assessmentQuestions = [
   "What are your current financial goals?",
@@ -46,7 +46,7 @@ const commitmentQuestions = [
 ];
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.supabase.co',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -367,6 +367,105 @@ Return JSON array or empty array if nothing to remember:`;
   }
 }
 
+// Build user data context from accounts, transactions, and goals
+async function buildUserDataContext(supabase: any, userId: string): Promise<string> {
+  try {
+    let context = '\n\n=== USER DATA CONTEXT ===\n';
+    
+    // Get Plaid connection status and account data
+    const { data: accounts } = await supabase
+      .from('accounts')
+      .select('id, name, type, balance, current_balance, available_balance, institution_name, plaid_account_id')
+      .eq('user_id', userId)
+      .order('balance', { ascending: false })
+      .limit(5);
+    
+    if (accounts && accounts.length > 0) {
+      const totalBalance = accounts.reduce((sum, acc) => sum + (acc.current_balance || acc.balance || 0), 0);
+      const hasPlaidConnection = accounts.some(acc => acc.plaid_account_id);
+      
+      context += `\nACCOUNTS:\n`;
+      context += `- Total Balance: $${totalBalance.toLocaleString()}\n`;
+      context += `- Plaid Connected: ${hasPlaidConnection ? 'Yes' : 'No'}\n`;
+      context += `- Top 5 Accounts:\n`;
+      
+      accounts.forEach(acc => {
+        const balance = acc.current_balance || acc.balance || 0;
+        context += `  • ${acc.name} (${acc.type}): $${balance.toLocaleString()}\n`;
+      });
+    } else {
+      context += `\nACCOUNTS: No accounts connected\n`;
+    }
+    
+    // Get recent transactions
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('id, amount, category, date, description, merchant_name')
+      .eq('user_id', userId)
+      .eq('pending', false)
+      .order('date', { ascending: false })
+      .limit(50);
+    
+    if (transactions && transactions.length > 0) {
+      // Calculate category totals
+      const categoryTotals = transactions.reduce((acc, txn) => {
+        acc[txn.category] = (acc[txn.category] || 0) + Math.abs(txn.amount);
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const topCategories = Object.entries(categoryTotals)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5);
+      
+      const totalSpending = transactions
+        .filter(txn => txn.amount > 0)
+        .reduce((sum, txn) => sum + txn.amount, 0);
+      
+      context += `\nRECENT TRANSACTIONS (Last 50):\n`;
+      context += `- Total Spending: $${totalSpending.toLocaleString()}\n`;
+      context += `- Top 5 Categories:\n`;
+      
+      topCategories.forEach(([category, amount]) => {
+        context += `  • ${category}: $${amount.toLocaleString()}\n`;
+      });
+      
+      context += `- Latest 10 Transactions:\n`;
+      transactions.slice(0, 10).forEach(txn => {
+        const merchant = txn.merchant_name || txn.description || 'Unknown';
+        context += `  • ${txn.date}: ${merchant} - $${Math.abs(txn.amount)} (${txn.category})\n`;
+      });
+    } else {
+      context += `\nRECENT TRANSACTIONS: No transactions found\n`;
+    }
+    
+    // Get financial goals
+    const { data: goals } = await supabase
+      .from('goals')
+      .select('id, goal_name, target_amount, current_amount, deadline')
+      .eq('user_id', userId)
+      .order('target_amount', { ascending: false })
+      .limit(5);
+    
+    if (goals && goals.length > 0) {
+      context += `\nFINANCIAL GOALS:\n`;
+      goals.forEach(goal => {
+        const progress = goal.target_amount > 0 ? Math.round((goal.current_amount / goal.target_amount) * 100) : 0;
+        const deadline = goal.deadline ? new Date(goal.deadline).toLocaleDateString() : 'No deadline';
+        context += `  • ${goal.goal_name}: $${goal.current_amount.toLocaleString()} / $${goal.target_amount.toLocaleString()} (${progress}%) - Due: ${deadline}\n`;
+      });
+    } else {
+      context += `\nFINANCIAL GOALS: No goals set\n`;
+    }
+    
+    context += '\nUse this financial data to provide personalized advice based on the user\'s actual financial situation.\n';
+    
+    return context;
+  } catch (error) {
+    console.error('Error building user data context:', error);
+    return '\n\n=== USER DATA CONTEXT ===\nError: Could not retrieve user financial data\n';
+  }
+}
+
 // Enhanced memory context builder with token budget management
 function buildMemoryContext(memories: UserMemory[]): string {
   if (memories.length === 0) {
@@ -456,7 +555,14 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: req.headers.get('Authorization') ?? ''
+          }
+        }
+      }
     );
 
     // Get the authorization header
@@ -484,7 +590,8 @@ Deno.serve(async (req) => {
       timezone,
       todayString,
       nowUserLocal,
-      clientNowISO
+      clientNowISO,
+      include_user_data = true
     } = await req.json();
 
     console.log('Gemini chat request received:', { 
@@ -498,15 +605,22 @@ Deno.serve(async (req) => {
     // Skip memory operations for memory extraction calls to avoid recursion
     let memories: UserMemory[] = [];
     let memoryContext = '';
+    let userDataContext = '';
     
     if (!memory_extraction_mode) {
       // Retrieve user memories with message context for relevance scoring
       memories = await retrieveUserMemories(supabase, user.id, message);
       memoryContext = buildMemoryContext(memories);
       console.log(`Retrieved ${memories.length} user memories for context`);
+      
+      // Gather user data if requested
+      if (include_user_data) {
+        userDataContext = await buildUserDataContext(supabase, user.id);
+        console.log('Built user data context');
+      }
     }
 
-    let processedAttachments: { name: string; type: string; url: string; }[] = [];
+    let processedAttachments: { name: string; type: string; url: string; content?: string; }[] = [];
     let attachmentErrors = 0;
 
     if (attachments && attachments.length > 0) {
@@ -521,18 +635,50 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Basic type check (enhance as needed)
-          if (!attachment.type.startsWith('image/') && !attachment.type.startsWith('text/') && !attachment.type.startsWith('application/pdf')) {
+          // Enhanced type support
+          const isTextFile = attachment.type.startsWith('text/') || 
+                           attachment.type === 'application/json' || 
+                           attachment.type === 'text/csv';
+          const isPdf = attachment.type === 'application/pdf';
+          const isImage = attachment.type.startsWith('image/');
+
+          if (!isTextFile && !isPdf && !isImage) {
             console.warn('Skipping attachment with unsupported type:', attachment);
             attachmentErrors++;
             continue;
           }
 
-          processedAttachments.push({
+          let attachmentInfo = {
             name: attachment.name,
             type: attachment.type,
             url: attachment.url
-          });
+          };
+
+          // Try to fetch and extract text content for better context
+          if (isTextFile || isPdf) {
+            try {
+              const response = await fetch(attachment.url);
+              if (response.ok) {
+                if (isTextFile) {
+                  const text = await response.text();
+                  // Limit text content to prevent token overflow
+                  const excerpt = text.length > 3000 ? text.substring(0, 3000) + '...' : text;
+                  attachmentInfo.content = excerpt;
+                  console.log(`Extracted ${excerpt.length} chars from ${attachment.name}`);
+                } else if (isPdf) {
+                  // For PDFs, just note the filename and size for now
+                  const size = response.headers.get('content-length');
+                  attachmentInfo.content = `PDF document (${size ? `${Math.round(parseInt(size) / 1024)}KB` : 'size unknown'}) - Filename: ${attachment.name}`;
+                  console.log(`PDF processed: ${attachment.name}`);
+                }
+              }
+            } catch (fetchError) {
+              console.warn(`Failed to fetch content for ${attachment.name}:`, fetchError);
+              // Continue with just the attachment info
+            }
+          }
+
+          processedAttachments.push(attachmentInfo);
         } catch (attachmentError) {
           console.error('Error processing attachment:', attachment, attachmentError);
           attachmentErrors++;
@@ -542,7 +688,7 @@ Deno.serve(async (req) => {
       console.log(`Processed ${processedAttachments.length} attachments, ${attachmentErrors} errors`);
     }
 
-    // Construct the system prompt with memory context
+    // Construct the system prompt with memory context and user data
     let systemPrompt = `You are a helpful AI financial assistant. You provide personalized advice on budgeting, saving, investing, and financial planning.
 
 Current date/time context:
@@ -551,12 +697,17 @@ Current date/time context:
 - Current local time: ${nowUserLocal || 'Unknown'}
 - Client timestamp: ${clientNowISO || 'Unknown'}
 
-${memoryContext}`;
+${memoryContext}${userDataContext}`;
 
     if (processedAttachments.length > 0) {
       systemPrompt += `\n\nThe user has provided the following attachments. Use them to provide more accurate and relevant advice:\n`;
       processedAttachments.forEach(attachment => {
-        systemPrompt += `- ${attachment.name} (${attachment.type}): ${attachment.url}\n`;
+        systemPrompt += `- ${attachment.name} (${attachment.type})\n`;
+        if (attachment.content) {
+          systemPrompt += `  Content excerpt: ${attachment.content}\n`;
+        } else {
+          systemPrompt += `  URL: ${attachment.url}\n`;
+        }
       });
     }
 
@@ -675,7 +826,8 @@ Based on the conversation stage, provide 2-3 relevant coaching questions that he
         skippedAttachments: (attachments?.length || 0) - processedAttachments.length,
         attachmentErrors: attachmentErrors,
         memoryUsedCount: memories.length,
-        memoryUpsertedCount: memoryUpsertedCount
+        memoryUpsertedCount: memoryUpsertedCount,
+        userDataIncluded: !!userDataContext
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
