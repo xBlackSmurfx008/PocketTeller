@@ -842,7 +842,14 @@ export type Database = {
         Returns: boolean
       }
       log_budget_share_access: {
-        Args: { ip_address?: string; share_id: string; user_agent?: string }
+        Args:
+          | { ip_address?: string; share_id: string; user_agent?: string }
+          | {
+              ip_address?: string
+              share_id: string
+              user_agent?: string
+              user_email?: string
+            }
         Returns: undefined
       }
       rotate_plaid_token: {

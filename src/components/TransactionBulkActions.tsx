@@ -120,6 +120,8 @@ export const TransactionBulkActions = ({
 
   const exportToCSV = () => {
     const selectedTransactions = transactions.filter(t => selectedIds.includes(t.id));
+    
+    // Sanitize CSV data to prevent formula injection
     const csvContent = [
       ['Date', 'Description', 'Amount', 'Category'],
       ...selectedTransactions.map(t => [
@@ -128,7 +130,17 @@ export const TransactionBulkActions = ({
         t.amount.toString(),
         t.category
       ])
-    ].map(row => row.join(',')).join('\n');
+    ].map(row => 
+      row.map(cell => {
+        const stringValue = String(cell);
+        // Escape dangerous characters that could be interpreted as formulas
+        if (/^[=@+\-]/.test(stringValue)) {
+          return `'${stringValue}`;
+        }
+        // Escape double quotes by doubling them and wrap in quotes
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }).join(',')
+    ).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

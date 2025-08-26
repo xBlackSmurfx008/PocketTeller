@@ -232,8 +232,20 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
       });
     }
 
-    const csvContent = csvData.map(row => row.join(',')).join('\n');
-    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    // Sanitize CSV data to prevent formula injection
+    const sanitizedCsvContent = csvData.map(row => 
+      row.map(cell => {
+        const stringValue = String(cell);
+        // Escape dangerous characters that could be interpreted as formulas
+        if (/^[=@+\-]/.test(stringValue)) {
+          return `'${stringValue}`;
+        }
+        // Escape double quotes by doubling them and wrap in quotes
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }).join(',')
+    ).join('\n');
+    
+    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(sanitizedCsvContent);
     const exportFileDefaultName = `budget-plan-${new Date().toISOString().split('T')[0]}.csv`;
     
     const linkElement = document.createElement('a');

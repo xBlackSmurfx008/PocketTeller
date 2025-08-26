@@ -77,7 +77,17 @@ serve(async (req) => {
       }
     }
 
-    // Use the NEW secure function instead of the old validation function
+    // Set client IP context for the secure function
+    try {
+      await supabase.rpc('set_config', {
+        setting_name: 'app.client_ip',
+        new_value: clientIP || 'unknown'
+      });
+    } catch (configError) {
+      console.log('Failed to set client IP config, continuing:', configError);
+    }
+
+    // Use the NEW secure function with enhanced rate limiting
     const { data: secureResult, error: secureError } = await supabase.rpc('get_shared_budget_secure', {
       share_token: token,
       user_email: userEmail
@@ -101,6 +111,8 @@ serve(async (req) => {
       let statusCode = 403;
       if (secureResult.error === 'Authentication required') {
         statusCode = 401;
+      } else if (secureResult.error.includes('Rate limit exceeded')) {
+        statusCode = 429;
       }
       
       return new Response(
@@ -119,11 +131,12 @@ serve(async (req) => {
       .single();
 
     if (shareValidation?.id) {
-      // Log the access
+      // Log the access with enhanced logging including user email
       const { error: logError } = await supabase.rpc('log_budget_share_access', {
         share_id: shareValidation.id,
         ip_address: clientIP,
-        user_agent: userAgent || req.headers.get('user-agent') || 'unknown'
+        user_agent: userAgent || req.headers.get('user-agent') || 'unknown',
+        user_email: userEmail
       });
 
       if (logError) {
