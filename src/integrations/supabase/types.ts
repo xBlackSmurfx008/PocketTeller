@@ -584,6 +584,9 @@ export type Database = {
           authorized_date: string | null
           authorized_datetime: string | null
           category: string
+          category_confidence: number | null
+          category_model: string | null
+          category_reason: string | null
           category_source: string | null
           created_at: string
           date: string
@@ -609,6 +612,9 @@ export type Database = {
           authorized_date?: string | null
           authorized_datetime?: string | null
           category?: string
+          category_confidence?: number | null
+          category_model?: string | null
+          category_reason?: string | null
           category_source?: string | null
           created_at?: string
           date: string
@@ -634,6 +640,9 @@ export type Database = {
           authorized_date?: string | null
           authorized_datetime?: string | null
           category?: string
+          category_confidence?: number | null
+          category_model?: string | null
+          category_reason?: string | null
           category_source?: string | null
           created_at?: string
           date?: string

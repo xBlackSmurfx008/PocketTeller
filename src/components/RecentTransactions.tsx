@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, ChevronDown, ChevronRight, Zap } from 'lucide-react';
+import { Search, Plus, ChevronDown, ChevronRight, Zap, Sparkles } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import AddTransactionDialog from '@/components/AddTransactionDialog';
 import { TransactionSyncButton } from '@/components/TransactionSyncButton';
@@ -35,7 +36,7 @@ export default function RecentTransactions() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grouped'>('grouped');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
-  const [autoCategorizingCount, setAutoCategorizingCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isDemo && !user) {
@@ -180,71 +181,106 @@ export default function RecentTransactions() {
   };
 
   const autoCategorizeAllTransactions = async () => {
-    if (!user || isDemo) {
+    if (isDemo) {
+      // Fallback to keyword-based categorization in demo mode
+      const uncategorizedTransactions = transactions.filter(
+        t => t.category === 'Other' || !t.category
+      );
+      
+      let categorizedCount = 0;
+      const updatedTransactions = transactions.map(transaction => {
+        if (transaction.category === 'Other' || !transaction.category) {
+          const newCategory = autoCategorizeTransaction(transaction.description, transaction.amount);
+          categorizedCount++;
+          return { ...transaction, category: newCategory, category_source: 'auto' };
+        }
+        return transaction;
+      });
+      
+      setTransactions(updatedTransactions);
+      
       toast({
-        title: "Demo Mode",
-        description: "Auto-categorization disabled in demo",
+        title: "Auto-categorization complete",
+        description: `Categorized ${categorizedCount} transactions`,
       });
       return;
     }
 
-    const uncategorizedTransactions = transactions.filter(t => 
-      !t.category_source || t.category_source === 'auto' || t.category === 'Other'
-    );
-
-    if (uncategorizedTransactions.length === 0) {
-      toast({
-        title: "No transactions to categorize",
-        description: "All transactions are already categorized",
-      });
-      return;
-    }
-
-    setAutoCategorizingCount(uncategorizedTransactions.length);
-    
+    setIsLoading(true);
     try {
-      const updates = uncategorizedTransactions.map(transaction => {
-        const newCategory = autoCategorizeTransaction(transaction.description, transaction.amount);
-        return {
-          id: transaction.id,
-          category: newCategory,
-          category_source: 'auto'
-        };
+      // Try AI categorization first
+      const { data, error } = await supabase.functions.invoke('ai-categorize-transactions', {
+        body: { limit: 50, threshold: 0.55 }
       });
 
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('transactions')
-          .update({ 
-            category: update.category,
-            category_source: update.category_source
-          })
-          .eq('id', update.id)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-
-        // Update local state
-        setTransactions(prev => 
-          prev.map(t => 
-            t.id === update.id ? { ...t, category: update.category } : t
-          )
-        );
+      if (error) {
+        console.error('AI categorization error:', error);
+        throw new Error('AI categorization failed');
       }
 
+      // Refresh transactions to get updated data
+      await fetchTransactions();
+      
       toast({
-        title: "Success",
-        description: `Auto-categorized ${updates.length} transactions`,
+        title: "AI categorization complete",
+        description: data.details || `Updated ${data.updatedCount} transactions`,
       });
+
+      // If some transactions still need categorization, fall back to keyword-based
+      if (data.updatedCount === 0) {
+        const uncategorizedTransactions = transactions.filter(
+          t => (t.category === 'Other' || !t.category) && t.category_source !== 'user'
+        );
+        
+        if (uncategorizedTransactions.length > 0) {
+          let categorizedCount = 0;
+          for (const transaction of uncategorizedTransactions) {
+            const newCategory = autoCategorizeTransaction(transaction.description, transaction.amount);
+            if (newCategory !== transaction.category) {
+              await updateTransactionCategory(transaction.id, newCategory);
+              categorizedCount++;
+            }
+          }
+          
+          if (categorizedCount > 0) {
+            toast({
+              title: "Keyword categorization complete",
+              description: `Categorized ${categorizedCount} additional transactions`,
+            });
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error auto-categorizing transactions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to auto-categorize transactions",
-        variant: "destructive",
-      });
+      console.error('Categorization error:', error);
+      
+      // Fallback to keyword-based categorization
+      const uncategorizedTransactions = transactions.filter(
+        t => (t.category === 'Other' || !t.category) && t.category_source !== 'user'
+      );
+      
+      let categorizedCount = 0;
+      for (const transaction of uncategorizedTransactions) {
+        const newCategory = autoCategorizeTransaction(transaction.description, transaction.amount);
+        if (newCategory !== transaction.category) {
+          await updateTransactionCategory(transaction.id, newCategory);
+          categorizedCount++;
+        }
+      }
+      
+      if (categorizedCount > 0) {
+        toast({
+          title: "Fallback categorization complete",
+          description: `Categorized ${categorizedCount} transactions using keywords`,
+        });
+      } else {
+        toast({
+          title: "Categorization failed",
+          description: "Unable to categorize transactions. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setAutoCategorizingCount(0);
+      setIsLoading(false);
     }
   };
 
@@ -281,11 +317,11 @@ export default function RecentTransactions() {
                   onClick={autoCategorizeAllTransactions}
                   size="sm"
                   variant="outline"
-                  disabled={autoCategorizingCount > 0}
+                  disabled={isLoading}
                   className="gap-2"
                 >
-                  <Zap className="h-4 w-4" />
-                  {autoCategorizingCount > 0 ? `Categorizing ${autoCategorizingCount}...` : 'Auto-Categorize'}
+                  <Sparkles className="h-4 w-4" />
+                  {isLoading ? 'Categorizing with AI...' : 'AI Auto-Categorize'}
                 </Button>
               </>
             )}
@@ -360,21 +396,43 @@ export default function RecentTransactions() {
                       {format(new Date(transaction.date), 'MMM dd, yyyy')}
                     </span>
                   </div>
-                  <Select
-                    value={transaction.category}
-                    onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
-                  >
-                    <SelectTrigger className="w-full sm:w-fit h-8 sm:h-6 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border shadow-lg z-50">
-                      {CATEGORIES.map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <div className="flex items-center gap-2">
+                     <Select
+                       value={transaction.category}
+                       onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
+                     >
+                       <SelectTrigger className="w-full sm:w-fit h-8 sm:h-6 text-xs">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent className="bg-background border border-border shadow-lg z-50">
+                         {CATEGORIES.map(category => (
+                           <SelectItem key={category} value={category}>
+                             {category}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                     {(transaction as any).category_source === 'ai' && (
+                       <TooltipProvider>
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <Badge variant="secondary" className="text-xs gap-1">
+                               <Sparkles className="h-3 w-3" />
+                               AI
+                             </Badge>
+                           </TooltipTrigger>
+                           <TooltipContent>
+                             <div className="text-xs space-y-1">
+                               <div>AI suggested • Confidence: {Math.round(((transaction as any).category_confidence || 0) * 100)}%</div>
+                               {(transaction as any).category_reason && (
+                                 <div>Reason: {(transaction as any).category_reason}</div>
+                               )}
+                             </div>
+                           </TooltipContent>
+                         </Tooltip>
+                       </TooltipProvider>
+                     )}
+                   </div>
                 </div>
                 <Badge variant={transaction.amount >= 0 ? "default" : "destructive"} className="shrink-0 text-xs sm:text-sm">
                   {transaction.amount >= 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -418,21 +476,43 @@ export default function RecentTransactions() {
                                 {format(new Date(transaction.date), 'MMM dd, yyyy')}
                               </span>
                             </div>
-                            <Select
-                              value={transaction.category}
-                              onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
-                            >
-                              <SelectTrigger className="w-full sm:w-fit h-8 sm:h-6 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-background border border-border shadow-lg z-50">
-                                {CATEGORIES.map(cat => (
-                                  <SelectItem key={cat} value={cat}>
-                                    {cat}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                             <div className="flex items-center gap-2">
+                               <Select
+                                 value={transaction.category}
+                                 onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
+                               >
+                                 <SelectTrigger className="w-full sm:w-fit h-8 sm:h-6 text-xs">
+                                   <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent className="bg-background border border-border shadow-lg z-50">
+                                   {CATEGORIES.map(cat => (
+                                     <SelectItem key={cat} value={cat}>
+                                       {cat}
+                                     </SelectItem>
+                                   ))}
+                                 </SelectContent>
+                               </Select>
+                               {(transaction as any).category_source === 'ai' && (
+                                 <TooltipProvider>
+                                   <Tooltip>
+                                     <TooltipTrigger asChild>
+                                       <Badge variant="secondary" className="text-xs gap-1">
+                                         <Sparkles className="h-3 w-3" />
+                                         AI
+                                       </Badge>
+                                     </TooltipTrigger>
+                                     <TooltipContent>
+                                       <div className="text-xs space-y-1">
+                                         <div>AI suggested • Confidence: {Math.round(((transaction as any).category_confidence || 0) * 100)}%</div>
+                                         {(transaction as any).category_reason && (
+                                           <div>Reason: {(transaction as any).category_reason}</div>
+                                         )}
+                                       </div>
+                                     </TooltipContent>
+                                   </Tooltip>
+                                 </TooltipProvider>
+                               )}
+                             </div>
                           </div>
                           <Badge variant={transaction.amount >= 0 ? "default" : "destructive"} className="shrink-0 text-xs sm:text-sm">
                             {transaction.amount >= 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
