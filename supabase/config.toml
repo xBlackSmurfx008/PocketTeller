@@ -45,6 +45,3 @@ verify_jwt = true
 
 [functions.ai-categorize-transactions]
 verify_jwt = true
-
-[functions.ai-spending-insights]
-verify_jwt = true

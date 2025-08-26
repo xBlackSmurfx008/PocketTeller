@@ -38,48 +38,6 @@ export default function RecentTransactions() {
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Auto-categorize uncategorized transactions on mount
-  const autoCategorizePeriodically = async () => {
-    if (isDemo || !user) return;
-    
-    const lastRun = localStorage.getItem('aiCatLastRun');
-    const now = Date.now();
-    const twelveHours = 12 * 60 * 60 * 1000;
-    
-    if (lastRun && (now - parseInt(lastRun) < twelveHours)) {
-      return; // Too recent
-    }
-    
-    // Check if there are uncategorized transactions
-    const uncategorized = transactions.filter(tx => 
-      !tx.category || tx.category === 'Other'
-    );
-    
-    if (uncategorized.length === 0) return;
-    
-    console.log(`Auto-categorizing ${uncategorized.length} transactions`);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-categorize-transactions', {
-        body: { limit: 100, threshold: 0.6 }
-      });
-      
-      if (error) throw error;
-      
-      if (data.updated > 0) {
-        await fetchTransactions(); // Refresh the list
-        toast({
-          title: "Auto-categorization complete",
-          description: `${data.updated} transactions were automatically categorized.`,
-        });
-      }
-      
-      localStorage.setItem('aiCatLastRun', now.toString());
-    } catch (error) {
-      console.error('Auto-categorization failed:', error);
-    }
-  };
-
   useEffect(() => {
     if (isDemo && !user) {
       // Only show demo data if in demo mode AND no authenticated user
@@ -94,10 +52,7 @@ export default function RecentTransactions() {
       setTransactions(demoTransactions);
       setLoading(false);
     } else if (user) {
-      fetchTransactions().then(() => {
-        // Auto-categorize after initial load
-        autoCategorizePeriodically();
-      });
+      fetchTransactions();
       
       // Set up real-time subscription for transactions
       const channel = supabase
