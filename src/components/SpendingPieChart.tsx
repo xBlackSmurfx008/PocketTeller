@@ -82,19 +82,24 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
 
   const CustomLegend = () => {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-6 px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
         {chartData.map((entry, index) => (
-          <div key={index} className="flex items-center gap-3 text-sm">
-            <div 
-              className="w-4 h-4 rounded-sm flex-shrink-0 shadow-sm"
-              style={{ backgroundColor: CATEGORY_COLORS[entry.category] || '#C8C8C8' }}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground truncate">
-                {entry.category}
+          <div key={index} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div 
+                className="w-4 h-4 rounded-sm flex-shrink-0 shadow-sm border border-border/20"
+                style={{ backgroundColor: CATEGORY_COLORS[entry.category] || CATEGORY_COLORS['Other'] }}
+              />
+              <span className="font-medium text-foreground truncate text-sm">
+                {entry.category || 'Uncategorized'}
+              </span>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="font-semibold text-foreground text-sm">
+                ${entry.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </div>
-              <div className="text-muted-foreground text-xs">
-                ${entry.value.toLocaleString()} ({entry.percentage}%)
+              <div className="text-xs text-muted-foreground">
+                {entry.percentage}%
               </div>
             </div>
           </div>
