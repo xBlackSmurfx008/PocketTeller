@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CATEGORIES } from '@/utils/transactionCategorizer';
 import { ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 interface BudgetData {
   income: number;
@@ -28,11 +29,13 @@ export default function BudgetOverview() {
   const { user } = useAuth();
   const { isDemo, sampleData } = useDemo();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
   const [actualIncome, setActualIncome] = useState(0);
   const [actualExpenses, setActualExpenses] = useState(0);
   const [categoryActuals, setCategoryActuals] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   const fetchBudgetData = useCallback(async () => {
     if (isDemo) {
@@ -140,6 +143,59 @@ export default function BudgetOverview() {
     }
   }, [user, isDemo, sampleData]);
 
+  const handleCreateBudget = async () => {
+    if (isDemo) {
+      navigate('/demo');
+      return;
+    }
+
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      // Create a basic budget with starter values
+      const { error } = await supabase
+        .from('budget')
+        .insert({
+          user_id: user.id,
+          income: 4000, // Starter income
+          expenses: 0,
+          categories: {
+            'Food & Dining': 600,
+            'Transportation': 300,
+            'Shopping': 400,
+            'Entertainment': 200,
+            'Bills & Utilities': 800,
+            'Savings': 500
+          },
+          time_period: 'monthly',
+          status: 'active'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Budget Created!",
+        description: "Your starter budget has been created. You can customize it anytime.",
+      });
+
+      // Refresh data to show the new budget
+      fetchBudgetData();
+    } catch (error) {
+      console.error('Error creating budget:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create budget. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   useEffect(() => {
     fetchBudgetData();
 
@@ -198,8 +254,11 @@ export default function BudgetOverview() {
         <CardContent>
           <div className="text-center py-6">
             <p className="text-muted-foreground mb-4">No budget set up yet</p>
-            <Button onClick={() => navigate('/budget')}>
-              Create Budget
+            <Button 
+              onClick={handleCreateBudget}
+              disabled={creating}
+            >
+              {creating ? 'Creating...' : 'Create Budget'}
             </Button>
           </div>
         </CardContent>
