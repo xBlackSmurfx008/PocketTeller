@@ -77,6 +77,67 @@ const parseAttachments = (attachments: any): FileAttachment[] | undefined => {
   }
 };
 
+// Simple markdown-like text processing for better readability
+const formatMessageContent = (content: string): React.ReactNode => {
+  // Split by lines and process each line
+  const lines = content.split('\n');
+  const processedLines: React.ReactNode[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    
+    // Skip empty lines but preserve spacing
+    if (line.trim() === '') {
+      processedLines.push(<br key={i} />);
+      continue;
+    }
+    
+    // Process formatting
+    const parts: React.ReactNode[] = [];
+    let remaining = line;
+    let partKey = 0;
+    
+    // Handle bold text (remove extra ** and apply proper formatting)
+    const boldRegex = /\*\*([^*]+)\*\*/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = boldRegex.exec(remaining)) !== null) {
+      // Add text before the bold
+      if (match.index > lastIndex) {
+        parts.push(remaining.slice(lastIndex, match.index));
+      }
+      
+      // Add bold text
+      parts.push(
+        <strong key={`bold-${partKey++}`} className="font-semibold">
+          {match[1]}
+        </strong>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < remaining.length) {
+      parts.push(remaining.slice(lastIndex));
+    }
+    
+    // If no formatting was found, just use the original line
+    if (parts.length === 0) {
+      parts.push(line);
+    }
+    
+    processedLines.push(
+      <div key={i} className="mb-1">
+        {parts}
+      </div>
+    );
+  }
+  
+  return <div className="space-y-1">{processedLines}</div>;
+};
+
 const ConversationalAI = () => {
   const { threadId } = useParams();
   const navigate = useNavigate();
@@ -712,41 +773,53 @@ const ConversationalAI = () => {
                           <AvatarFallback>AI</AvatarFallback>
                         </Avatar>
                       )}
-                      <div className={`rounded-lg p-3 ${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                        <p className={`${isMobile ? 'text-sm' : 'text-sm'} whitespace-pre-line`}>{msg.content}</p>
+                      <div className={`rounded-lg p-4 ${isMobile ? 'max-w-[90%]' : 'max-w-[85%]'} ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 border border-border/50'}`}>
+                         <div className={`${isMobile ? 'text-sm' : 'text-base'} leading-relaxed`}>
+                           {formatMessageContent(msg.content)}
+                         </div>
                         {msg.attachments && msg.attachments.length > 0 && (
                           <div className="mt-2">
-                            {msg.attachments.map((attachment, index) => (
-                              <div key={index} className="text-xs text-blue-400 underline">
-                                <a href={attachment.url} target="_blank" rel="noopener noreferrer">{attachment.name}</a>
-                              </div>
-                            ))}
+                             {msg.attachments.map((attachment, index) => (
+                               <div key={index} className="flex items-center gap-2 text-xs opacity-75">
+                                 <span>📎</span>
+                                 <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                   {attachment.name}
+                                 </a>
+                               </div>
+                             ))}
                           </div>
                         )}
-                        {msg.role === 'assistant' && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-green-100 hover:text-green-600`}
-                              onClick={() => toast.success("Feedback recorded!")}
-                            >
-                              <ThumbsUp className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-red-100 hover:text-red-600`}
-                              onClick={() => toast.info("Thanks for the feedback!")}
-                            >
-                              <ThumbsDown className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {msg.timestamp.toLocaleTimeString()}
-                      </p>
+                         {msg.role === 'assistant' && (
+                           <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/20">
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className={`${isMobile ? 'h-8 px-2' : 'h-7 px-2'} text-xs hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20`}
+                               onClick={() => toast.success("Thank you for the positive feedback!")}
+                             >
+                               <ThumbsUp className={`${isMobile ? 'h-3 w-3' : 'h-3 w-3'} mr-1`} />
+                               Helpful
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className={`${isMobile ? 'h-8 px-2' : 'h-7 px-2'} text-xs hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20`}
+                               onClick={() => toast.info("Thanks for the feedback! We'll improve.")}
+                             >
+                               <ThumbsDown className={`${isMobile ? 'h-3 w-3' : 'h-3 w-3'} mr-1`} />
+                               Not helpful
+                             </Button>
+                           </div>
+                         )}
+                       </div>
+                       {!isMobile && (
+                         <div className="text-xs text-muted-foreground mt-1 min-w-16 text-right">
+                           {msg.timestamp.toLocaleTimeString([], { 
+                             hour: '2-digit', 
+                             minute: '2-digit' 
+                           })}
+                         </div>
+                       )}
                     </div>
                   ))}
                   
@@ -757,7 +830,7 @@ const ConversationalAI = () => {
                         <AvatarImage src={aiAvatar} alt="AI Assistant" />
                         <AvatarFallback>AI</AvatarFallback>
                       </Avatar>
-                      <div className={`rounded-lg p-3 ${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} bg-muted`}>
+                      <div className={`rounded-lg p-4 ${isMobile ? 'max-w-[90%]' : 'max-w-[85%]'} bg-muted/50 border border-border/50`}>
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <p className="text-sm">Thinking...</p>
@@ -817,9 +890,9 @@ const ConversationalAI = () => {
                   >
                     <Plus className="h-5 w-5" />
                   </Button>
-                  <div className="flex-1 relative">
+                   <div className="flex-1 relative">
                      <Textarea
-                       placeholder={isDemo && conversationsUsed >= maxConversations ? "Demo limit reached - Create account to continue" : isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
+                       placeholder={isDemo && conversationsUsed >= maxConversations ? "Demo limit reached - Create account to continue" : isDemo ? `Ask about your finances... (${promptsUsed}/${maxPrompts} demo messages used)` : "Ask me about your finances..."}
                        value={inputMessage}
                        onChange={(e) => setInputMessage(e.target.value)}
                        onKeyDown={(e) => {
@@ -829,11 +902,11 @@ const ConversationalAI = () => {
                          }
                        }}
                        onFocus={() => setShowPromptSuggestions(false)}
-                       className="min-h-[40px] max-h-[120px] resize-none text-base"
+                       className="min-h-[60px] max-h-[120px] resize-none text-base border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                        data-tour-id="chat-input"
                        disabled={isDemo && conversationsUsed >= maxConversations}
                      />
-                  </div>
+                   </div>
                    <Button
                      onClick={sendMessage}
                      disabled={isLoading || uploadingFiles.size > 0 || !inputMessage.trim() || (isDemo && conversationsUsed >= maxConversations)}
@@ -859,9 +932,8 @@ const ConversationalAI = () => {
           {/* Desktop Input Area */}
           {!isMobile && (
             <div className="flex items-center gap-2">
-               <Input
-                 type="text"
-                 placeholder={isDemo && conversationsUsed >= maxConversations ? "Demo limit reached - Create account to continue" : isDemo ? `Type your message... (${promptsUsed}/${maxPrompts} demo messages used)` : "Type your message..."}
+               <Textarea
+                 placeholder={isDemo && conversationsUsed >= maxConversations ? "Demo limit reached - Create account to continue" : isDemo ? `Ask about your finances... (${promptsUsed}/${maxPrompts} demo messages used)` : "Ask me about your finances..."}
                  value={inputMessage}
                  onChange={(e) => setInputMessage(e.target.value)}
                  onKeyDown={(e) => {
@@ -871,7 +943,7 @@ const ConversationalAI = () => {
                    }
                  }}
                  onFocus={() => setShowPromptSuggestions(false)}
-                 className="flex-grow"
+                 className="flex-grow min-h-[60px] max-h-[120px] resize-none text-base"
                  data-tour-id="chat-input"
                  disabled={isDemo && conversationsUsed >= maxConversations}
                />
