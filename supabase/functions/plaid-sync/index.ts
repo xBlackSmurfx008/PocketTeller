@@ -190,6 +190,23 @@ serve(async (req) => {
       throw new Error(`Failed to fetch accounts: ${accountsData.error_message}`);
     }
 
+    // Update Plaid item metadata
+    if (accountsData.item) {
+      await supabase
+        .from('plaid_items')
+        .upsert({
+          user_id: user.id,
+          item_id: accountsData.item.item_id,
+          institution_id: accountsData.item.institution_id,
+          available_products: accountsData.item.available_products || [],
+          billed_products: accountsData.item.billed_products || [],
+          products: accountsData.item.products || [],
+          update_type: 'sync'
+        }, {
+          onConflict: 'item_id'
+        });
+    }
+
     // Sync accounts using enhanced schema
     let syncedAccounts = 0;
     for (const account of accountsData.accounts) {
@@ -199,6 +216,7 @@ serve(async (req) => {
           user_id: user.id,
           account_id: account.account_id, // For compatibility
           plaid_account_id: account.account_id,
+          plaid_item_id_ref: accountsData.item?.item_id,
           name: account.name,
           official_name: account.official_name || account.name,
           type: account.type,
@@ -209,6 +227,7 @@ serve(async (req) => {
           current_balance: account.balances.current,
           credit_limit: account.balances.limit,
           currency_code: account.balances.iso_currency_code || 'USD',
+          institution_id: accountsData.item?.institution_id,
           source: 'plaid',
         }, {
           onConflict: 'user_id,plaid_account_id',
@@ -216,6 +235,15 @@ serve(async (req) => {
 
       if (accountError) {
         console.error('Error upserting account:', accountError);
+        await supabase.from('plaid_token_audit_log').insert({
+          user_id: user.id,
+          access_type: 'sync_account_error',
+          function_name: 'plaid-sync',
+          success: false,
+          error_message: `Account sync failed: ${accountError.message}`,
+          ip_address: clientIP,
+          user_agent: userAgent
+        });
       } else {
         syncedAccounts++;
       }

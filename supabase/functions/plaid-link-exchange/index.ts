@@ -280,42 +280,72 @@ serve(async (req) => {
       const accountsData = await accountsResponse.json();
       console.log('Accounts data retrieved:', accountsData.accounts?.length || 0, 'accounts');
 
-      // Save accounts to database
-      if (accountsData.accounts && accountsData.accounts.length > 0) {
-        const accountsToInsert = accountsData.accounts.map((account: any) => ({
+    // Store Plaid item metadata first
+    const { error: itemError } = await supabase
+      .from('plaid_items')
+      .upsert({
+        user_id: user.id,
+        item_id: exchangeData.item_id,
+        institution_id: accountsData.item?.institution_id,
+        available_products: accountsData.item?.available_products || [],
+        billed_products: accountsData.item?.billed_products || [],
+        products: accountsData.item?.products || []
+      }, {
+        onConflict: 'item_id'
+      });
+
+    if (itemError) {
+      console.warn('Failed to store Plaid item metadata:', itemError);
+      // Don't fail the entire process for this
+    }
+
+    // Save accounts to database
+    if (accountsData.accounts && accountsData.accounts.length > 0) {
+      const accountsToInsert = accountsData.accounts.map((account: any) => ({
+        user_id: user.id,
+        plaid_account_id: account.account_id,
+        plaid_item_id: exchangeData.item_id,
+        plaid_item_id_ref: exchangeData.item_id,
+        account_id: account.account_id, // For compatibility with existing schema
+        name: account.name,
+        official_name: account.official_name || account.name,
+        type: account.type,
+        subtype: account.subtype,
+        mask: account.mask,
+        available_balance: account.balances.available,
+        current_balance: account.balances.current,
+        balance: account.balances.current || account.balances.available || 0, // For compatibility
+        credit_limit: account.balances.limit,
+        currency_code: account.balances.iso_currency_code || 'USD',
+        institution_id: accountsData.item?.institution_id,
+        institution_name: 'Connected Bank', // Will be updated with actual name later
+        source: 'plaid'
+      }));
+
+      const { data: accountInsertResult, error: accountInsertError } = await supabase
+        .from('accounts')
+        .upsert(accountsToInsert, { 
+          onConflict: 'user_id,plaid_account_id',
+          ignoreDuplicates: false 
+        })
+        .select();
+
+      if (accountInsertError) {
+        console.error('Account insert error:', accountInsertError);
+        await supabase.from('plaid_token_audit_log').insert({
           user_id: user.id,
-          plaid_account_id: account.account_id,
-          plaid_item_id: exchangeData.item_id,
-          account_id: account.account_id, // For compatibility with existing schema
-          name: account.name,
-          official_name: account.official_name || account.name,
-          type: account.type,
-          subtype: account.subtype,
-          mask: account.mask,
-          available_balance: account.balances.available,
-          current_balance: account.balances.current,
-          balance: account.balances.current || account.balances.available || 0, // For compatibility
-          credit_limit: account.balances.limit,
-          currency_code: account.balances.iso_currency_code || 'USD',
-          institution_name: 'Connected Bank', // Will be updated with actual name later
-          source: 'plaid'
-        }));
-
-        const { data: accountInsertResult, error: accountInsertError } = await supabase
-          .from('accounts')
-          .upsert(accountsToInsert, { 
-            onConflict: 'user_id,plaid_account_id',
-            ignoreDuplicates: false 
-          })
-          .select();
-
-        if (accountInsertError) {
-          console.error('Account insert error:', accountInsertError);
-        } else {
-          accountsCount = accountInsertResult?.length || 0;
-          console.log('Successfully saved', accountsCount, 'accounts');
-        }
+          access_type: 'accounts_store',
+          function_name: 'plaid-link-exchange',
+          success: false,
+          error_message: `Accounts storage failed: ${accountInsertError.message}`,
+          ip_address: clientIP,
+          user_agent: userAgent
+        });
+      } else {
+        accountsCount = accountInsertResult?.length || 0;
+        console.log('Successfully saved', accountsCount, 'accounts');
       }
+    }
 
       // Fetch recent transactions (last 30 days)
       console.log('Fetching recent transaction data from Plaid');

@@ -31,6 +31,7 @@ export type Database = {
           official_name: string | null
           plaid_account_id: string | null
           plaid_item_id: string | null
+          plaid_item_id_ref: string | null
           source: string
           subtype: string | null
           type: string
@@ -53,6 +54,7 @@ export type Database = {
           official_name?: string | null
           plaid_account_id?: string | null
           plaid_item_id?: string | null
+          plaid_item_id_ref?: string | null
           source?: string
           subtype?: string | null
           type: string
@@ -75,6 +77,7 @@ export type Database = {
           official_name?: string | null
           plaid_account_id?: string | null
           plaid_item_id?: string | null
+          plaid_item_id_ref?: string | null
           source?: string
           subtype?: string | null
           type?: string
@@ -370,6 +373,54 @@ export type Database = {
           target_amount?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      plaid_items: {
+        Row: {
+          available_products: string[] | null
+          billed_products: string[] | null
+          consent_expiration_time: string | null
+          created_at: string
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          item_id: string
+          products: string[] | null
+          update_type: string | null
+          updated_at: string
+          user_id: string
+          webhook: string | null
+        }
+        Insert: {
+          available_products?: string[] | null
+          billed_products?: string[] | null
+          consent_expiration_time?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id: string
+          products?: string[] | null
+          update_type?: string | null
+          updated_at?: string
+          user_id: string
+          webhook?: string | null
+        }
+        Update: {
+          available_products?: string[] | null
+          billed_products?: string[] | null
+          consent_expiration_time?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id?: string
+          products?: string[] | null
+          update_type?: string | null
+          updated_at?: string
+          user_id?: string
+          webhook?: string | null
         }
         Relationships: []
       }
