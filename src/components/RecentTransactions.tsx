@@ -92,6 +92,9 @@ export default function RecentTransactions() {
 
   useEffect(() => {
     filterTransactions();
+  }, [transactions, searchTerm, categoryFilter]);
+
+  useEffect(() => {
     if (viewMode === 'grouped') {
       const grouped = groupTransactionsByCategory(filteredTransactions);
       setGroupedTransactions(grouped);
@@ -102,7 +105,7 @@ export default function RecentTransactions() {
       });
       setOpenCategories(newOpenCategories);
     }
-  }, [transactions, searchTerm, categoryFilter, viewMode, filteredTransactions]);
+  }, [viewMode, filteredTransactions]);
 
   const fetchTransactions = async () => {
     try {
