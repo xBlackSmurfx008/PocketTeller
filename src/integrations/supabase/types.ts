@@ -17,33 +17,66 @@ export type Database = {
       accounts: {
         Row: {
           account_id: string
+          available_balance: number | null
           balance: number
           created_at: string
+          credit_limit: number | null
+          currency_code: string | null
+          current_balance: number | null
           id: string
+          institution_id: string | null
+          institution_name: string | null
+          mask: string | null
           name: string
+          official_name: string | null
+          plaid_account_id: string | null
+          plaid_item_id: string | null
           source: string
+          subtype: string | null
           type: string
           updated_at: string
           user_id: string
         }
         Insert: {
           account_id: string
+          available_balance?: number | null
           balance?: number
           created_at?: string
+          credit_limit?: number | null
+          currency_code?: string | null
+          current_balance?: number | null
           id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          mask?: string | null
           name: string
+          official_name?: string | null
+          plaid_account_id?: string | null
+          plaid_item_id?: string | null
           source?: string
+          subtype?: string | null
           type: string
           updated_at?: string
           user_id: string
         }
         Update: {
           account_id?: string
+          available_balance?: number | null
           balance?: number
           created_at?: string
+          credit_limit?: number | null
+          currency_code?: string | null
+          current_balance?: number | null
           id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          mask?: string | null
           name?: string
+          official_name?: string | null
+          plaid_account_id?: string | null
+          plaid_item_id?: string | null
           source?: string
+          subtype?: string | null
           type?: string
           updated_at?: string
           user_id?: string
@@ -491,36 +524,72 @@ export type Database = {
         Row: {
           account_id: string | null
           amount: number
+          authorized_date: string | null
+          authorized_datetime: string | null
           category: string
           created_at: string
           date: string
+          datetime: string | null
           description: string
           id: string
+          iso_currency_code: string | null
+          location: Json | null
+          merchant_name: string | null
+          payment_meta: Json | null
+          pending: boolean | null
+          plaid_account_id: string | null
+          plaid_transaction_id: string | null
+          subcategory: string | null
           transaction_id: string | null
+          unofficial_currency_code: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           account_id?: string | null
           amount: number
+          authorized_date?: string | null
+          authorized_datetime?: string | null
           category?: string
           created_at?: string
           date: string
+          datetime?: string | null
           description: string
           id?: string
+          iso_currency_code?: string | null
+          location?: Json | null
+          merchant_name?: string | null
+          payment_meta?: Json | null
+          pending?: boolean | null
+          plaid_account_id?: string | null
+          plaid_transaction_id?: string | null
+          subcategory?: string | null
           transaction_id?: string | null
+          unofficial_currency_code?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           account_id?: string | null
           amount?: number
+          authorized_date?: string | null
+          authorized_datetime?: string | null
           category?: string
           created_at?: string
           date?: string
+          datetime?: string | null
           description?: string
           id?: string
+          iso_currency_code?: string | null
+          location?: Json | null
+          merchant_name?: string | null
+          payment_meta?: Json | null
+          pending?: boolean | null
+          plaid_account_id?: string | null
+          plaid_transaction_id?: string | null
+          subcategory?: string | null
           transaction_id?: string | null
+          unofficial_currency_code?: string | null
           updated_at?: string
           user_id?: string
         }
