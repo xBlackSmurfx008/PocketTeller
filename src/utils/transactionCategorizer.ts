@@ -9,6 +9,8 @@ export const CATEGORIES = [
   'Travel',
   'Education',
   'Income',
+  'Savings',
+  'Investments',
   'Other'
 ];
 

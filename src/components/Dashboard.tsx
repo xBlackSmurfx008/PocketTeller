@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FinancialHealthSnapshot from '@/components/FinancialHealthSnapshot';
+import BudgetOverview from '@/components/BudgetOverview';
 import GoalsOverview from '@/components/GoalsOverview';
 import UpcomingBills from '@/components/UpcomingBills';
 import { PlaidLink } from '@/components/PlaidLink';
@@ -195,6 +196,10 @@ export default function Dashboard() {
 
         <div data-tour-id="financial-snapshot">
           <FinancialHealthSnapshot />
+        </div>
+
+        <div data-tour-id="budget-overview">
+          <BudgetOverview />
         </div>
         
         <div className={`grid grid-cols-1 lg:grid-cols-2 ${showMobileLayout ? 'gap-4' : 'gap-6'}`}>
