@@ -584,6 +584,7 @@ export type Database = {
           authorized_date: string | null
           authorized_datetime: string | null
           category: string
+          category_source: string | null
           created_at: string
           date: string
           datetime: string | null
@@ -608,6 +609,7 @@ export type Database = {
           authorized_date?: string | null
           authorized_datetime?: string | null
           category?: string
+          category_source?: string | null
           created_at?: string
           date: string
           datetime?: string | null
@@ -632,6 +634,7 @@ export type Database = {
           authorized_date?: string | null
           authorized_datetime?: string | null
           category?: string
+          category_source?: string | null
           created_at?: string
           date?: string
           datetime?: string | null

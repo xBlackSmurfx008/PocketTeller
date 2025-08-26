@@ -364,7 +364,9 @@ serve(async (req) => {
           access_token: exchangeData.access_token,
           start_date: thirtyDaysAgo.toISOString().split('T')[0],
           end_date: new Date().toISOString().split('T')[0],
-          count: 100
+          options: {
+            count: 100
+          }
         }),
       });
 
@@ -389,7 +391,8 @@ serve(async (req) => {
             authorized_datetime: transaction.authorized_datetime || null,
             description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
             merchant_name: transaction.merchant_name,
-            category: transaction.category?.[0] || 'Other',
+            category: mapPlaidCategory(transaction.category || []),
+            category_source: 'auto',
             subcategory: transaction.category?.[1] || null,
             pending: transaction.pending || false,
             iso_currency_code: transaction.iso_currency_code || 'USD',

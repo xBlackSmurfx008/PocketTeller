@@ -146,7 +146,10 @@ export default function RecentTransactions() {
     try {
       const { error } = await supabase
         .from('transactions')
-        .update({ category: newCategory })
+        .update({ 
+          category: newCategory,
+          category_source: 'user'
+        })
         .eq('id', transactionId)
         .eq('user_id', user?.id);
 

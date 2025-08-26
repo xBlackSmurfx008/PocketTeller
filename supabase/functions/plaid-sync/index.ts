@@ -388,6 +388,7 @@ serve(async (req) => {
             description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
             merchant_name: transaction.merchant_name,
             category: mappedCategory,
+            category_source: 'auto',
             subcategory: transaction.category?.[1] || null,
             pending: transaction.pending || false,
             iso_currency_code: transaction.iso_currency_code || 'USD',
@@ -405,34 +406,43 @@ serve(async (req) => {
         }
       }
 
-      // Process modified transactions
+      // Process modified transactions (preserve user categories)
       for (const transaction of syncData.modified) {
-        const mappedCategory = mapPlaidCategory(transaction.category);
-        
+        // Check if user has manually categorized this transaction
+        const { data: existingTxn } = await supabase
+          .from('transactions')
+          .select('category_source, category')
+          .eq('user_id', user.id)
+          .eq('plaid_transaction_id', transaction.transaction_id)
+          .single();
+
+        const updateData: any = {
+          amount: Math.abs(transaction.amount),
+          date: transaction.date,
+          datetime: transaction.datetime || null,
+          authorized_date: transaction.authorized_date || null,
+          authorized_datetime: transaction.authorized_datetime || null,
+          description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
+          merchant_name: transaction.merchant_name,
+          subcategory: transaction.category?.[1] || null,
+          pending: transaction.pending || false,
+          iso_currency_code: transaction.iso_currency_code || 'USD',
+          unofficial_currency_code: transaction.unofficial_currency_code,
+          location: transaction.location || null,
+          payment_meta: transaction.payment_meta || null,
+        };
+
+        // Only update category if user hasn't manually set it
+        if (!existingTxn || existingTxn.category_source !== 'user') {
+          updateData.category = mapPlaidCategory(transaction.category || []);
+          updateData.category_source = 'auto';
+        }
+
         const { error: transactionError } = await supabase
           .from('transactions')
-          .upsert({
-            user_id: user.id,
-            transaction_id: transaction.transaction_id,
-            plaid_transaction_id: transaction.transaction_id,
-            plaid_account_id: transaction.account_id,
-            amount: Math.abs(transaction.amount),
-            date: transaction.date,
-            datetime: transaction.datetime || null,
-            authorized_date: transaction.authorized_date || null,
-            authorized_datetime: transaction.authorized_datetime || null,
-            description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
-            merchant_name: transaction.merchant_name,
-            category: mappedCategory,
-            subcategory: transaction.category?.[1] || null,
-            pending: transaction.pending || false,
-            iso_currency_code: transaction.iso_currency_code || 'USD',
-            unofficial_currency_code: transaction.unofficial_currency_code,
-            location: transaction.location || null,
-            payment_meta: transaction.payment_meta || null,
-          }, {
-            onConflict: 'user_id,plaid_transaction_id',
-          });
+          .update(updateData)
+          .eq('user_id', user.id)
+          .eq('plaid_transaction_id', transaction.transaction_id);
 
         if (transactionError) {
           console.error('Error updating transaction:', transactionError);
