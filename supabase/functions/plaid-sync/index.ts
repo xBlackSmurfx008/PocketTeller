@@ -190,29 +190,40 @@ serve(async (req) => {
       throw new Error(`Failed to fetch accounts: ${accountsData.error_message}`);
     }
 
-    // Sync accounts
+    // Sync accounts using enhanced schema
+    let syncedAccounts = 0;
     for (const account of accountsData.accounts) {
       const { error: accountError } = await supabase
         .from('accounts')
         .upsert({
           user_id: user.id,
-          account_id: account.account_id,
+          account_id: account.account_id, // For compatibility
+          plaid_account_id: account.account_id,
           name: account.name,
+          official_name: account.official_name || account.name,
           type: account.type,
-          balance: account.balances.current || 0,
+          subtype: account.subtype,
+          mask: account.mask,
+          balance: account.balances.current || account.balances.available || 0, // For compatibility
+          available_balance: account.balances.available,
+          current_balance: account.balances.current,
+          credit_limit: account.balances.limit,
+          currency_code: account.balances.iso_currency_code || 'USD',
           source: 'plaid',
         }, {
-          onConflict: 'user_id,account_id',
+          onConflict: 'user_id,plaid_account_id',
         });
 
       if (accountError) {
         console.error('Error upserting account:', accountError);
+      } else {
+        syncedAccounts++;
       }
     }
 
-    // Get transactions for last 24 months
+    // Get transactions for last 3 months (more reasonable for sync)
     const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 24);
+    startDate.setMonth(startDate.getMonth() - 3);
     const endDate = new Date();
 
     const transactionsResponse = await fetch(`${plaidBaseUrl}/transactions/get`, {
@@ -238,53 +249,47 @@ serve(async (req) => {
       throw new Error(`Failed to fetch transactions: ${transactionsData.error_message}`);
     }
 
-    // Get account mapping for user's accounts
-    const { data: userAccounts } = await supabase
-      .from('accounts')
-      .select('id, account_id')
-      .eq('user_id', user.id);
-
-    const accountMap = new Map(
-      userAccounts?.map(acc => [acc.account_id, acc.id]) || []
-    );
-
-    // Sync transactions
-    let syncedCount = 0;
+    // Sync transactions using enhanced schema
+    let syncedTransactions = 0;
     for (const transaction of transactionsData.transactions) {
-      const accountId = accountMap.get(transaction.account_id);
-      
-      if (!accountId) {
-        console.warn('Account not found for transaction:', transaction.account_id);
-        continue;
-      }
-
       const { error: transactionError } = await supabase
         .from('transactions')
         .upsert({
           user_id: user.id,
-          transaction_id: transaction.transaction_id,
-          account_id: accountId,
-          amount: Math.abs(transaction.amount),
-          description: transaction.name,
-          category: transaction.category?.[0] || 'Other',
+          transaction_id: transaction.transaction_id, // For compatibility
+          plaid_transaction_id: transaction.transaction_id,
+          plaid_account_id: transaction.account_id,
+          amount: Math.abs(transaction.amount), // Store positive amount
           date: transaction.date,
+          datetime: transaction.datetime || null,
+          authorized_date: transaction.authorized_date || null,
+          authorized_datetime: transaction.authorized_datetime || null,
+          description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
+          merchant_name: transaction.merchant_name,
+          category: transaction.category?.[0] || 'Other',
+          subcategory: transaction.category?.[1] || null,
+          pending: transaction.pending || false,
+          iso_currency_code: transaction.iso_currency_code || 'USD',
+          unofficial_currency_code: transaction.unofficial_currency_code,
+          location: transaction.location || null,
+          payment_meta: transaction.payment_meta || null,
         }, {
-          onConflict: 'user_id,transaction_id',
+          onConflict: 'user_id,plaid_transaction_id',
         });
 
       if (transactionError) {
         console.error('Error upserting transaction:', transactionError);
       } else {
-        syncedCount++;
+        syncedTransactions++;
       }
     }
 
-    console.log(`Successfully synced ${accountsData.accounts.length} accounts and ${syncedCount} transactions for user:`, user.id);
+    console.log(`Successfully synced ${syncedAccounts} accounts and ${syncedTransactions} transactions for user:`, user.id);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      accounts: accountsData.accounts.length,
-      transactions: syncedCount 
+      accounts: syncedAccounts,
+      transactions: syncedTransactions 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
