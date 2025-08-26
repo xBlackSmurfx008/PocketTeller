@@ -625,9 +625,9 @@ const ConversationalAI = () => {
         </div>
       )}
 
-      <div className={`flex flex-1 ${isMobile ? 'flex-col' : 'max-w-7xl mx-auto w-full px-4 flex-row gap-6'}`}>
+      <div className={`flex flex-1 min-h-0 ${isMobile ? 'flex-col' : 'max-w-7xl mx-auto w-full px-4 flex-row gap-6'}`}>
         {/* Main Chat Area */}
-        <div className={`flex-1 flex flex-col ${isMobile ? 'h-full' : ''}`}>
+        <div className={`flex-1 flex flex-col min-h-0 ${isMobile ? 'h-full' : ''}`}>
           {!isMobile && coachMode && (
             <Card className="mb-4 border-primary/20 bg-primary/5">
               <CardContent className="p-4">
@@ -724,10 +724,10 @@ const ConversationalAI = () => {
           )}
 
           {/* Messages Display */}
-          <div className={`flex-1 ${isMobile ? 'px-4 pb-0' : ''}`}>
-            <Card className={`${isMobile ? 'h-full' : ''}`}>
-              <CardContent className="p-4 pb-0 h-full">
-                <ScrollArea className={`${isMobile ? 'h-full' : 'h-[400px]'} pr-4`}>
+          <div className={`flex-1 min-h-0 ${isMobile ? 'px-4 pb-0' : ''}`}>
+            <Card className={`h-full flex flex-col`}>
+              <CardContent className="p-4 pb-0 flex-1 flex flex-col min-h-0">
+                <ScrollArea className={`flex-1 pr-4`}>
                   {/* Prompt Suggestions in Chat */}
                   {showPromptSuggestions && messages.length === 0 && (
                     <div className="mb-4 p-4 border border-primary/20 bg-primary/5 rounded-lg">
