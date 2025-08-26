@@ -879,7 +879,7 @@ const ConversationalAI = () => {
                 </div>
               )}
               
-              <div className="p-4">
+              <div className="p-4 pt-0">
                 <div className="flex items-end gap-2">
                   <Button
                     type="button"
