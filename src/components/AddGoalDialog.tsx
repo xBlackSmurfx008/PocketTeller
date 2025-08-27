@@ -178,13 +178,14 @@ export function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGoalDialog
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
                           {field.value ? (
                             format(field.value, "PPP")
                           ) : (

@@ -229,6 +229,7 @@ export function AddTaskDialog({ open, onOpenChange, goalId, goals, onTaskAdded }
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
+                          type="button"
                           variant="outline"
                           className={cn(
                             "w-full pl-3 text-left font-normal",

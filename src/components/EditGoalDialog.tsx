@@ -188,15 +188,16 @@ export function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated }: Edit
                 <FormItem className="flex flex-col">
                   <FormLabel>Deadline (Optional)</FormLabel>
                   <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        type="button"
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
                           {field.value ? (
                             format(field.value, "PPP")
                           ) : (

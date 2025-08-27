@@ -16,11 +16,7 @@ export const TransactionSyncButton = ({ onSyncComplete }: TransactionSyncButtonP
   const handleSync = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('plaid-sync', {
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('plaid-sync');
 
       if (error) {
         throw error;
@@ -57,6 +53,7 @@ export const TransactionSyncButton = ({ onSyncComplete }: TransactionSyncButtonP
       variant="outline"
       size="sm"
       className="gap-2"
+      aria-label="Refresh transactions from bank"
     >
       <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
       {isLoading ? 'Syncing...' : 'Refresh'}

@@ -34,7 +34,7 @@ export default function SpendingInsights() {
   const { isDemo } = useDemo();
 
   const THROTTLE_KEY = 'aiInsightsLastRun';
-  const THROTTLE_HOURS = 12;
+  const THROTTLE_HOURS = 1;
 
   const canRunInsights = () => {
     if (isDemo) return false;
@@ -153,6 +153,7 @@ export default function SpendingInsights() {
             onClick={handleRefresh}
             disabled={isLoading}
             className="gap-2"
+            aria-label="Refresh spending insights"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh

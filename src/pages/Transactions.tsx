@@ -54,7 +54,7 @@ export default function Transactions() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex items-center gap-3 sm:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0" aria-label="Back to dashboard">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Transactions</h1>

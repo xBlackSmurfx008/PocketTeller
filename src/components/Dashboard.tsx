@@ -122,23 +122,23 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 sm:gap-4">
             {showMobileLayout ? (
               <>
-                <Button variant="ghost" size="icon" onClick={() => navigate('/chat')}>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/chat')} aria-label="AI Chat">
                   <MessageSquare className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => navigate('/goals')}>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/goals')} aria-label="Goals">
                   <Target className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => navigate('/transactions')}>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/transactions')} aria-label="Transactions">
                   <Receipt className="h-4 w-4" />
                 </Button>
                 {budgetData && (
                   <ShareBudgetDialog budgetData={budgetData}>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" aria-label="Share budget">
                       <Share2 className="h-4 w-4" />
                     </Button>
                   </ShareBudgetDialog>
                 )}
-                <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/account')} aria-label="Account settings">
                   <Settings className="h-4 w-4" />
                 </Button>
               </>
@@ -163,7 +163,7 @@ export default function Dashboard() {
                     </Button>
                   </ShareBudgetDialog>
                 )}
-                <Button variant="ghost" size="icon" onClick={() => navigate('/account')}>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/account')} aria-label="Account settings">
                   <Settings className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" onClick={handleSignOut}>
