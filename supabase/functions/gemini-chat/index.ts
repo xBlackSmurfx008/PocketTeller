@@ -46,9 +46,8 @@ const commitmentQuestions = [
 ];
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.lovableproject.com',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Credentials': 'true',
 }
 
 // SSRF protection: validate attachment URLs
