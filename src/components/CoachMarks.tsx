@@ -117,8 +117,8 @@ export function CoachMarks() {
       setHasElementNotFound(true);
       console.warn(`Tour element not found: ${currentStep.selector}`);
       
-      // Auto-skip after showing warning (declare handleNext first)
-      const autoSkip = () => {
+      // Auto-skip after showing warning
+      setTimeout(() => {
         if (tourActive && currentStep) {
           if (tourStep >= tourSteps.length - 1) {
             skipTour();
@@ -126,10 +126,9 @@ export function CoachMarks() {
             nextTourStep();
           }
         }
-      };
-      setTimeout(autoSkip, 3000);
+      }, 3000);
     }
-  }, [currentStep, tourActive]);
+  }, [currentStep, tourActive, tourStep, tourSteps.length, skipTour, nextTourStep]);
 
   useEffect(() => {
     if (!tourActive || !currentStep) return;
