@@ -48,3 +48,6 @@ verify_jwt = true
 
 [functions.ai-spending-insights]
 verify_jwt = true
+
+[functions.send-waitlist-confirmation]
+verify_jwt = false

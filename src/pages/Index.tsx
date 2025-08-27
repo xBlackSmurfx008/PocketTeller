@@ -104,11 +104,38 @@ const Index = () => {
           });
         }
       } else {
+        // Database insertion successful, now send confirmation email
         setJoined(true);
-        toast({
-          title: "Welcome to the waitlist!",
-          description: "Thanks for signing up. We'll be in touch before Oct 16.",
-        });
+        
+        try {
+          // Send confirmation email
+          const { error: emailError } = await supabase.functions.invoke('send-waitlist-confirmation', {
+            body: {
+              email: email.trim(),
+              source: 'home_hero',
+              user_agent: navigator.userAgent
+            }
+          });
+
+          if (emailError) {
+            console.error('Email confirmation failed:', emailError);
+            toast({
+              title: "You're on the waitlist!",
+              description: "Confirmation email failed to send, but you're registered for Oct 16.",
+            });
+          } else {
+            toast({
+              title: "Welcome to the waitlist!",
+              description: "Check your email for confirmation. We'll be in touch before Oct 16!",
+            });
+          }
+        } catch (emailError) {
+          console.error('Email confirmation error:', emailError);
+          toast({
+            title: "You're on the waitlist!",
+            description: "Confirmation email failed to send, but you're registered for Oct 16.",
+          });
+        }
       }
     } catch (error) {
       toast({
