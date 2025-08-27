@@ -267,7 +267,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       full: [
         {
           id: 'welcome',
-          title: 'Welcome to Budget AI!',
+          title: 'Welcome to Pocket Banker!',
           description: 'Let\'s take a quick tour of the main features. This demo includes sample data and you can try the AI chat with up to 5 messages.',
           selector: '[data-tour-id="dashboard"]',
           route: '/',

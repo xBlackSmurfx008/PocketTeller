@@ -212,7 +212,7 @@ const Index = () => {
             Ready to take control of your finances?
           </h2>
           <p className={`text-xl text-muted-foreground mb-8 scroll-reveal reveal-delay-1 ${ctaReveal.isVisible ? 'in-view' : ''}`}>
-            Join thousands of users who have transformed their financial lives with Budget AI.
+            Join thousands of users who have transformed their financial lives with Pocket Banker.
           </p>
           <div className={`flex flex-col sm:flex-row gap-4 justify-center scroll-reveal reveal-delay-2 ${ctaReveal.isVisible ? 'in-view' : ''}`}>
             <Button 

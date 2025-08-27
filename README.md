@@ -1,4 +1,4 @@
-# Budget AI - Intelligent Personal Finance Management
+# Pocket Banker - Intelligent Personal Finance Management
 
 [![Deploy](https://img.shields.io/badge/Deploy-Lovable-brightgreen)](https://lovable.dev)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

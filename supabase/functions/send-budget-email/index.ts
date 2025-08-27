@@ -178,12 +178,12 @@ serve(async (req) => {
         <a href="${shareUrl}" style="display: inline-block; background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Budget Plan</a>
         <p style="color: #666; font-size: 12px;">This link will expire in 7 days.</p>
         <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        <p style="color: #888; font-size: 12px;">This email was sent from Budget AI. If you did not expect this email, you can safely ignore it.</p>
+        <p style="color: #888; font-size: 12px;">This email was sent from Pocket Banker. If you did not expect this email, you can safely ignore it.</p>
       </div>
     `;
 
     const emailResponse = await resend.emails.send({
-      from: "Budget AI <noreply@resend.dev>",
+      from: "Pocket Banker <noreply@resend.dev>",
       to: [recipientEmail],
       subject: `${safeSenderName ? safeSenderName + ' shared' : 'Shared'} a Budget Plan with you`,
       html: emailHtml,

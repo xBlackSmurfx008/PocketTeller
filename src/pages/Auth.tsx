@@ -236,7 +236,7 @@ export default function Auth() {
           
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>Welcome to Budget AI</CardTitle>
+              <CardTitle>Welcome to Pocket Banker</CardTitle>
               <CardDescription>
                 Sign in to your account or create a new one to get started.
               </CardDescription>
@@ -255,7 +255,7 @@ export default function Auth() {
                   Try Demo - No Signup Required
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Explore Budget AI with sample data
+                  Explore Pocket Banker with sample data
                 </p>
               </div>
 

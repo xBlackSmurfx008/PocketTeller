@@ -200,7 +200,7 @@ export default function SharedBudget() {
         </Card>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>Want to create your own budget? Visit Budget AI to get started.</p>
+          <p>Want to create your own budget? Visit Pocket Banker to get started.</p>
         </div>
       </div>
     </div>

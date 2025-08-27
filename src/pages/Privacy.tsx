@@ -33,7 +33,7 @@ const Privacy = () => {
               </CardHeader>
               <CardContent className="prose dark:prose-invert max-w-none">
                 <p>
-                  Budget AI is committed to protecting your privacy and financial data. This Privacy Policy 
+                  Pocket Banker is committed to protecting your privacy and financial data. This Privacy Policy 
                   explains how we collect, use, and safeguard your information when you use our application.
                 </p>
               </CardContent>

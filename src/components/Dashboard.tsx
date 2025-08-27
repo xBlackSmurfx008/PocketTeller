@@ -118,7 +118,7 @@ export default function Dashboard() {
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className={`font-bold text-foreground ${showMobileLayout ? 'text-xl' : 'text-2xl'}`}>
-            Budget AI {isDemo && <span className="text-sm font-normal text-muted-foreground">(Demo)</span>}
+            Pocket Banker {isDemo && <span className="text-sm font-normal text-muted-foreground">(Demo)</span>}
           </h1>
           <div className="flex items-center gap-2 sm:gap-4">
             {showMobileLayout ? (

@@ -17,7 +17,7 @@ const TOUR_OPTIONS: TourOption[] = [
   {
     type: 'full',
     title: 'Complete Walkthrough',
-    description: 'Comprehensive tour of all Budget AI features',
+    description: 'Comprehensive tour of all Pocket Banker features',
     icon: <Play className="h-5 w-5" />,
     duration: '3-4 min'
   },
@@ -63,7 +63,7 @@ export function TourLauncher() {
         <DialogHeader>
           <DialogTitle>Choose Your Tour</DialogTitle>
           <DialogDescription>
-            Select a guided tour to learn about Budget AI's features
+            Select a guided tour to learn about Pocket Banker's features
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

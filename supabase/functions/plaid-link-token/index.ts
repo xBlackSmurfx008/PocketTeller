@@ -174,7 +174,7 @@ serve(async (req) => {
         user: {
           client_user_id: user.id
         },
-        client_name: 'Budget AI',
+        client_name: 'Pocket Banker',
         products: ['transactions'],
         country_codes: ['US'],
         language: 'en'

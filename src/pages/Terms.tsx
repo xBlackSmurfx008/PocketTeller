@@ -33,7 +33,7 @@ const Terms = () => {
               </CardHeader>
               <CardContent className="prose dark:prose-invert max-w-none">
                 <p>
-                  By accessing and using Budget AI, you accept and agree to be bound by the terms 
+                  By accessing and using Pocket Banker, you accept and agree to be bound by the terms 
                   and provision of this agreement. If you do not agree to abide by the above, 
                   please do not use this service.
                 </p>
@@ -47,7 +47,7 @@ const Terms = () => {
             </CardHeader>
             <CardContent className="prose prose-sm dark:prose-invert max-w-none">
               <p>
-                Budget AI is a personal finance management application that provides:
+                Pocket Banker is a personal finance management application that provides:
               </p>
               <ul>
                 <li>Budget tracking and expense categorization</li>
@@ -148,7 +148,7 @@ const Terms = () => {
             </CardHeader>
             <CardContent className="prose prose-sm dark:prose-invert max-w-none">
               <p>
-                Budget AI is provided "as is" without warranties of any kind. We are not liable for any financial decisions made based on our service or any damages resulting from the use of our application.
+                Pocket Banker is provided "as is" without warranties of any kind. We are not liable for any financial decisions made based on our service or any damages resulting from the use of our application.
               </p>
             </CardContent>
           </Card>
