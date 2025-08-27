@@ -3,16 +3,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Bill } from '@/types/models';
 
-export interface Bill {
-  id: string;
-  name: string;
-  amount: number;
-  due_date: string;
-  is_paid: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+export type { Bill };
 
 export const useBills = () => {
   const { user } = useAuth();

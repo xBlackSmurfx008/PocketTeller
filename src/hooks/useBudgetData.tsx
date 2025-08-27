@@ -7,23 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { autoCategorizeTransaction } from '@/utils/transactionCategorizer';
 import { normalizeCategoryName } from '@/utils/categoryNormalizer';
 
-export interface CategoryBudget {
-  id: string;
-  name: string;
-  planned: number;
-  actual: number;
-}
+import { CategoryBudget, BudgetData, TotalsData } from '@/types/models';
 
-export interface BudgetData {
-  income: number;
-  categories: CategoryBudget[];
-}
-
-export interface TotalsData {
-  income: number;
-  expenses: number;
-  net: number;
-}
+export type { CategoryBudget, BudgetData, TotalsData };
 
 export const useBudgetData = (selectedMonth: string) => {
   const { user } = useAuth();

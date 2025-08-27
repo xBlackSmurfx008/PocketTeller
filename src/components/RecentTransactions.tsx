@@ -19,10 +19,9 @@ import {
   CATEGORIES, 
   autoCategorizeTransaction, 
   groupTransactionsByCategory, 
-  getCategoryTotals,
-  type Transaction,
-  type GroupedTransactions 
+  getCategoryTotals
 } from '@/utils/transactionCategorizer';
+import { Transaction, GroupedTransactions } from '@/types/models';
 
 export default function RecentTransactions() {
   const { user } = useAuth();

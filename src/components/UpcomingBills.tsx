@@ -1,112 +1,27 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useDemo } from '@/hooks/useDemo';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useDateHelpers } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/use-toast';
+import { useBills } from '@/hooks/useBills';
 import { Plus, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import AddBillDialog from '@/components/AddBillDialog';
-
-interface Bill {
-  id: string;
-  name: string;
-  due_date: string;
-  amount: number;
-  is_paid: boolean;
-}
+import { Bill } from '@/types/models';
 
 export default function UpcomingBills() {
-  const { user } = useAuth();
-  const { isDemo, sampleData } = useDemo();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const { toast } = useToast();
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { bills, loading, updateBill } = useBills();
   const [showAddDialog, setShowAddDialog] = useState(false);
 
-  useEffect(() => {
-    if (isDemo && !user) {
-      // Only show demo data if in demo mode AND no authenticated user
-      setBills(sampleData.bills.map(bill => ({ ...bill, is_paid: false })) as Bill[]);
-      setLoading(false);
-    } else if (user) {
-      fetchBills();
-    } else {
-      setLoading(false);
-    }
-  }, [user, isDemo, sampleData]);
-
-  const fetchBills = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bills')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('due_date', { ascending: true });
-
-      if (error) throw error;
-      setBills(data || []);
-    } catch (error) {
-      console.error('Error fetching bills:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch bills",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const updateBillStatus = async (billId: string, isPaid: boolean) => {
-    if (isDemo) {
-      setBills(prev =>
-        prev.map(bill =>
-          bill.id === billId ? { ...bill, is_paid: isPaid } : bill
-        )
-      );
-      toast({
-        title: "Demo Mode",
-        description: `Bill marked as ${isPaid ? 'paid' : 'unpaid'} (demo only)`,
-      });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('bills')
-        .update({ is_paid: isPaid })
-        .eq('id', billId)
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
-
-      setBills(prev =>
-        prev.map(bill =>
-          bill.id === billId ? { ...bill, is_paid: isPaid } : bill
-        )
-      );
-
-      toast({
-        title: "Success",
-        description: `Bill marked as ${isPaid ? 'paid' : 'unpaid'}`,
-      });
-    } catch (error) {
-      console.error('Error updating bill:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update bill status",
-        variant: "destructive",
-      });
-    }
+    await updateBill(billId, { is_paid: isPaid });
   };
 
   const getBillStatusBadge = (bill: Bill) => {
@@ -160,7 +75,7 @@ export default function UpcomingBills() {
             Upcoming Bills
           </CardTitle>
           <Button 
-            onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding bills disabled in demo" }) : setShowAddDialog(true)} 
+            onClick={() => setShowAddDialog(true)} 
             size="sm"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -210,7 +125,7 @@ export default function UpcomingBills() {
       <AddBillDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
-        onBillAdded={fetchBills}
+        onBillAdded={() => {}} // Bills are automatically refreshed via hook
       />
     </Card>
   );

@@ -1,65 +1,24 @@
 
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useDemo } from '@/hooks/useDemo';
+import { useGoals } from '@/hooks/useGoals';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useDateHelpers } from '@/utils/dateUtils';
 import { useNavigate } from 'react-router-dom';
 import { Target, TrendingUp, Calendar } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
-
-interface Goal {
-  id: string;
-  goal_name: string;
-  target_amount: number;
-  current_amount: number;
-  deadline: string | null;
-  created_at: string;
-}
+import { Goal } from '@/types/models';
 
 export default function GoalsOverview() {
-  const { user } = useAuth();
-  const { isDemo, sampleData } = useDemo();
+  const { goals, loading } = useGoals();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const navigate = useNavigate();
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (isDemo && !user) {
-      // Only show demo data if in demo mode AND no authenticated user
-      setGoals(sampleData.goals as Goal[]);
-      setLoading(false);
-    } else if (user) {
-      fetchGoals();
-    } else {
-      setLoading(false);
-    }
-  }, [user, isDemo, sampleData]);
-
-  const fetchGoals = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('goals')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-      setGoals(data || []);
-    } catch (error) {
-      console.error('Error fetching goals:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  // Show only the first 3 goals for overview
+  const displayGoals = goals.slice(0, 3);
 
   const getGoalProgress = (goal: Goal) => {
     return Math.min((goal.current_amount / goal.target_amount) * 100, 100);
@@ -137,8 +96,8 @@ export default function GoalsOverview() {
               Create Your First Goal
             </Button>
           </div>
-        ) : (
-          goals.map((goal) => {
+          ) : (
+            displayGoals.map((goal) => {
             const progress = getGoalProgress(goal);
             const onTrack = isGoalOnTrack(goal);
             const deadlineInfo = getDeadlineInfo(goal);

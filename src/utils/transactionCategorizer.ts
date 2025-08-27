@@ -79,19 +79,9 @@ export function autoCategorizeTransaction(description: string, amount: number): 
   return 'Other';
 }
 
-export interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  category: string;
-  account_id?: string;
-  category_source?: string;
-}
+import { Transaction, GroupedTransactions } from '@/types/models';
 
-export interface GroupedTransactions {
-  [category: string]: Transaction[];
-}
+export type { Transaction, GroupedTransactions };
 
 export function groupTransactionsByCategory(transactions: Transaction[]): GroupedTransactions {
   const grouped: GroupedTransactions = {};

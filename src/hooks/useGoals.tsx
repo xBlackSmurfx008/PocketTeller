@@ -3,16 +3,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Goal } from '@/types/models';
 
-export interface Goal {
-  id: string;
-  goal_name: string;
-  target_amount: number;
-  current_amount: number;
-  deadline?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+export type { Goal };
 
 export const useGoals = () => {
   const { user } = useAuth();
