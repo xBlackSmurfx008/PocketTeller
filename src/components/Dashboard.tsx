@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Settings, Target, MessageSquare, Share2, Receipt } from 'lucide-react';
 import { TourLauncher } from '@/components/TourLauncher';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -140,6 +141,7 @@ export default function Dashboard() {
                     </Button>
                   </ShareBudgetDialog>
                 )}
+                <NotificationBell />
                 <Button variant="ghost" size="icon" onClick={() => navigate('/account')} aria-label="Account settings">
                   <Settings className="h-4 w-4" />
                 </Button>
@@ -166,6 +168,7 @@ export default function Dashboard() {
                     </Button>
                   </ShareBudgetDialog>
                 )}
+                <NotificationBell />
                 <Button variant="ghost" size="icon" onClick={() => navigate('/account')} aria-label="Account settings">
                   <Settings className="h-4 w-4" />
                 </Button>

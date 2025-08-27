@@ -13,6 +13,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlaidLink } from '@/components/PlaidLink';
 import { PlaidSecuritySettings } from '@/components/PlaidSecuritySettings';
 import { Reveal } from '@/components/Reveal';
+import NotificationSettings from '@/components/NotificationSettings';
+import NotificationInbox from '@/components/NotificationInbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -220,6 +222,14 @@ export default function Account() {
         </Reveal>
 
         <Reveal delay={250}>
+          <NotificationSettings />
+        </Reveal>
+
+        <Reveal delay={300}>
+          <NotificationInbox />
+        </Reveal>
+
+        <Reveal delay={350}>
           <Card className="border-destructive card-hover-lift">
             <CardHeader>
               <CardTitle className="text-destructive flex items-center gap-2">
