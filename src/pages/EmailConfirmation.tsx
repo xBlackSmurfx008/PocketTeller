@@ -204,12 +204,20 @@ export default function EmailConfirmation() {
               )}
               
               {status === 'error' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>Common issues and solutions:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>Check if the email link has expired (usually valid for 24 hours)</li>
+                      <li>Make sure you're using the latest email confirmation link</li>
+                      <li>Try requesting a new confirmation email</li>
+                    </ul>
+                  </div>
                   <Button 
                     onClick={() => navigate('/auth')} 
                     className="w-full"
                   >
-                    Try Again
+                    Request New Confirmation Email
                   </Button>
                   <Button 
                     variant="outline"

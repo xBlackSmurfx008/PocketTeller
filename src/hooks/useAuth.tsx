@@ -85,14 +85,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resendConfirmation = async (email: string) => {
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: {
-        emailRedirectTo: AuthConfig.emailConfirmRedirect
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: AuthConfig.emailConfirmRedirect
+        }
+      });
+      
+      if (error) {
+        console.error('Resend confirmation error:', error);
       }
-    });
-    return { error };
+      
+      return { error };
+    } catch (err: any) {
+      console.error('Unexpected resend error:', err);
+      return { error: err };
+    }
   };
 
   const resetPassword = async (email: string) => {
