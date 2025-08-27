@@ -66,6 +66,26 @@ const getClientIP = (req: Request): string | null => {
   return null;
 };
 
+// Map Plaid categories to our app categories
+const mapPlaidCategory = (plaidCategories: string[]): string => {
+  if (!plaidCategories || plaidCategories.length === 0) {
+    return 'Other';
+  }
+
+  const category = plaidCategories[0].toLowerCase();
+  
+  if (category.includes('food') || category.includes('restaurant')) return 'Food & Dining';
+  if (category.includes('travel') || category.includes('transportation')) return 'Transportation';
+  if (category.includes('shop') || category.includes('retail')) return 'Shopping';
+  if (category.includes('entertainment') || category.includes('recreation')) return 'Entertainment';
+  if (category.includes('healthcare') || category.includes('medical')) return 'Healthcare';
+  if (category.includes('utilities') || category.includes('bills')) return 'Bills & Utilities';
+  if (category.includes('transfer') || category.includes('deposit')) return 'Transfer';
+  if (category.includes('interest') || category.includes('dividend')) return 'Income';
+  
+  return 'Other';
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -133,6 +153,10 @@ serve(async (req) => {
     }
 
     console.log('Starting Plaid token exchange for user:', user.id);
+
+    // Get client info early for audit logging
+    const clientIP = getClientIP(req);
+    const userAgent = req.headers.get('user-agent') || 'unknown';
 
     // Exchange public token for access token
     const exchangeResponse = await fetch(`${plaidBaseUrl}/item/public_token/exchange`, {
@@ -377,51 +401,64 @@ serve(async (req) => {
         const transactionsData = await transactionsResponse.json();
         console.log('Transactions data retrieved:', transactionsData.transactions?.length || 0, 'transactions');
 
-        // Save transactions to database
+        // Save transactions to database  
         if (transactionsData.transactions && transactionsData.transactions.length > 0) {
-          const transactionsToInsert = transactionsData.transactions.map((transaction: any) => ({
-            user_id: user.id,
-            plaid_transaction_id: transaction.transaction_id,
-            plaid_account_id: transaction.account_id,
-            transaction_id: transaction.transaction_id, // For compatibility
-            amount: Math.abs(transaction.amount), // Plaid uses negative for debits, we store positive
-            date: transaction.date,
-            datetime: transaction.datetime || null,
-            authorized_date: transaction.authorized_date || null,
-            authorized_datetime: transaction.authorized_datetime || null,
-            description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
-            merchant_name: transaction.merchant_name,
-            category: mapPlaidCategory(transaction.category || []),
-            category_source: 'auto',
-            subcategory: transaction.category?.[1] || null,
-            pending: transaction.pending || false,
-            iso_currency_code: transaction.iso_currency_code || 'USD',
-            unofficial_currency_code: transaction.unofficial_currency_code,
-            location: transaction.location ? transaction.location : null,
-            payment_meta: transaction.payment_meta ? transaction.payment_meta : null
-          }));
+          try {
+            const transactionsToInsert = transactionsData.transactions.map((transaction: any) => ({
+              user_id: user.id,
+              plaid_transaction_id: transaction.transaction_id,
+              plaid_account_id: transaction.account_id,
+              transaction_id: transaction.transaction_id, // For compatibility
+              amount: Math.abs(transaction.amount), // Plaid uses negative for debits, we store positive
+              date: transaction.date,
+              datetime: transaction.datetime || null,
+              authorized_date: transaction.authorized_date || null,
+              authorized_datetime: transaction.authorized_datetime || null,
+              description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
+              merchant_name: transaction.merchant_name,
+              category: mapPlaidCategory(transaction.category || []),
+              category_source: 'auto',
+              subcategory: transaction.category?.[1] || null,
+              pending: transaction.pending || false,
+              iso_currency_code: transaction.iso_currency_code || 'USD',
+              unofficial_currency_code: transaction.unofficial_currency_code,
+              location: transaction.location ? transaction.location : null,
+              payment_meta: transaction.payment_meta ? transaction.payment_meta : null
+            }));
 
-          const { data: transactionInsertResult, error: transactionInsertError } = await supabase
-            .from('transactions')
-            .upsert(transactionsToInsert, { 
-              onConflict: 'user_id,plaid_transaction_id',
-              ignoreDuplicates: false 
-            })
-            .select();
+            const { data: transactionInsertResult, error: transactionInsertError } = await supabase
+              .from('transactions')
+              .upsert(transactionsToInsert, { 
+                onConflict: 'user_id,plaid_transaction_id',
+                ignoreDuplicates: false 
+              })
+              .select();
 
-          if (transactionInsertError) {
-            console.error('Transaction insert error:', transactionInsertError);
-          } else {
-            transactionsCount = transactionInsertResult?.length || 0;
-            console.log('Successfully saved', transactionsCount, 'transactions');
+            if (transactionInsertError) {
+              console.error('Transaction insert error:', transactionInsertError);
+              // Log transaction error but don't fail the whole process
+              await supabase.from('plaid_token_audit_log').insert({
+                user_id: user.id,
+                access_type: 'transactions_store',
+                function_name: 'plaid-link-exchange',
+                success: false,
+                error_message: `Transactions storage failed: ${transactionInsertError.message}`,
+                ip_address: clientIP,
+                user_agent: userAgent
+              });
+            } else {
+              transactionsCount = transactionInsertResult?.length || 0;
+              console.log('Successfully saved', transactionsCount, 'transactions');
+            }
+          } catch (error) {
+            console.error('Error processing transactions:', error);
+            // Don't fail the whole process if transactions fail
           }
         }
       }
     }
 
-    // Safely get client IP for audit logging
-    const clientIP = getClientIP(req);
-    const userAgent = req.headers.get('user-agent') || 'unknown';
+    // Client IP and user agent already defined at the top of the function
 
     // Log the encryption in audit trail
     const { error: auditError } = await supabase
