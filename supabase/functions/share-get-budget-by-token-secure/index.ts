@@ -49,7 +49,7 @@ serve(async (req) => {
 
     // Get client IP address
     const clientIP = req.headers.get('cf-connecting-ip') || 
-                    req.headers.get('x-forwarded-for') || 
+                    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                     req.headers.get('x-real-ip') || 
                     'unknown';
 
