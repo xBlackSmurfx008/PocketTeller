@@ -20,6 +20,7 @@ export const useSiteMetrics = () => {
   // Stable fetchMetrics function using useCallback
   const fetchMetrics = useCallback(async () => {
     try {
+      console.log('Fetching site metrics...');
       const { data, error } = await supabase
         .from('site_metrics')
         .select('*')
@@ -32,6 +33,7 @@ export const useSiteMetrics = () => {
       }
 
       if (data) {
+        console.log('Site metrics data received:', data);
         const newMetrics = {
           totalUsers: data.total_users ?? 0,
           totalBudgets: data.total_budgets ?? 0,
@@ -39,25 +41,27 @@ export const useSiteMetrics = () => {
           lastUpdated: data.updated_at
         };
         
-        // Only update if values actually changed
+        // Always update metrics on initial load or when values actually change
         setMetrics(prev => {
-          if (prev.totalUsers !== newMetrics.totalUsers || 
-              prev.totalBudgets !== newMetrics.totalBudgets || 
-              prev.totalTransactions !== newMetrics.totalTransactions) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('Site metrics updated:', newMetrics);
-            }
+          const hasChanged = prev.totalUsers !== newMetrics.totalUsers || 
+                            prev.totalBudgets !== newMetrics.totalBudgets || 
+                            prev.totalTransactions !== newMetrics.totalTransactions;
+          
+          if (hasChanged || loading) {
+            console.log('Updating site metrics:', newMetrics);
             return newMetrics;
           }
           return prev;
         });
+      } else {
+        console.log('No site metrics data found');
       }
     } catch (err) {
       console.error('Error in fetchMetrics:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     // Fetch initial metrics
@@ -80,7 +84,7 @@ export const useSiteMetrics = () => {
           filter: 'id=eq.1'
         },
         (payload) => {
-          console.log('Real-time metrics update:', payload);
+          console.log('Real-time metrics update received:', payload);
           const newData = payload.new as any;
           const newMetrics = {
             totalUsers: newData.total_users ?? 0,
@@ -89,14 +93,14 @@ export const useSiteMetrics = () => {
             lastUpdated: newData.updated_at
           };
           
-          // Throttle updates and only apply if values changed
+          // Update metrics from real-time changes
           setMetrics(prev => {
-            if (prev.totalUsers !== newMetrics.totalUsers || 
-                prev.totalBudgets !== newMetrics.totalBudgets || 
-                prev.totalTransactions !== newMetrics.totalTransactions) {
-              if (process.env.NODE_ENV === 'development') {
-                console.log('Real-time site metrics updated:', newMetrics);
-              }
+            const hasChanged = prev.totalUsers !== newMetrics.totalUsers || 
+                              prev.totalBudgets !== newMetrics.totalBudgets || 
+                              prev.totalTransactions !== newMetrics.totalTransactions;
+            
+            if (hasChanged) {
+              console.log('Real-time site metrics updated:', newMetrics);
               return newMetrics;
             }
             return prev;
