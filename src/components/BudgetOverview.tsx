@@ -265,16 +265,19 @@ export default function BudgetOverview() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="text-center space-y-2">
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
               ${actualIncome.toLocaleString()}
             </div>
-            <div className="text-sm text-muted-foreground">
-              Income (${budgetData.income.toLocaleString()} planned)
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Income
+            </div>
+            <div className="text-xs text-muted-foreground">
+              (${budgetData.income.toLocaleString()} planned)
             </div>
             {actualIncome !== budgetData.income && (
-              <Badge variant={actualIncome > budgetData.income ? "default" : "secondary"} className="mt-1">
+              <Badge variant={actualIncome > budgetData.income ? "default" : "secondary"} className="mt-1 text-xs">
                 {actualIncome > budgetData.income ? (
                   <TrendingUp className="h-3 w-3 mr-1" />
                 ) : (
@@ -284,15 +287,19 @@ export default function BudgetOverview() {
               </Badge>
             )}
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">
+          
+          <div className="text-center space-y-2">
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
               ${actualExpenses.toLocaleString()}
             </div>
-            <div className="text-sm text-muted-foreground">
-              Expenses (${plannedExpenses.toLocaleString()} planned)
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Expenses
+            </div>
+            <div className="text-xs text-muted-foreground">
+              (${plannedExpenses.toLocaleString()} planned)
             </div>
             {actualExpenses !== plannedExpenses && (
-              <Badge variant={actualExpenses > plannedExpenses ? "destructive" : "default"} className="mt-1">
+              <Badge variant={actualExpenses > plannedExpenses ? "destructive" : "default"} className="mt-1 text-xs">
                 {actualExpenses > plannedExpenses ? (
                   <TrendingUp className="h-3 w-3 mr-1" />
                 ) : (
@@ -302,15 +309,19 @@ export default function BudgetOverview() {
               </Badge>
             )}
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">
+          
+          <div className="text-center space-y-2">
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
               ${actualNet.toLocaleString()}
             </div>
-            <div className="text-sm text-muted-foreground">
-              Net (${plannedNet.toLocaleString()} planned)
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Net
+            </div>
+            <div className="text-xs text-muted-foreground">
+              (${plannedNet.toLocaleString()} planned)
             </div>
             {actualNet !== plannedNet && (
-              <Badge variant={actualNet > plannedNet ? "default" : "secondary"} className="mt-1">
+              <Badge variant={actualNet > plannedNet ? "default" : "secondary"} className="mt-1 text-xs">
                 {actualNet > plannedNet ? (
                   <TrendingUp className="h-3 w-3 mr-1" />
                 ) : (
@@ -330,13 +341,13 @@ export default function BudgetOverview() {
           ) : (
             (categorySummaries || []).map((summary) => (
               <div key={summary?.category || 'unknown'} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-foreground">{summary?.category || 'Unknown'}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                  <span className="text-sm font-medium text-foreground truncate">{summary?.category || 'Unknown'}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       ${(summary?.actual || 0).toLocaleString()} / ${(summary?.planned || 0).toLocaleString()}
                     </span>
-                    <Badge variant={getRemainingBadgeVariant(summary?.remaining || 0)} className="text-xs">
+                    <Badge variant={getRemainingBadgeVariant(summary?.remaining || 0)} className="text-xs w-fit">
                       {(summary?.remaining || 0) >= 0 ? '+' : ''}${(summary?.remaining || 0).toLocaleString()}
                     </Badge>
                   </div>

@@ -204,25 +204,25 @@ export default function FinancialHealthSnapshot() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Balance</h3>
-            <p className="text-3xl font-bold text-primary">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div className="text-center space-y-2">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Total Balance</h3>
+            <p className="text-2xl sm:text-3xl font-bold text-primary">
               ${(data?.totalBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
           
-          <div className="text-center">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Monthly Income</h3>
-            <p className="text-2xl font-semibold text-green-600 flex items-center justify-center gap-1">
+          <div className="text-center space-y-2">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Monthly Income</h3>
+            <p className="text-xl sm:text-2xl font-semibold text-green-600 flex items-center justify-center gap-1">
               <TrendingUp className="h-4 w-4" />
               ${(data?.monthlyIncome || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
           
-          <div className="text-center">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Monthly Expenses</h3>
-            <p className="text-2xl font-semibold text-red-600 flex items-center justify-center gap-1">
+          <div className="text-center space-y-2">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Monthly Expenses</h3>
+            <p className="text-xl sm:text-2xl font-semibold text-red-600 flex items-center justify-center gap-1">
               <TrendingDown className="h-4 w-4" />
               ${(data?.monthlyExpenses || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
