@@ -376,6 +376,198 @@ export type Database = {
         }
         Relationships: []
       }
+      in_app_notifications: {
+        Row: {
+          action_text: string | null
+          action_url: string | null
+          archived_at: string | null
+          content: string
+          created_at: string
+          group_key: string | null
+          icon: string | null
+          id: string
+          is_archived: boolean
+          is_read: boolean
+          notification_type: string
+          priority: number
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_text?: string | null
+          action_url?: string | null
+          archived_at?: string | null
+          content: string
+          created_at?: string
+          group_key?: string | null
+          icon?: string | null
+          id?: string
+          is_archived?: boolean
+          is_read?: boolean
+          notification_type: string
+          priority?: number
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_text?: string | null
+          action_url?: string | null
+          archived_at?: string | null
+          content?: string
+          created_at?: string
+          group_key?: string | null
+          icon?: string | null
+          id?: string
+          is_archived?: boolean
+          is_read?: boolean
+          notification_type?: string
+          priority?: number
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_logs: {
+        Row: {
+          channel: string
+          clicked_at: string | null
+          content: string
+          context_data: Json | null
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          notification_type: string
+          opened_at: string | null
+          sent_at: string
+          status: string
+          template_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          clicked_at?: string | null
+          content: string
+          context_data?: Json | null
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          opened_at?: string | null
+          sent_at?: string
+          status?: string
+          template_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          clicked_at?: string | null
+          content?: string
+          context_data?: Json | null
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          opened_at?: string | null
+          sent_at?: string
+          status?: string
+          template_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          bill_reminders: boolean
+          budget_alerts: boolean
+          created_at: string
+          daily_spending_recap: boolean
+          email_enabled: boolean
+          goal_progress_updates: boolean
+          id: string
+          in_app_enabled: boolean
+          inactivity_reminders: boolean
+          last_inactivity_reminder: string | null
+          max_daily_notifications: number | null
+          monthly_spending_recap: boolean
+          preferred_day_monthly: number | null
+          preferred_day_weekly: number | null
+          preferred_time_daily: string | null
+          push_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          security_alerts: boolean
+          sms_enabled: boolean
+          timezone: string | null
+          transaction_sync_reminder: boolean
+          updated_at: string
+          user_id: string
+          weekly_spending_recap: boolean
+        }
+        Insert: {
+          bill_reminders?: boolean
+          budget_alerts?: boolean
+          created_at?: string
+          daily_spending_recap?: boolean
+          email_enabled?: boolean
+          goal_progress_updates?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          inactivity_reminders?: boolean
+          last_inactivity_reminder?: string | null
+          max_daily_notifications?: number | null
+          monthly_spending_recap?: boolean
+          preferred_day_monthly?: number | null
+          preferred_day_weekly?: number | null
+          preferred_time_daily?: string | null
+          push_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          security_alerts?: boolean
+          sms_enabled?: boolean
+          timezone?: string | null
+          transaction_sync_reminder?: boolean
+          updated_at?: string
+          user_id: string
+          weekly_spending_recap?: boolean
+        }
+        Update: {
+          bill_reminders?: boolean
+          budget_alerts?: boolean
+          created_at?: string
+          daily_spending_recap?: boolean
+          email_enabled?: boolean
+          goal_progress_updates?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          inactivity_reminders?: boolean
+          last_inactivity_reminder?: string | null
+          max_daily_notifications?: number | null
+          monthly_spending_recap?: boolean
+          preferred_day_monthly?: number | null
+          preferred_day_weekly?: number | null
+          preferred_time_daily?: string | null
+          push_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          security_alerts?: boolean
+          sms_enabled?: boolean
+          timezone?: string | null
+          transaction_sync_reminder?: boolean
+          updated_at?: string
+          user_id?: string
+          weekly_spending_recap?: boolean
+        }
+        Relationships: []
+      }
       plaid_items: {
         Row: {
           available_products: string[] | null
