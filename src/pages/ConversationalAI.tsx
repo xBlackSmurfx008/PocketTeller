@@ -13,24 +13,33 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { EducationPanel } from "@/components/chat/EducationPanel";
 import { Reveal } from "@/components/Reveal";
-
 const ConversationalAI = () => {
-  const { threadId } = useParams();
+  const {
+    threadId
+  } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { isDemo, promptsUsed, maxPrompts, conversationsUsed, maxConversations, exitDemo } = useDemo();
+  const {
+    user
+  } = useAuth();
+  const {
+    isDemo,
+    promptsUsed,
+    maxPrompts,
+    conversationsUsed,
+    maxConversations,
+    exitDemo
+  } = useDemo();
   const isMobile = useIsMobile();
-  const { toast } = useToast();
-  
+  const {
+    toast
+  } = useToast();
   const [educationSuggestions, setEducationSuggestions] = useState<EducationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [coachQuestions, setCoachQuestions] = useState<string[]>([]);
   const [coachStage, setCoachStage] = useState<string>('');
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const {
     messages,
     isLoading,
@@ -39,17 +48,7 @@ const ConversationalAI = () => {
     clearMessages,
     loadThread
   } = useConversation(threadId);
-
-  const promptSuggestions = [
-    "Analyze my spending patterns from the last month",
-    "Help me create a budget for next month", 
-    "What are some strategies to reduce my expenses?",
-    "How can I improve my credit score?",
-    "Explain the difference between needs and wants",
-    "Help me set realistic financial goals",
-    "What should I know about emergency funds?",
-    "How do I start investing with a small budget?"
-  ];
+  const promptSuggestions = ["Analyze my spending patterns from the last month", "Help me create a budget for next month", "What are some strategies to reduce my expenses?", "How can I improve my credit score?", "Explain the difference between needs and wants", "Help me set realistic financial goals", "What should I know about emergency funds?", "How do I start investing with a small budget?"];
 
   // Load conversation history on component mount
   useEffect(() => {
@@ -60,32 +59,31 @@ const ConversationalAI = () => {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth'
+    });
   }, [messages]);
 
   // Handle message sending
   const handleSendMessage = async (content: string, attachments: any[], coachMode: boolean) => {
     const result = await sendMessage(content, attachments, coachMode);
-    
     if (result && typeof result === 'object' && 'success' in result && result.success) {
       // Update education suggestions if provided
       if ('educationSuggestions' in result && result.educationSuggestions) {
         setEducationSuggestions(result.educationSuggestions);
       }
-      
+
       // Update coach data if provided
       if ('coachQuestions' in result && result.coachQuestions) {
         setCoachQuestions(result.coachQuestions);
       }
-      
       if ('coachStage' in result && result.coachStage) {
         setCoachStage(result.coachStage);
       }
-      
+
       // Show suggestions panel if we have new content
       const hasEducationSuggestions = 'educationSuggestions' in result && result.educationSuggestions?.length;
       const hasCoachQuestions = 'coachQuestions' in result && result.coachQuestions?.length;
-      
       if (hasEducationSuggestions || hasCoachQuestions) {
         setShowSuggestions(true);
       }
@@ -104,50 +102,30 @@ const ConversationalAI = () => {
   const handlePromptSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion, [], false);
   };
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col content-visible">
+  return <div className="min-h-screen bg-background flex flex-col content-visible">
       {/* Header */}
       <header className="border-b border-border p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-              className="md:hidden"
-            >
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="md:hidden">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
               <h1 className="text-xl font-semibold">AI Financial Assistant</h1>
-              {isDemo && (
-                <p className="text-sm text-muted-foreground">
+              {isDemo && <p className="text-sm text-muted-foreground">
                   Demo Mode: {promptsUsed}/{maxPrompts} messages used
-                </p>
-              )}
+                </p>}
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowSidebar(!showSidebar)}
-              >
+            {isMobile && <Button variant="ghost" size="icon" onClick={() => setShowSidebar(!showSidebar)}>
                 <Menu className="h-4 w-4" />
-              </Button>
-            )}
+              </Button>}
             
-            {!isMobile && (
-              <Button
-                variant="outline"
-                onClick={() => navigate('/')}
-              >
+            {!isMobile && <Button variant="outline" onClick={() => navigate('/')}>
                 Back to Dashboard
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
       </header>
@@ -158,11 +136,10 @@ const ConversationalAI = () => {
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             {/* Welcome Message */}
-            {messages.length === 0 && (
-              <Reveal>
+            {messages.length === 0 && <Reveal>
                 <Card className="mx-auto max-w-2xl card-hover-lift">
                   <CardHeader>
-                    <CardTitle className="text-center text-gradient">Welcome to your AI Financial Assistant! 🤖💰</CardTitle>
+                    <CardTitle className="text-center text-gradient">Welcome to your AI Financial Assistant! </CardTitle>
                   <CardDescription className="text-center">
                     I'm here to help you manage your finances, analyze spending patterns, create budgets, and answer any financial questions you have.
                   </CardDescription>
@@ -172,59 +149,39 @@ const ConversationalAI = () => {
                     <p className="text-sm text-muted-foreground">
                       You can upload files (bank statements, receipts, etc.) or just ask me questions!
                     </p>
-                    {isDemo && (
-                      <p className="text-xs text-orange-600">
+                    {isDemo && <p className="text-xs text-orange-600">
                         Demo mode: Limited to {maxPrompts} messages. Sign up for unlimited access!
-                      </p>
-                    )}
+                      </p>}
                   </div>
                 </CardContent>
               </Card>
-              </Reveal>
-            )}
+              </Reveal>}
 
             {/* Messages */}
-            {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-              />
-            ))}
+            {messages.map(message => <MessageBubble key={message.id} message={message} />)}
 
             {/* Error Display */}
-            {error && (
-              <Card className="border-destructive">
+            {error && <Card className="border-destructive">
                 <CardContent className="pt-6">
                   <p className="text-destructive text-sm">Error: {error}</p>
                 </CardContent>
-              </Card>
-            )}
+              </Card>}
 
             {/* Prompt Suggestions */}
-            {showPromptSuggestions && messages.length === 0 && (
-              <Reveal delay={300}>
+            {showPromptSuggestions && messages.length === 0 && <Reveal delay={300}>
                 <Card className="mx-auto max-w-2xl card-hover-lift">
                   <CardHeader>
                     <CardTitle className="text-lg">Get started with these questions:</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {promptSuggestions.slice(0, 6).map((suggestion, index) => (
-                        <Button
-                          key={index}
-                          variant="outline"
-                          className="text-left justify-start h-auto p-4 text-sm ripple-effect whitespace-normal leading-relaxed min-h-[60px]"
-                          onClick={() => handlePromptSuggestionClick(suggestion)}
-                          disabled={isLoading}
-                        >
+                      {promptSuggestions.slice(0, 6).map((suggestion, index) => <Button key={index} variant="outline" className="text-left justify-start h-auto p-4 text-sm ripple-effect whitespace-normal leading-relaxed min-h-[60px]" onClick={() => handlePromptSuggestionClick(suggestion)} disabled={isLoading}>
                           <span className="break-words">{suggestion}</span>
-                        </Button>
-                      ))}
+                        </Button>)}
                     </div>
                   </CardContent>
                 </Card>
-              </Reveal>
-            )}
+              </Reveal>}
 
             <div ref={messagesEndRef} />
           </div>
@@ -232,52 +189,30 @@ const ConversationalAI = () => {
 
         {/* Message Input */}
         <div className="p-4 border-t">
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            disabled={isDemo && promptsUsed >= maxPrompts}
-          />
+          <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} disabled={isDemo && promptsUsed >= maxPrompts} />
           
-          {isDemo && promptsUsed >= maxPrompts && (
-            <Card className="mt-4 border-orange-200 bg-orange-50">
+          {isDemo && promptsUsed >= maxPrompts && <Card className="mt-4 border-orange-200 bg-orange-50">
               <CardContent className="pt-4">
                 <div className="text-center space-y-2">
                   <p className="text-sm text-orange-800">
                     You've reached the demo limit of {maxPrompts} messages.
                   </p>
                   <div className="flex gap-2 justify-center">
-                    <Button
-                      onClick={() => navigate('/auth')}
-                      size="sm"
-                    >
+                    <Button onClick={() => navigate('/auth')} size="sm">
                       Sign Up for Full Access
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={exitDemo}
-                      size="sm"
-                    >
+                    <Button variant="outline" onClick={exitDemo} size="sm">
                       Exit Demo
                     </Button>
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </div>
       </div>
 
       {/* Education Panel */}
-      <EducationPanel
-        suggestions={educationSuggestions}
-        coachQuestions={coachQuestions}
-        coachStage={coachStage}
-        onQuestionClick={handleQuestionClick}
-        onToggle={() => setShowSuggestions(!showSuggestions)}
-        isVisible={showSuggestions}
-      />
-    </div>
-  );
+      <EducationPanel suggestions={educationSuggestions} coachQuestions={coachQuestions} coachStage={coachStage} onQuestionClick={handleQuestionClick} onToggle={() => setShowSuggestions(!showSuggestions)} isVisible={showSuggestions} />
+    </div>;
 };
-
 export default ConversationalAI;
