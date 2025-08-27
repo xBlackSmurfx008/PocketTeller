@@ -27,17 +27,8 @@ interface TransactionBulkActionsProps {
   onTransactionsUpdate: () => void;
 }
 
-const CATEGORIES = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Bills & Utilities',
-  'Healthcare',
-  'Travel',
-  'Education',
-  'Other'
-];
+// Import categories from the centralized utility
+import { CATEGORIES } from '@/utils/transactionCategorizer';
 
 export const TransactionBulkActions = ({
   transactions,
@@ -61,10 +52,17 @@ export const TransactionBulkActions = ({
 
     setIsUpdating(true);
     try {
+      // Get current user for security
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { error } = await supabase
         .from('transactions')
         .update({ category })
-        .in('id', selectedIds);
+        .in('id', selectedIds)
+        .eq('user_id', user.id); // Ensure user can only update their own transactions
 
       if (error) throw error;
 
@@ -92,10 +90,17 @@ export const TransactionBulkActions = ({
 
     setIsUpdating(true);
     try {
+      // Get current user for security
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { error } = await supabase
         .from('transactions')
         .delete()
-        .in('id', selectedIds);
+        .in('id', selectedIds)
+        .eq('user_id', user.id); // Ensure user can only delete their own transactions
 
       if (error) throw error;
 

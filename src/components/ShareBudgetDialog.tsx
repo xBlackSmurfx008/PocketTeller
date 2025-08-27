@@ -80,11 +80,35 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
   };
 
   const copyToClipboard = async () => {
-    if (shareUrl) {
-      await navigator.clipboard.writeText(shareUrl);
+    if (!shareUrl) return;
+    
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        // Fallback for insecure contexts or unsupported browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      
       toast({
         title: "Copied!",
         description: "Share link copied to clipboard",
+      });
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      toast({
+        title: "Copy failed",
+        description: "Please manually copy the link",
+        variant: "destructive",
       });
     }
   };
@@ -338,7 +362,13 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
                     readOnly
                     className="flex-1"
                   />
-                  <Button onClick={copyToClipboard} size="icon" variant="outline" aria-label="Copy share URL to clipboard">
+                  <Button 
+                    onClick={copyToClipboard} 
+                    size="icon" 
+                    variant="outline" 
+                    aria-label="Copy share URL to clipboard"
+                    disabled={!shareUrl}
+                  >
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>

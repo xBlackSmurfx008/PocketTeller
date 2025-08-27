@@ -168,9 +168,19 @@ export default function RecentTransactions() {
     let filtered = transactions;
 
     if (searchTerm) {
-      filtered = filtered.filter(t => 
-        t.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(t => {
+        // Defensive search - handle null/undefined values
+        const description = (t.description || '').toLowerCase();
+        const merchant = (t.merchant_name || '').toLowerCase();
+        const category = (t.category || '').toLowerCase();
+        const amount = String(t.amount || 0);
+        
+        return description.includes(searchLower) ||
+               merchant.includes(searchLower) ||
+               category.includes(searchLower) ||
+               amount.includes(searchLower);
+      });
     }
 
     if (categoryFilter !== 'all') {

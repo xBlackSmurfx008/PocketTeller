@@ -44,9 +44,13 @@ export default function SharedBudget() {
         if (data.success) {
           setBudgetData({
             ...data.budgetData,
-            created_at: new Date().toISOString(), // Will be from actual data in production
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-            view_count: 1
+            // Use server-provided values if available, with fallbacks
+            created_at: data.budgetData.created_at || new Date().toISOString(),
+            expires_at: data.budgetData.expires_at || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            view_count: data.budgetData.view_count || 1,
+            remaining_views: data.budgetData.max_views ? 
+              Math.max(0, data.budgetData.max_views - (data.budgetData.view_count || 1)) : 
+              undefined
           });
         } else {
           throw new Error(data.error || 'Failed to load budget');

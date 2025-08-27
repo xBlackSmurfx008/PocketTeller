@@ -80,12 +80,23 @@ const Index = () => {
     e.preventDefault();
     if (!email.trim()) return;
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { error } = await supabase
         .from('waitlist_signups')
         .insert({
-          email: email.trim(),
+          email: email.trim().toLowerCase(), // Normalize email
           source: 'home_hero',
           user_agent: navigator.userAgent
         });

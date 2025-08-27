@@ -87,6 +87,12 @@ export function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated }: Edit
     
     setIsSubmitting(true);
     try {
+      // Get current user for security
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { error } = await supabase
         .from('goals')
         .update({
@@ -95,7 +101,8 @@ export function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated }: Edit
           current_amount: values.current_amount,
           deadline: values.deadline ? format(values.deadline, 'yyyy-MM-dd') : null,
         })
-        .eq('id', goal.id);
+        .eq('id', goal.id)
+        .eq('user_id', user.id); // Ensure user can only update their own goals
 
       if (error) throw error;
 
