@@ -260,6 +260,185 @@ All colors MUST be HSL.
   margin-top: 0.25rem;
 }
 
+/* 2025 UX Trends - Performance Utilities */
+.content-visible {
+  content-visibility: auto;
+  contain-intrinsic-size: 200px;
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Micro-Animations */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in-center {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Interactive Elements */
+.cursor-trail::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--primary) / 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: all 0.1s ease;
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple-effect:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Scroll-Driven Animations */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scale-on-scroll {
+  transform: scale(0.9);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scale-on-scroll.in-view {
+  transform: scale(1);
+}
+
+/* Geometric Grid Layouts */
+.grid-modern {
+  display: grid;
+  gap: clamp(1rem, 4vw, 2rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+}
+
+/* Subtle Parallax */
+.parallax-subtle {
+  transform: translateY(var(--scroll-y, 0));
+  transition: transform 0.1s ease-out;
+}
+
+/* Enhanced Button Hover Effects */
+.btn-magnetic {
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-magnetic:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px hsl(var(--primary) / 0.2);
+}
+
+/* Modern Card Interactions */
+.card-hover-lift {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-8px) rotateX(5deg);
+  box-shadow: 
+    0 20px 40px hsl(var(--primary) / 0.1),
+    0 10px 20px hsl(var(--primary) / 0.05);
+}
+
+/* Cinematic Text Effects */
+.text-gradient {
+  background: linear-gradient(135deg, 
+    hsl(var(--primary)), 
+    hsl(var(--primary) / 0.8), 
+    hsl(var(--accent))
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .aurora-bg::before,
+  .aurora-bg::after {
+    opacity: 0;
+  }
+  
+  .text-gradient {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: hsl(var(--foreground));
+  }
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .aurora-bg::before,
@@ -279,9 +458,23 @@ All colors MUST be HSL.
     display: none;
   }
   
-  .reveal {
+  .reveal,
+  .scroll-reveal {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+  
+  .text-gradient {
+    animation: none;
+  }
+  
+  .card-hover-lift:hover,
+  .btn-magnetic:hover {
+    transform: none;
+  }
+  
+  .parallax-subtle {
+    transform: none;
   }
 }

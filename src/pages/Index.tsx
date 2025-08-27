@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
@@ -11,18 +11,29 @@ import CountUp from '@/components/CountUp';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicFooter from '@/components/PublicFooter';
+import LazyImage from '@/components/LazyImage';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { isDemo } = useDemo();
   const navigate = useNavigate();
+  const [scrollY, setScrollY] = useState(0);
   
   // Animation hooks
-  
   const featuresReveal = useReveal();
   const ctaReveal = useReveal();
   const kpiReveal = useReveal();
   const { metrics } = useSiteMetrics();
+
+  // Scroll-driven animations
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
 
 
@@ -51,16 +62,19 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background scroll-smooth">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4 aurora-bg">
+      <section className="relative overflow-hidden py-20 px-4 aurora-bg content-visible">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
         
-        <div className="relative z-10 max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-foreground">
-            Smart <span className="text-primary">AI-Powered</span> Finance Management
+        <div 
+          className="relative z-10 max-w-6xl mx-auto text-center parallax-subtle"
+          style={{ '--scroll-y': `${scrollY * 0.1}px` } as React.CSSProperties}
+        >
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-gradient">
+            Smart AI-Powered Finance Management
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto scroll-reveal in-view">
             Take control of your finances with intelligent budgeting, expense tracking, and personalized AI insights. 
             Connect your bank accounts and let AI help you make smarter financial decisions.
           </p>
@@ -68,7 +82,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer hover-scale"
+              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
             >
               Get Started Free
             </Button>
@@ -76,7 +90,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale"
+              className="text-lg px-8 py-3 h-auto btn-magnetic"
             >
               Try Demo
             </Button>
@@ -88,24 +102,24 @@ const Index = () => {
       <TrustedByMarquee />
       
       {/* KPI Section */}
-      <section className="py-12 px-4 bg-muted/20">
+      <section className="py-12 px-4 bg-muted/20 content-visible">
         <div 
           ref={kpiReveal.ref}
-          className={`max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 reveal ${kpiReveal.isVisible ? 'is-visible' : ''}`}
+          className={`max-w-4xl mx-auto grid-modern reveal scale-on-scroll ${kpiReveal.isVisible ? 'is-visible in-view' : ''}`}
         >
-          <div className="kpi-stat">
+          <div className="kpi-stat card-hover-lift">
             <span className="kpi-number">
               <CountUp end={metrics.totalUsers} suffix={metrics.totalUsers > 0 ? "+" : undefined} animateOnChange={false} />
             </span>
             <span className="kpi-label">Users Joined</span>
           </div>
-          <div className="kpi-stat">
+          <div className="kpi-stat card-hover-lift">
             <span className="kpi-number">
               <CountUp end={metrics.totalBudgets} suffix={metrics.totalBudgets > 0 ? "+" : undefined} animateOnChange={false} />
             </span>
             <span className="kpi-label">Budgets Created</span>
           </div>
-          <div className="kpi-stat">
+          <div className="kpi-stat card-hover-lift">
             <span className="kpi-number">
               <CountUp end={metrics.totalTransactions} suffix={metrics.totalTransactions > 0 ? "+" : undefined} animateOnChange={false} />
             </span>
@@ -115,7 +129,7 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-muted/30">
+      <section className="py-20 px-4 bg-muted/30 content-visible">
         <div className="max-w-6xl mx-auto">
           <h2 
             ref={featuresReveal.ref}
@@ -123,8 +137,8 @@ const Index = () => {
           >
             Everything you need to manage your finances
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className={`text-center p-6 hover:shadow-lg transition-shadow reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}>
+          <div className="grid-modern">
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🤖</span>
               </div>
@@ -134,7 +148,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 hover:shadow-lg transition-shadow reveal reveal-delay-1 ${featuresReveal.isVisible ? 'is-visible' : ''}`}>
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🏦</span>
               </div>
@@ -144,7 +158,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 hover:shadow-lg transition-shadow reveal reveal-delay-2 ${featuresReveal.isVisible ? 'is-visible' : ''}`}>
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📊</span>
               </div>
@@ -154,7 +168,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 hover:shadow-lg transition-shadow reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}>
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">💳</span>
               </div>
@@ -164,7 +178,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 hover:shadow-lg transition-shadow reveal reveal-delay-1 ${featuresReveal.isVisible ? 'is-visible' : ''}`}>
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🎯</span>
               </div>
@@ -174,7 +188,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 hover:shadow-lg transition-shadow reveal reveal-delay-2 ${featuresReveal.isVisible ? 'is-visible' : ''}`}>
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📅</span>
               </div>
@@ -189,22 +203,22 @@ const Index = () => {
 
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 content-visible">
         <div className="max-w-4xl mx-auto text-center">
           <h2 
             ref={ctaReveal.ref}
-            className={`text-3xl md:text-4xl font-bold mb-6 text-foreground reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-3xl md:text-4xl font-bold mb-6 text-gradient reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
           >
             Ready to take control of your finances?
           </h2>
-          <p className={`text-xl text-muted-foreground mb-8 reveal reveal-delay-1 ${ctaReveal.isVisible ? 'is-visible' : ''}`}>
+          <p className={`text-xl text-muted-foreground mb-8 scroll-reveal reveal-delay-1 ${ctaReveal.isVisible ? 'in-view' : ''}`}>
             Join thousands of users who have transformed their financial lives with Budget AI.
           </p>
-          <div className={`flex flex-col sm:flex-row gap-4 justify-center reveal reveal-delay-2 ${ctaReveal.isVisible ? 'is-visible' : ''}`}>
+          <div className={`flex flex-col sm:flex-row gap-4 justify-center scroll-reveal reveal-delay-2 ${ctaReveal.isVisible ? 'in-view' : ''}`}>
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer hover-scale"
+              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
             >
               Start Your Financial Journey
             </Button>
@@ -212,7 +226,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale"
+              className="text-lg px-8 py-3 h-auto btn-magnetic"
             >
               Explore Demo First
             </Button>
