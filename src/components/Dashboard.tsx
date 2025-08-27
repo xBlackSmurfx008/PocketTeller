@@ -16,6 +16,7 @@ import { ShareBudgetDialog } from '@/components/ShareBudgetDialog';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Settings, Target, MessageSquare, Share2, Receipt } from 'lucide-react';
+import { TourLauncher } from '@/components/TourLauncher';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -122,6 +123,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 sm:gap-4">
             {showMobileLayout ? (
               <>
+                <TourLauncher />
                 <Button variant="ghost" size="icon" onClick={() => navigate('/chat')} aria-label="AI Chat">
                   <MessageSquare className="h-4 w-4" />
                 </Button>
@@ -144,6 +146,7 @@ export default function Dashboard() {
               </>
             ) : (
               <>
+                <TourLauncher />
                 <Button variant="outline" onClick={() => navigate('/chat')} data-tour-id="ai-chat-button">
                   Budgeting Assistant
                 </Button>

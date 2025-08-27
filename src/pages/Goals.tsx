@@ -610,10 +610,10 @@ export default function Goals() {
                    </CardContent>
                   </Card>
                 </Reveal>
-               );
+              );
              })}
-           </div>
-         )}
+          </div>
+        )}
 
         {/* Mobile FAB for adding goals */}
         <div className="fixed bottom-6 right-6 md:hidden">

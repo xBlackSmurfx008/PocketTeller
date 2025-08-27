@@ -188,7 +188,7 @@ const ConversationalAI = () => {
         </ScrollArea>
 
         {/* Message Input */}
-        <div className="p-4 border-t">
+        <div className="p-4 border-t" data-tour-id="chat-input">
           <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} disabled={isDemo && promptsUsed >= maxPrompts} />
           
           {isDemo && promptsUsed >= maxPrompts && <Card className="mt-4 border-orange-200 bg-orange-50">
@@ -212,7 +212,9 @@ const ConversationalAI = () => {
       </div>
 
       {/* Education Panel */}
-      <EducationPanel suggestions={educationSuggestions} coachQuestions={coachQuestions} coachStage={coachStage} onQuestionClick={handleQuestionClick} onToggle={() => setShowSuggestions(!showSuggestions)} isVisible={showSuggestions} />
+      <div data-tour-id="education-panel">
+        <EducationPanel suggestions={educationSuggestions} coachQuestions={coachQuestions} coachStage={coachStage} onQuestionClick={handleQuestionClick} onToggle={() => setShowSuggestions(!showSuggestions)} isVisible={showSuggestions} />
+      </div>
     </div>;
 };
 export default ConversationalAI;

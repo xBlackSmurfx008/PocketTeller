@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type TourType = 'full' | 'chat' | 'budget' | 'goals';
+
 export interface DemoState {
   isDemo: boolean;
   promptsUsed: number;
@@ -9,6 +11,7 @@ export interface DemoState {
   maxConversations: number;
   tourStep: number;
   tourActive: boolean;
+  currentTour: TourType;
   isAnonymousDemo: boolean;
   sampleData: {
     transactions: any[];
@@ -27,6 +30,8 @@ interface DemoContextType extends DemoState {
   prevTourStep: () => void;
   skipTour: () => void;
   resetTour: () => void;
+  startTour: (tourType: TourType) => void;
+  getTourSteps: () => any[];
 }
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
@@ -138,6 +143,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       maxConversations: 5,
       tourStep: 0,
       tourActive: false,
+      currentTour: 'full' as TourType,
       isAnonymousDemo: false,
       sampleData: SAMPLE_DATA
     };
@@ -157,6 +163,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         conversationsUsed: 0,
         tourStep: 0,
         tourActive: false,
+        currentTour: 'full' as TourType,
         isAnonymousDemo: false
       }));
     };
@@ -171,10 +178,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       isDemo: true,
       promptsUsed: 0,
-      conversationsUsed: 0,
-      tourStep: 0,
-      tourActive: true,
-      isAnonymousDemo: false // No longer using anonymous auth
+        conversationsUsed: 0,
+        tourStep: 0,
+        tourActive: true,
+        currentTour: 'full' as TourType,
+        isAnonymousDemo: false // No longer using anonymous auth
     }));
   };
 
@@ -184,10 +192,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       isDemo: false,
       promptsUsed: 0,
-      conversationsUsed: 0,
-      tourStep: 0,
-      tourActive: false,
-      isAnonymousDemo: false
+        conversationsUsed: 0,
+        tourStep: 0,
+        tourActive: false,
+        currentTour: 'full' as TourType,
+        isAnonymousDemo: false
     }));
     sessionStorage.removeItem('demo-state');
   };
@@ -243,6 +252,127 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const startTour = (tourType: TourType) => {
+    setDemoState(prev => ({
+      ...prev,
+      tourStep: 0,
+      tourActive: true,
+      currentTour: tourType
+    }));
+  };
+
+  const getTourSteps = () => {
+    // Import tour configurations based on current tour type
+    const TOUR_CONFIGS = {
+      full: [
+        {
+          id: 'welcome',
+          title: 'Welcome to Budget AI!',
+          description: 'Let\'s take a quick tour of the main features. This demo includes sample data and you can try the AI chat with up to 5 messages.',
+          selector: '[data-tour-id="dashboard"]',
+          route: '/',
+          position: 'bottom'
+        },
+        {
+          id: 'financial-snapshot',
+          title: 'Financial Overview',
+          description: 'See your account balances and spending insights at a glance.',
+          selector: '[data-tour-id="financial-snapshot"]',
+          route: '/',
+          position: 'bottom'
+        },
+        {
+          id: 'budget-overview',
+          title: 'Budget Management',
+          description: 'Create and track budgets by category. See how much you\'ve spent vs. your budget limits.',
+          selector: '[data-tour-id="budget-overview"]',
+          route: '/',
+          position: 'top'
+        },
+        {
+          id: 'goals-overview',
+          title: 'Financial Goals',
+          description: 'Set and track progress toward your financial goals.',
+          selector: '[data-tour-id="goals-overview"]',
+          route: '/',
+          position: 'top'
+        },
+        {
+          id: 'upcoming-bills',
+          title: 'Upcoming Bills',
+          description: 'Never miss a payment with bill tracking and reminders.',
+          selector: '[data-tour-id="upcoming-bills"]',
+          route: '/',
+          position: 'top'
+        },
+        {
+          id: 'ai-chat',
+          title: 'AI Assistant',
+          description: 'Ask questions about your finances and get personalized insights. Try asking "How much did I spend on groceries this month?"',
+          selector: '[data-tour-id="ai-chat-button"]',
+          route: '/',
+          position: 'left'
+        },
+        {
+          id: 'chat-interface',
+          title: 'Chat with AI',
+          description: 'This is where you can have conversations with your AI financial assistant. You have 5 demo messages to try!',
+          selector: '[data-tour-id="chat-input"]',
+          route: '/chat',
+          position: 'top'
+        },
+        {
+          id: 'goals-page',
+          title: 'Goals Management',
+          description: 'Create, edit, and track detailed progress on your financial goals.',
+          selector: '[data-tour-id="goals-list"]',
+          route: '/goals',
+          position: 'top'
+        }
+      ],
+      chat: [
+        {
+          id: 'chat-welcome',
+          title: 'AI Financial Assistant',
+          description: 'Ask questions about your finances, upload documents, or get personalized advice.',
+          selector: '[data-tour-id="chat-input"]',
+          route: '/chat',
+          position: 'top'
+        },
+        {
+          id: 'education-panel',
+          title: 'Learning Center',
+          description: 'Get educational suggestions and follow-up questions based on your conversations.',
+          selector: '[data-tour-id="education-panel"]',
+          route: '/chat',
+          position: 'left'
+        }
+      ],
+      budget: [
+        {
+          id: 'budget-categories',
+          title: 'Budget Categories',
+          description: 'Organize your spending into categories and set limits for each.',
+          selector: '[data-tour-id="budget-categories"]',
+          route: '/budget',
+          position: 'top'
+        }
+      ],
+      goals: [
+        {
+          id: 'goals-list',
+          title: 'Your Goals',
+          description: 'Create and track your financial goals with target amounts and deadlines.',
+          selector: '[data-tour-id="goals-list"]',
+          route: '/goals',
+          position: 'top'
+        }
+      ]
+    };
+    
+    return TOUR_CONFIGS[demoState.currentTour] || TOUR_CONFIGS.full;
+  };
+
   const value = {
     ...demoState,
     sampleData: SAMPLE_DATA,
@@ -253,7 +383,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     nextTourStep,
     prevTourStep,
     skipTour,
-    resetTour
+    resetTour,
+    startTour,
+    getTourSteps
   };
 
   return (
