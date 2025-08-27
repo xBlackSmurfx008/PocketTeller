@@ -77,20 +77,11 @@ serve(async (req) => {
       }
     }
 
-    // Set client IP context for the secure function
-    try {
-      await supabase.rpc('set_config', {
-        setting_name: 'app.client_ip',
-        new_value: clientIP || 'unknown'
-      });
-    } catch (configError) {
-      console.log('Failed to set client IP config, continuing:', configError);
-    }
-
-    // Use the NEW secure function with enhanced rate limiting
+    // Use the updated secure function with explicit client_ip parameter
     const { data: secureResult, error: secureError } = await supabase.rpc('get_shared_budget_secure', {
       share_token: token,
-      user_email: userEmail
+      user_email: userEmail,
+      client_ip: clientIP
     });
 
     if (secureError) {

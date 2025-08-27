@@ -732,6 +732,36 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_email_log: {
+        Row: {
+          created_at: string
+          email_masked: string
+          error_message: string | null
+          id: string
+          ip_address: unknown | null
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_masked: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_masked?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       waitlist_signups: {
         Row: {
           created_at: string
@@ -790,6 +820,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      check_waitlist_email_rate: {
+        Args: { email_param: string; ip_param: unknown }
+        Returns: boolean
+      }
       clear_user_audit_logs: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -842,7 +876,9 @@ export type Database = {
         }[]
       }
       get_shared_budget_secure: {
-        Args: { share_token: string; user_email?: string }
+        Args:
+          | { client_ip?: string; share_token: string; user_email?: string }
+          | { share_token: string; user_email?: string }
         Returns: Json
       }
       get_user_profile_secure: {
@@ -860,6 +896,10 @@ export type Database = {
           updated_at: string
           user_id: string
         }[]
+      }
+      has_recent_waitlist_signup: {
+        Args: { days_param?: number; email_param: string }
+        Returns: boolean
       }
       increment_budget_share_view: {
         Args: { share_id: string }

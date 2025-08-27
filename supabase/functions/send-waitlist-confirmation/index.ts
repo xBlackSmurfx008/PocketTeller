@@ -1,7 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+// Use service role client for anti-abuse checks
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +28,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Set function context for RLS
+    await supabase.rpc('set_config', {
+      setting_name: 'app.current_function_name',
+      new_value: 'send-waitlist-confirmation'
+    });
+
     const { email, source = 'unknown', user_agent }: WaitlistEmailRequest = await req.json();
 
     // Validate email format
@@ -30,6 +43,71 @@ const handler = async (req: Request): Promise<Response> => {
         JSON.stringify({ error: "Invalid email format" }),
         {
           status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Extract client IP for rate limiting
+    const clientIP = req.headers.get('cf-connecting-ip') || 
+                    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                    req.headers.get('x-real-ip') || 
+                    'unknown';
+    
+    let ipAddress: any = null;
+    try {
+      ipAddress = clientIP !== 'unknown' ? clientIP : null;
+    } catch {
+      ipAddress = null;
+    }
+
+    // Anti-abuse check: Verify the email exists in recent waitlist signups
+    const { data: hasRecentSignup, error: signupCheckError } = await supabase.rpc('has_recent_waitlist_signup', {
+      email_param: email,
+      days_param: 30
+    });
+
+    if (signupCheckError || !hasRecentSignup) {
+      console.log(`Email confirmation rejected - no recent signup: ${email.replace(/(.{2}).+@/, '$1***@')}`);
+      
+      await supabase.from('waitlist_email_log').insert({
+        email_masked: email.replace(/(.{2}).+@/, '$1***@'),
+        ip_address: ipAddress,
+        user_agent: user_agent || req.headers.get('user-agent') || 'unknown',
+        success: false,
+        error_message: 'No recent waitlist signup found'
+      });
+
+      return new Response(
+        JSON.stringify({ error: "No recent waitlist signup found for this email" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Rate limiting check
+    const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc('check_waitlist_email_rate', {
+      email_param: email,
+      ip_param: ipAddress
+    });
+
+    if (rateLimitError || !rateLimitOk) {
+      console.log(`Rate limit exceeded for email: ${email.replace(/(.{2}).+@/, '$1***@')}, IP: ${clientIP}`);
+      
+      await supabase.from('waitlist_email_log').insert({
+        email_masked: email.replace(/(.{2}).+@/, '$1***@'),
+        ip_address: ipAddress,
+        user_agent: user_agent || req.headers.get('user-agent') || 'unknown',
+        success: false,
+        error_message: 'Rate limit exceeded'
+      });
+
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        {
+          status: 429,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
@@ -126,11 +204,21 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHtml,
     });
 
+    // Log successful send with PII masking
     console.log("Waitlist confirmation email sent successfully:", {
-      email: email,
+      email_masked: email.replace(/(.{2}).+@/, '$1***@'),
       source: source,
-      user_agent: user_agent?.substring(0, 100), // Truncate for logging
-      resend_id: emailResponse.data?.id
+      user_agent_truncated: user_agent?.substring(0, 100),
+      resend_id: emailResponse.data?.id,
+      ip: clientIP
+    });
+
+    // Log to database
+    await supabase.from('waitlist_email_log').insert({
+      email_masked: email.replace(/(.{2}).+@/, '$1***@'),
+      ip_address: ipAddress,
+      user_agent: user_agent || req.headers.get('user-agent') || 'unknown',
+      success: true
     });
 
     return new Response(
@@ -151,8 +239,33 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-waitlist-confirmation function:", {
       error: error.message,
-      stack: error.stack
+      stack: error.stack?.substring(0, 500) // Truncate stack trace
     });
+
+    // Try to log the error safely
+    try {
+      const body = await req.clone().json();
+      const clientIP = req.headers.get('cf-connecting-ip') || 
+                      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                      'unknown';
+      
+      let ipAddress: any = null;
+      try {
+        ipAddress = clientIP !== 'unknown' ? clientIP : null;
+      } catch {
+        ipAddress = null;
+      }
+
+      await supabase.from('waitlist_email_log').insert({
+        email_masked: (body.email || 'unknown').replace(/(.{2}).+@/, '$1***@'),
+        ip_address: ipAddress,
+        user_agent: body.user_agent || req.headers.get('user-agent') || 'unknown',
+        success: false,
+        error_message: error.message ? error.message.substring(0, 100) : 'Unknown error'
+      });
+    } catch (logError) {
+      console.error('Failed to log error to database:', logError);
+    }
     
     return new Response(
       JSON.stringify({ 
