@@ -14,7 +14,7 @@ const Privacy = () => {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/')}
               className="mb-4 ripple-effect"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />

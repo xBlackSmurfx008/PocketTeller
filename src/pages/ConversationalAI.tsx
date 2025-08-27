@@ -107,7 +107,7 @@ const ConversationalAI = () => {
       <header className="border-b border-border p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="md:hidden">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="md:hidden" aria-label="Go back to dashboard">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
@@ -119,7 +119,7 @@ const ConversationalAI = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            {isMobile && <Button variant="ghost" size="icon" onClick={() => setShowSidebar(!showSidebar)}>
+            {isMobile && <Button variant="ghost" size="icon" onClick={() => setShowSidebar(!showSidebar)} aria-label="Toggle sidebar menu">
                 <Menu className="h-4 w-4" />
               </Button>}
             

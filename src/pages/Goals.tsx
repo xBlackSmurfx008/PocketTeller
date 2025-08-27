@@ -342,7 +342,7 @@ export default function Goals() {
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0 ripple-effect">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0 ripple-effect" aria-label="Go back to dashboard">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground text-gradient">Financial Goals</h1>
@@ -356,7 +356,7 @@ export default function Goals() {
               <Plus className="h-4 w-4 mr-2" />
               <span className="sm:inline">Add Goal</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="shrink-0 ripple-effect">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="shrink-0 ripple-effect" aria-label="Go to account settings">
               <Settings className="h-4 w-4" />
             </Button>
           </div>

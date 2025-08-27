@@ -204,7 +204,7 @@ export function CoachMarks() {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">{currentStep.title}</CardTitle>
-            <Button variant="ghost" size="icon" onClick={skipTour}>
+            <Button variant="ghost" size="icon" onClick={skipTour} aria-label="Skip tour">
               <X className="h-4 w-4" />
             </Button>
           </div>

@@ -40,11 +40,42 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, onClick, type = "button", ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    
+    // Enhanced onClick with error handling
+    const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+      if (onClick) {
+        try {
+          onClick(event);
+        } catch (error) {
+          console.error('Button onClick error:', error);
+        }
+      }
+    }, [onClick]);
+
+    // Development-only accessibility warnings
+    React.useEffect(() => {
+      if (process.env.NODE_ENV === 'development') {
+        // Check for icon-only buttons without aria-label
+        const hasIconOnly = props.children && 
+          React.Children.toArray(props.children).some((child) => 
+            React.isValidElement(child) && 
+            child.type && 
+            typeof child.type === 'function'
+          );
+        
+        if (hasIconOnly && !props['aria-label'] && !props.title) {
+          console.warn('Button with icon should have aria-label or title for accessibility');
+        }
+      }
+    }, [props.children, props['aria-label'], props.title]);
+    
     return (
       <Comp
+        type={asChild ? undefined : type}
         className={cn(buttonVariants({ variant, size, className }))}
+        onClick={handleClick}
         ref={ref}
         {...props}
       />

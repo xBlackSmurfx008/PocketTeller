@@ -126,7 +126,7 @@ export default function Account() {
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0 ripple-effect">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0 ripple-effect" aria-label="Go back to dashboard">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground text-gradient">Account Settings</h1>

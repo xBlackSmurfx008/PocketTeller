@@ -338,7 +338,7 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
                     readOnly
                     className="flex-1"
                   />
-                  <Button onClick={copyToClipboard} size="icon" variant="outline">
+                  <Button onClick={copyToClipboard} size="icon" variant="outline" aria-label="Copy share URL to clipboard">
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
@@ -409,6 +409,7 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
                         onClick={sendEmail} 
                         disabled={!recipientEmail || !shareUrl || isLoading}
                         size="icon"
+                        aria-label="Send budget via email"
                       >
                         <Mail className="w-4 h-4" />
                       </Button>
@@ -437,6 +438,7 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
                         onClick={sendSMS} 
                         disabled={!recipientPhone || !shareUrl || isLoading}
                         size="icon"
+                        aria-label="Send budget via SMS"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </Button>
