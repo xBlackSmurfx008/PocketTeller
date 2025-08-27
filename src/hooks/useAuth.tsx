@@ -10,8 +10,9 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
-  resendConfirmation: (email: string) => Promise<{ error: any }>;
+  resendConfirmation: (email: string) => Promise<{ error: any; errorType?: string | null }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  sendMagicLink: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -86,22 +87,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resendConfirmation = async (email: string) => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email,
+        email: normalizedEmail,
         options: {
           emailRedirectTo: AuthConfig.emailConfirmRedirect
         }
       });
       
+      // Map common errors to structured responses
       if (error) {
         console.error('Resend confirmation error:', error);
+        
+        // Return structured error info for better UX decisions
+        const errorType = error.message.toLowerCase();
+        if (errorType.includes('rate') || errorType.includes('limit')) {
+          return { error, errorType: 'rate_limit' };
+        } else if (errorType.includes('confirmed') || errorType.includes('already')) {
+          return { error, errorType: 'already_confirmed' };
+        } else if (errorType.includes('delivery') || errorType.includes('provider')) {
+          return { error, errorType: 'delivery_failed' };
+        }
       }
       
-      return { error };
+      return { error, errorType: error ? 'unknown' : null };
     } catch (err: any) {
       console.error('Unexpected resend error:', err);
-      return { error: err };
+      return { error: err, errorType: 'unknown' };
     }
   };
 
@@ -110,6 +124,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       redirectTo: AuthConfig.passwordResetRedirect
     });
     return { error };
+  };
+
+  const sendMagicLink = async (email: string) => {
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo: AuthConfig.defaultRedirect
+        }
+      });
+      
+      return { error };
+    } catch (err: any) {
+      console.error('Magic link error:', err);
+      return { error: err };
+    }
   };
 
   const value = {
@@ -121,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     resendConfirmation,
     resetPassword,
+    sendMagicLink,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

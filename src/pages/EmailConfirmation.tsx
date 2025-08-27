@@ -221,6 +221,13 @@ export default function EmailConfirmation() {
                   </Button>
                   <Button 
                     variant="outline"
+                    onClick={() => navigate('/auth')} 
+                    className="w-full"
+                  >
+                    Try Magic Link Instead
+                  </Button>
+                  <Button 
+                    variant="ghost"
                     onClick={() => navigate('/')} 
                     className="w-full"
                   >

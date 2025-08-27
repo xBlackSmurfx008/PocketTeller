@@ -26,7 +26,8 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [lastSignUpEmail, setLastSignUpEmail] = useState('');
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
-  const { signUp, signIn, user, resendConfirmation, resetPassword } = useAuth();
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+  const { signUp, signIn, user, resendConfirmation, resetPassword, sendMagicLink } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -183,22 +184,45 @@ export default function Auth() {
       console.log('Auth - Attempting resend for:', emailToResend);
     }
     
-    const { error } = await resendConfirmation(emailToResend);
+    const { error, errorType } = await resendConfirmation(emailToResend);
     
     if (error) {
-      toast({
-        title: "Failed to resend",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
+      const errorMessage = getErrorMessage(error);
+      
+      // Show specific error with magic link fallback for certain cases
+      if (errorType === 'rate_limit') {
+        toast({
+          title: "Too many requests",
+          description: `${errorMessage} Try the magic link option below as an alternative.`,
+          variant: "destructive",
+        });
+      } else if (errorType === 'already_confirmed') {
+        toast({
+          title: "Account already confirmed",
+          description: "Your email is already confirmed. Try signing in directly.",
+          variant: "destructive",
+        });
+      } else if (errorType === 'delivery_failed') {
+        toast({
+          title: "Email delivery issue",
+          description: `${errorMessage} Try the magic link option below.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to resend",
+          description: `${errorMessage} Try the magic link option as an alternative.`,
+          variant: "destructive",
+        });
+      }
       
       if (import.meta.env.DEV) {
-        console.log('Auth - Resend error:', error);
+        console.log('Auth - Resend error:', error, 'Type:', errorType);
       }
     } else {
       toast({
         title: "Confirmation email sent",
-        description: "Please check your email (including spam folder) for the confirmation link.",
+        description: `Please check your email (${emailToResend}) including spam folder for the confirmation link.`,
       });
       
       // Start 30-second cooldown
@@ -218,6 +242,37 @@ export default function Auth() {
       }
     }
     setResendLoading(false);
+  };
+
+  const handleMagicLink = async () => {
+    const emailToSend = lastSignUpEmail || email;
+    if (!emailToSend) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setMagicLinkLoading(true);
+    
+    const { error } = await sendMagicLink(emailToSend);
+    
+    if (error) {
+      toast({
+        title: "Failed to send magic link",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Magic link sent!",
+        description: `Check your email (${emailToSend}) for a magic sign-in link that works immediately.`,
+      });
+    }
+    
+    setMagicLinkLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -348,23 +403,38 @@ export default function Auth() {
                       {emailNotConfirmed && lastSignUpEmail && (
                         <Alert>
                           <Mail className="h-4 w-4" />
-                          <AlertDescription className="flex items-center justify-between">
-                            <span>Email not confirmed. Please check your inbox.</span>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={handleResendConfirmation}
-                              disabled={resendLoading || resendCooldown > 0}
-                              className="ml-2"
-                            >
-                              {resendLoading ? (
-                                <RotateCcw className="h-3 w-3 animate-spin" />
-                              ) : resendCooldown > 0 ? (
-                                `Wait ${resendCooldown}s`
-                              ) : (
-                                "Resend"
-                              )}
-                            </Button>
+                          <AlertDescription>
+                            <div className="space-y-2">
+                              <p>Email not confirmed for <strong>{lastSignUpEmail}</strong>. Check your inbox.</p>
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={handleResendConfirmation}
+                                  disabled={resendLoading || resendCooldown > 0}
+                                >
+                                  {resendLoading ? (
+                                    <RotateCcw className="h-3 w-3 animate-spin" />
+                                  ) : resendCooldown > 0 ? (
+                                    `Wait ${resendCooldown}s`
+                                  ) : (
+                                    "Resend"
+                                  )}
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={handleMagicLink}
+                                  disabled={magicLinkLoading}
+                                >
+                                  {magicLinkLoading ? (
+                                    <RotateCcw className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    "Use magic link instead"
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
                           </AlertDescription>
                         </Alert>
                       )}
@@ -429,23 +499,38 @@ export default function Auth() {
                     {lastSignUpEmail && (
                       <Alert>
                         <Mail className="h-4 w-4" />
-                        <AlertDescription className="flex items-center justify-between">
-                          <span>Didn't get the email? Check spam folder or resend.</span>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={handleResendConfirmation}
-                            disabled={resendLoading || resendCooldown > 0}
-                            className="ml-2"
-                          >
-                            {resendLoading ? (
-                              <RotateCcw className="h-3 w-3 animate-spin" />
-                            ) : resendCooldown > 0 ? (
-                              `Wait ${resendCooldown}s`
-                            ) : (
-                              "Resend"
-                            )}
-                          </Button>
+                        <AlertDescription>
+                          <div className="space-y-2">
+                            <p>Confirmation email sent to <strong>{lastSignUpEmail}</strong>. Check spam folder if needed.</p>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleResendConfirmation}
+                                disabled={resendLoading || resendCooldown > 0}
+                              >
+                                {resendLoading ? (
+                                  <RotateCcw className="h-3 w-3 animate-spin" />
+                                ) : resendCooldown > 0 ? (
+                                  `Wait ${resendCooldown}s`
+                                ) : (
+                                  "Resend"
+                                )}
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={handleMagicLink}
+                                disabled={magicLinkLoading}
+                              >
+                                {magicLinkLoading ? (
+                                  <RotateCcw className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  "Use magic link instead"
+                                )}
+                              </Button>
+                            </div>
+                          </div>
                         </AlertDescription>
                       </Alert>
                     )}
