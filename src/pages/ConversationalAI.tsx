@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemo } from "@/hooks/useDemo";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Menu } from "lucide-react";
 import { useConversation, EducationSuggestion } from "@/hooks/useConversation";
 import { MessageBubble } from "@/components/chat/MessageBubble";
@@ -20,6 +20,7 @@ const ConversationalAI = () => {
   const { user } = useAuth();
   const { isDemo, promptsUsed, maxPrompts, conversationsUsed, maxConversations, exitDemo } = useDemo();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   
   const [educationSuggestions, setEducationSuggestions] = useState<EducationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -105,7 +106,7 @@ const ConversationalAI = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col content-visible">
       {/* Header */}
       <header className="border-b border-border p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -158,9 +159,10 @@ const ConversationalAI = () => {
           <div className="space-y-4">
             {/* Welcome Message */}
             {messages.length === 0 && (
-              <Card className="mx-auto max-w-2xl">
-                <CardHeader>
-                  <CardTitle className="text-center">Welcome to your AI Financial Assistant! 🤖💰</CardTitle>
+              <Reveal>
+                <Card className="mx-auto max-w-2xl card-hover-lift">
+                  <CardHeader>
+                    <CardTitle className="text-center text-gradient">Welcome to your AI Financial Assistant! 🤖💰</CardTitle>
                   <CardDescription className="text-center">
                     I'm here to help you manage your finances, analyze spending patterns, create budgets, and answer any financial questions you have.
                   </CardDescription>
@@ -178,6 +180,7 @@ const ConversationalAI = () => {
                   </div>
                 </CardContent>
               </Card>
+              </Reveal>
             )}
 
             {/* Messages */}
@@ -199,26 +202,28 @@ const ConversationalAI = () => {
 
             {/* Prompt Suggestions */}
             {showPromptSuggestions && messages.length === 0 && (
-              <Card className="mx-auto max-w-2xl">
-                <CardHeader>
-                  <CardTitle className="text-lg">Get started with these questions:</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {promptSuggestions.slice(0, 6).map((suggestion, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="text-left justify-start h-auto p-3 text-sm"
-                        onClick={() => handlePromptSuggestionClick(suggestion)}
-                        disabled={isLoading}
-                      >
-                        {suggestion}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <Reveal delay={300}>
+                <Card className="mx-auto max-w-2xl card-hover-lift">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Get started with these questions:</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {promptSuggestions.slice(0, 6).map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          className="text-left justify-start h-auto p-3 text-sm ripple-effect"
+                          onClick={() => handlePromptSuggestionClick(suggestion)}
+                          disabled={isLoading}
+                        >
+                          {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Reveal>
             )}
 
             <div ref={messagesEndRef} />

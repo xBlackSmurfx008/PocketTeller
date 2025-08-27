@@ -20,7 +20,9 @@ export const useSiteMetrics = () => {
   // Stable fetchMetrics function using useCallback
   const fetchMetrics = useCallback(async () => {
     try {
-      console.log('Fetching site metrics...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fetching site metrics...');
+      }
       const { data, error } = await supabase
         .from('site_metrics')
         .select('*')
@@ -33,7 +35,9 @@ export const useSiteMetrics = () => {
       }
 
       if (data) {
-        console.log('Site metrics data received:', data);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Site metrics data received:', data);
+        }
         const newMetrics = {
           totalUsers: data.total_users ?? 0,
           totalBudgets: data.total_budgets ?? 0,
@@ -48,7 +52,9 @@ export const useSiteMetrics = () => {
                             prev.totalTransactions !== newMetrics.totalTransactions;
           
           if (hasChanged || loading) {
-            console.log('Updating site metrics:', newMetrics);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Updating site metrics:', newMetrics);
+            }
             return newMetrics;
           }
           return prev;
@@ -84,7 +90,9 @@ export const useSiteMetrics = () => {
           filter: 'id=eq.1'
         },
         (payload) => {
-          console.log('Real-time metrics update received:', payload);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Real-time metrics update received:', payload);
+          }
           const newData = payload.new as any;
           const newMetrics = {
             totalUsers: newData.total_users ?? 0,
@@ -100,7 +108,9 @@ export const useSiteMetrics = () => {
                               prev.totalTransactions !== newMetrics.totalTransactions;
             
             if (hasChanged) {
-              console.log('Real-time site metrics updated:', newMetrics);
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Real-time site metrics updated:', newMetrics);
+              }
               return newMetrics;
             }
             return prev;

@@ -1,67 +1,75 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
+import { Reveal } from '@/components/Reveal';
 
 const Privacy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Privacy Policy</h1>
-          <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
-        </div>
+    <div className="min-h-screen bg-background py-8 px-4 content-visible">
+      <div className="max-w-4xl mx-auto">
+        <Reveal>
+          <div className="mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="mb-4 ripple-effect"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <h1 className="text-4xl font-bold text-gradient">Privacy Policy</h1>
+            <p className="text-muted-foreground mt-2">Last updated: December 2024</p>
+          </div>
+        </Reveal>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Introduction</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-              <p>
-                Budget AI ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our budgeting and financial management application.
-              </p>
-            </CardContent>
-          </Card>
+          <Reveal delay={100}>
+            <Card className="card-hover-lift">
+              <CardHeader>
+                <CardTitle>Introduction</CardTitle>
+              </CardHeader>
+              <CardContent className="prose dark:prose-invert max-w-none">
+                <p>
+                  Budget AI is committed to protecting your privacy and financial data. This Privacy Policy 
+                  explains how we collect, use, and safeguard your information when you use our application.
+                </p>
+              </CardContent>
+            </Card>
+          </Reveal>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Information We Collect</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-              <h4>Personal Information</h4>
-              <ul>
-                <li>Email address and password for account creation</li>
-                <li>Profile information you choose to provide</li>
-                <li>Financial goals and budget preferences</li>
-              </ul>
-              
-              <h4>Financial Data</h4>
-              <ul>
-                <li>Bank account information (through Plaid integration)</li>
-                <li>Transaction history and categorization</li>
-                <li>Bill information and payment schedules</li>
-                <li>Budget allocations and spending patterns</li>
-              </ul>
-
-              <h4>Usage Data</h4>
-              <ul>
-                <li>App usage patterns and feature interactions</li>
-                <li>Chat conversations with our AI assistant</li>
-                <li>Device information and browser type</li>
-              </ul>
-            </CardContent>
-          </Card>
+          <Reveal delay={200}>
+            <Card className="card-hover-lift">
+              <CardHeader>
+                <CardTitle>Information We Collect</CardTitle>
+              </CardHeader>
+              <CardContent className="prose dark:prose-invert max-w-none">
+                <h4>Personal Information</h4>
+                <ul>
+                  <li>Email address and authentication credentials</li>
+                  <li>Profile information you choose to provide</li>
+                  <li>Communication preferences</li>
+                </ul>
+                
+                <h4>Financial Information</h4>
+                <ul>
+                  <li>Bank account connections through Plaid (encrypted)</li>
+                  <li>Transaction data and spending patterns</li>
+                  <li>Budget and financial goal information</li>
+                  <li>Bill and payment information you enter</li>
+                </ul>
+                
+                <h4>Usage Information</h4>
+                <ul>
+                  <li>App usage patterns and feature interactions</li>
+                  <li>AI conversation history and preferences</li>
+                  <li>Device information and browser type</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </Reveal>
 
           <Card>
             <CardHeader>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { Shield, RefreshCw, Eye, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -44,6 +44,7 @@ export const PlaidSecuritySettings = () => {
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRotating, setIsRotating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchSecurityData();
@@ -73,7 +74,11 @@ export const PlaidSecuritySettings = () => {
 
     } catch (error) {
       console.error('Error fetching security data:', error);
-      toast.error('Failed to load security information');
+      toast({
+        title: "Error",
+        description: "Failed to load security information",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -91,14 +96,25 @@ export const PlaidSecuritySettings = () => {
       if (error) throw error;
 
       if (data) {
-        toast.success('Plaid token rotated successfully. You will need to reconnect your bank account.');
+        toast({
+          title: "Success",
+          description: "Plaid token rotated successfully. You will need to reconnect your bank account.",
+        });
         fetchSecurityData();
       } else {
-        toast.error('Failed to rotate token');
+        toast({
+          title: "Error",
+          description: "Failed to rotate token",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error rotating token:', error);
-      toast.error('Failed to rotate token');
+      toast({
+        title: "Error", 
+        description: "Failed to rotate token",
+        variant: "destructive",
+      });
     } finally {
       setIsRotating(false);
     }
@@ -114,10 +130,17 @@ export const PlaidSecuritySettings = () => {
       if (error) throw error;
 
       setSecuritySettings(prev => prev ? { ...prev, security_alerts_enabled: enabled } : null);
-      toast.success(`Security alerts ${enabled ? 'enabled' : 'disabled'}`);
+      toast({
+        title: "Success",
+        description: `Security alerts ${enabled ? 'enabled' : 'disabled'}`,
+      });
     } catch (error) {
       console.error('Error updating security alerts:', error);
-      toast.error('Failed to update security alerts');
+      toast({
+        title: "Error",
+        description: "Failed to update security alerts",
+        variant: "destructive",
+      });
     }
   };
 
@@ -128,10 +151,17 @@ export const PlaidSecuritySettings = () => {
       if (error) throw error;
 
       setAuditLogs([]);
-      toast.success('Audit logs cleared successfully');
+      toast({
+        title: "Success",
+        description: "Audit logs cleared successfully",
+      });
     } catch (error) {
       console.error('Error clearing audit logs:', error);
-      toast.error('Failed to clear audit logs');
+      toast({
+        title: "Error",
+        description: "Failed to clear audit logs",
+        variant: "destructive",
+      });
     }
   };
 

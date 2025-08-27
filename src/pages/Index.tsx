@@ -11,7 +11,7 @@ import CountUp from '@/components/CountUp';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicFooter from '@/components/PublicFooter';
-import LazyImage from '@/components/LazyImage';
+
 
 const Index = () => {
   const { user, loading } = useAuth();

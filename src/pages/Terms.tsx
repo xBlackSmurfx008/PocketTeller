@@ -1,38 +1,45 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
+import { Reveal } from '@/components/Reveal';
 
 const Terms = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Terms of Service</h1>
-          <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
-        </div>
+    <div className="min-h-screen bg-background py-8 px-4 content-visible">
+      <div className="max-w-4xl mx-auto">
+        <Reveal>
+          <div className="mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="mb-4 ripple-effect"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <h1 className="text-4xl font-bold text-gradient">Terms of Service</h1>
+            <p className="text-muted-foreground mt-2">Last updated: December 2024</p>
+          </div>
+        </Reveal>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Agreement to Terms</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-              <p>
-                By accessing and using Budget AI, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
-              </p>
-            </CardContent>
-          </Card>
+          <Reveal delay={100}>
+            <Card className="card-hover-lift">
+              <CardHeader>
+                <CardTitle>Acceptance of Terms</CardTitle>
+              </CardHeader>
+              <CardContent className="prose dark:prose-invert max-w-none">
+                <p>
+                  By accessing and using Budget AI, you accept and agree to be bound by the terms 
+                  and provision of this agreement. If you do not agree to abide by the above, 
+                  please do not use this service.
+                </p>
+              </CardContent>
+            </Card>
+          </Reveal>
 
           <Card>
             <CardHeader>

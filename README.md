@@ -1,15 +1,16 @@
-# BudgetAI - Personal Finance Management 🤖💰
+# Budget AI - Intelligent Personal Finance Management
 
-> AI-powered personal finance management with intelligent insights, automated categorization, and comprehensive budget tracking
+[![Deploy](https://img.shields.io/badge/Deploy-Lovable-brightgreen)](https://lovable.dev)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-green)](https://supabase.io/)
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)]()
-[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)]()
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase&logoColor=white)]()
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)]()
+> Transform your financial life with AI-powered insights, smart budgeting, and seamless bank integration.
 
-## 🌟 Features
+---
+
+## 🚀 Features
 
 ### 🤖 AI-Powered Financial Assistant
 - **Conversational AI**: Chat with your personal finance assistant powered by Google Gemini 2.0 Flash
@@ -104,8 +105,8 @@
    ```
 
 8. **Try the demo**
-   - Visit `http://localhost:8080`
-   - Click "Try a 5-message demo" to explore with sample data
+   - Visit `http://localhost:5173`
+   - Click "Try Demo" to explore with sample data
 
 ## 🏗️ Architecture
 
