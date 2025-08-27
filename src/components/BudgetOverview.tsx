@@ -325,24 +325,24 @@ export default function BudgetOverview() {
         {/* Category Progress */}
         <div className="space-y-3">
           <h4 className="font-medium text-foreground">Category Spending</h4>
-          {categorySummaries.length === 0 ? (
+          {!categorySummaries || categorySummaries.length === 0 ? (
             <p className="text-muted-foreground text-sm">No category budgets set</p>
           ) : (
-            categorySummaries.map((summary) => (
-              <div key={summary.category} className="space-y-2">
+            (categorySummaries || []).map((summary) => (
+              <div key={summary?.category || 'unknown'} className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-foreground">{summary.category}</span>
+                  <span className="text-sm font-medium text-foreground">{summary?.category || 'Unknown'}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
-                      ${summary.actual.toLocaleString()} / ${summary.planned.toLocaleString()}
+                      ${(summary?.actual || 0).toLocaleString()} / ${(summary?.planned || 0).toLocaleString()}
                     </span>
-                    <Badge variant={getRemainingBadgeVariant(summary.remaining)} className="text-xs">
-                      {summary.remaining >= 0 ? '+' : ''}${summary.remaining.toLocaleString()}
+                    <Badge variant={getRemainingBadgeVariant(summary?.remaining || 0)} className="text-xs">
+                      {(summary?.remaining || 0) >= 0 ? '+' : ''}${(summary?.remaining || 0).toLocaleString()}
                     </Badge>
                   </div>
                 </div>
                 <Progress 
-                  value={Math.min(summary.percentage, 100)} 
+                  value={Math.min(summary?.percentage || 0, 100)} 
                   className="h-2"
                 />
               </div>

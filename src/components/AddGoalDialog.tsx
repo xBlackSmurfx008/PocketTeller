@@ -63,7 +63,15 @@ export function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGoalDialog
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
+    // Critical auth check
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create goals",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setLoading(true);
     try {
@@ -87,11 +95,11 @@ export function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGoalDialog
       form.reset();
       onOpenChange(false);
       onGoalAdded();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating goal:', error);
       toast({
         title: "Error",
-        description: "Failed to create goal",
+        description: error?.message || "Failed to create goal",
         variant: "destructive",
       });
     } finally {

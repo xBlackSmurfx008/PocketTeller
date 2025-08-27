@@ -53,14 +53,53 @@ export default function AddTransactionDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Critical auth check
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to add transactions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate form data
+    if (!formData.description.trim()) {
+      toast({
+        title: "Validation Error", 
+        description: "Description is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.amount.trim() || isNaN(parseFloat(formData.amount))) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.category) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a category", 
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase
         .from('transactions')
         .insert({
-          user_id: user?.id,
-          description: formData.description,
+          user_id: user.id,
+          description: formData.description.trim(),
           amount: parseFloat(formData.amount),
           category: formData.category,
           date: formData.date,
@@ -76,11 +115,11 @@ export default function AddTransactionDialog({
       resetForm();
       onOpenChange(false);
       onTransactionAdded();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding transaction:', error);
       toast({
         title: "Error",
-        description: "Failed to add transaction",
+        description: error?.message || "Failed to add transaction",
         variant: "destructive",
       });
     } finally {
@@ -132,8 +171,8 @@ export default function AddTransactionDialog({
               <SelectTrigger>
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map(category => (
+              <SelectContent className="bg-background border border-border shadow-lg z-50">
+                {(CATEGORIES || []).map(category => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>

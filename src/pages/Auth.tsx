@@ -49,10 +49,29 @@ export default function Auth() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateEmail(email)) {
+    // Validate inputs
+    if (!email?.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateEmail(email.trim())) {
       toast({
         title: "Invalid email",
         description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!password?.trim()) {
+      toast({
+        title: "Password required", 
+        description: "Please enter a password",
         variant: "destructive",
       });
       return;
@@ -78,7 +97,7 @@ export default function Auth() {
 
     setLoading(true);
     
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(email.trim(), password);
     
     if (error) {
       toast({
@@ -98,10 +117,30 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (!email?.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!password?.trim()) {
+      toast({
+        title: "Password required", 
+        description: "Please enter your password",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setEmailNotConfirmed(false);
     
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email.trim(), password);
     
     if (error) {
       if (error.message.includes('Email not confirmed')) {

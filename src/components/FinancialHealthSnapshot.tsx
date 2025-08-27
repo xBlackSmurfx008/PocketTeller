@@ -178,7 +178,8 @@ export default function FinancialHealthSnapshot() {
     }
   };
 
-  const netIncome = data.monthlyIncome - data.monthlyExpenses;
+  // Safe calculation with fallbacks
+  const netIncome = (data?.monthlyIncome || 0) - (data?.monthlyExpenses || 0);
   const isPositive = netIncome >= 0;
 
   if (loading) {
@@ -207,7 +208,7 @@ export default function FinancialHealthSnapshot() {
           <div className="text-center">
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Balance</h3>
             <p className="text-3xl font-bold text-primary">
-              ${data.totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              ${(data?.totalBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
           
@@ -215,7 +216,7 @@ export default function FinancialHealthSnapshot() {
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Monthly Income</h3>
             <p className="text-2xl font-semibold text-green-600 flex items-center justify-center gap-1">
               <TrendingUp className="h-4 w-4" />
-              ${data.monthlyIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              ${(data?.monthlyIncome || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
           
@@ -223,7 +224,7 @@ export default function FinancialHealthSnapshot() {
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Monthly Expenses</h3>
             <p className="text-2xl font-semibold text-red-600 flex items-center justify-center gap-1">
               <TrendingDown className="h-4 w-4" />
-              ${data.monthlyExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              ${(data?.monthlyExpenses || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
         </div>

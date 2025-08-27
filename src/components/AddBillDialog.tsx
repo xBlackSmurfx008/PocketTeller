@@ -37,14 +37,53 @@ export default function AddBillDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Critical auth check
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required", 
+        description: "Please sign in to add bills",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate form data
+    if (!formData.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Bill name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.amount.trim() || isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid positive amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.due_date) {
+      toast({
+        title: "Validation Error",
+        description: "Due date is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase
         .from('bills')
         .insert({
-          user_id: user?.id,
-          name: formData.name,
+          user_id: user.id,
+          name: formData.name.trim(),
           amount: parseFloat(formData.amount),
           due_date: formData.due_date,
           is_paid: false,
@@ -60,11 +99,11 @@ export default function AddBillDialog({
       resetForm();
       onOpenChange(false);
       onBillAdded();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding bill:', error);
       toast({
         title: "Error",
-        description: "Failed to add bill",
+        description: error?.message || "Failed to add bill",
         variant: "destructive",
       });
     } finally {

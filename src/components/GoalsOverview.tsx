@@ -97,7 +97,7 @@ export default function GoalsOverview() {
             </Button>
           </div>
           ) : (
-            displayGoals.map((goal) => {
+            (displayGoals || []).map((goal) => {
             const progress = getGoalProgress(goal);
             const onTrack = isGoalOnTrack(goal);
             const deadlineInfo = getDeadlineInfo(goal);

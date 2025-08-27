@@ -90,7 +90,7 @@ export default function UpcomingBills() {
               No bills found. Add your first bill to get started.
             </div>
           ) : (
-            bills.map((bill) => (
+            (bills || []).map((bill) => (
               <div key={bill.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                 <div className="flex items-center gap-3">
                   <Checkbox

@@ -8,11 +8,21 @@ export function useSignOutAction() {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    if (isDemo) {
-      exitDemo();
-      navigate('/');
-    } else {
-      await signOut();
+    try {
+      if (isDemo) {
+        exitDemo();
+        navigate('/');
+      } else {
+        const { error } = await signOut();
+        if (error) {
+          console.error('Sign out error:', error);
+          // Still navigate even if sign out fails
+        }
+        navigate('/auth', { replace: true });
+      }
+    } catch (error) {
+      console.error('Unexpected sign out error:', error);
+      // Force navigation to auth page even on error
       navigate('/auth', { replace: true });
     }
   };

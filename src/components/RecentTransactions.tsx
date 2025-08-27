@@ -447,12 +447,12 @@ export default function RecentTransactions() {
         </div>
 
         <div className="space-y-2 max-h-[50vh] sm:max-h-[400px] overflow-y-auto">
-          {filteredTransactions.length === 0 ? (
+          {!filteredTransactions || filteredTransactions.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               No transactions found
             </div>
           ) : viewMode === 'list' ? (
-            filteredTransactions.map((transaction) => (
+            (filteredTransactions || []).map((transaction) => (
               <div key={transaction.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border border-border rounded-lg gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
@@ -523,7 +523,7 @@ export default function RecentTransactions() {
                           {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                           <span className="font-medium">{category}</span>
                           <Badge variant="secondary" className="text-xs">
-                            {categoryTransactions.length} transaction{categoryTransactions.length !== 1 ? 's' : ''}
+                            {(categoryTransactions?.length || 0)} transaction{(categoryTransactions?.length || 0) !== 1 ? 's' : ''}
                           </Badge>
                         </div>
                         <Badge variant="outline" className="text-sm">
@@ -532,7 +532,7 @@ export default function RecentTransactions() {
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-2 mt-2">
-                      {categoryTransactions.map((transaction) => (
+                      {(categoryTransactions || []).map((transaction) => (
                         <div key={transaction.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 ml-6 border border-border rounded-lg gap-3 sm:gap-4 bg-muted/20">
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
