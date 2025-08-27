@@ -2,9 +2,30 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.lovableproject.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Credentials': 'true',
 };
+
+// Rate limiting
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(userId: string, maxRequests = 50, windowMs = 3600000): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  
+  if (userLimit.count >= maxRequests) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
 
 interface InsightsRequest {
   days?: number;
@@ -67,10 +88,20 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Unauthorized',
-          details: authError?.message || 'Invalid session'
+          details: 'Invalid session'
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Check rate limit
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({
+        error: 'Rate limit exceeded. Please try again later.',
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const { days = 60, topN = 6 }: InsightsRequest = await req.json();
@@ -249,10 +280,19 @@ Important: Use the exact category names and totals provided above. Keep descript
 
   } catch (error) {
     console.error('AI insights error:', error);
+    
+    // Sanitize error message
+    let sanitizedError = 'Service temporarily unavailable';
+    if (error.message?.includes('Rate limit') || error.message?.includes('Unauthorized')) {
+      sanitizedError = error.message;
+    } else if (error.message?.includes('AI service')) {
+      sanitizedError = 'AI service temporarily unavailable';
+    }
+    
     return new Response(
       JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message || 'Failed to generate spending insights'
+        error: sanitizedError,
+        details: 'Failed to generate spending insights'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

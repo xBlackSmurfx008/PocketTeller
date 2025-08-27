@@ -46,8 +46,74 @@ const commitmentQuestions = [
 ];
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://dscndbpqvhvylukvcgpq.lovableproject.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Credentials': 'true',
+}
+
+// SSRF protection: validate attachment URLs
+function isValidAttachmentUrl(url: string): boolean {
+  try {
+    const parsedUrl = new URL(url);
+    
+    // Only allow HTTPS URLs
+    if (parsedUrl.protocol !== 'https:') {
+      return false;
+    }
+    
+    // Block private/internal IPs and localhost
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./) ||
+      hostname.startsWith('169.254.') || // Link-local
+      hostname.startsWith('224.') || // Multicast
+      hostname.includes('metadata') // Cloud metadata
+    ) {
+      return false;
+    }
+    
+    // Only allow trusted domains for file uploads
+    const allowedDomains = [
+      'cdn.supabase.co',
+      'supabase.co', 
+      'storage.googleapis.com',
+      'amazonaws.com',
+      's3.amazonaws.com'
+    ];
+    
+    const isDomainAllowed = allowedDomains.some(domain => 
+      hostname === domain || hostname.endsWith('.' + domain)
+    );
+    
+    return isDomainAllowed;
+  } catch {
+    return false;
+  }
+}
+
+// Rate limiting for AI endpoints
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(userId: string, maxRequests = 30, windowMs = 60000): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  
+  if (userLimit.count >= maxRequests) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
 }
 
 interface UserMemory {
@@ -580,6 +646,17 @@ Deno.serve(async (req) => {
       throw new Error('Invalid or expired token');
     }
 
+    // Check rate limit
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({
+        error: 'Rate limit exceeded. Please try again later.',
+        timestamp: new Date().toISOString()
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { 
       message, 
       conversation_history, 
@@ -654,10 +731,21 @@ Deno.serve(async (req) => {
             url: attachment.url
           };
 
+          // Validate URL to prevent SSRF attacks
+          if (!isValidAttachmentUrl(attachment.url)) {
+            console.warn('Skipping attachment with invalid URL:', attachment.url);
+            attachmentErrors++;
+            continue;
+          }
+
           // Try to fetch and extract text content for better context
           if (isTextFile || isPdf) {
             try {
-              const response = await fetch(attachment.url);
+              const response = await fetch(attachment.url, {
+                headers: {
+                  'User-Agent': 'FinanceApp/1.0'
+                }
+              });
               if (response.ok) {
                 if (isTextFile) {
                   const text = await response.text();
@@ -835,8 +923,17 @@ Based on the conversation stage, provide 2-3 relevant coaching questions that he
 
   } catch (error) {
     console.error('Error in gemini-chat function:', error);
+    
+    // Sanitize error message to prevent stack trace leakage
+    let sanitizedError = 'Internal server error';
+    if (error.message?.includes('Rate limit') || error.message?.includes('Invalid or expired token')) {
+      sanitizedError = error.message;
+    } else if (error.message?.includes('Gemini API error')) {
+      sanitizedError = 'AI service temporarily unavailable';
+    }
+    
     return new Response(JSON.stringify({
-      error: error.message,
+      error: sanitizedError,
       timestamp: new Date().toISOString()
     }), {
       status: 500,
