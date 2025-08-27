@@ -208,16 +208,16 @@ const ConversationalAI = () => {
                     <CardTitle className="text-lg">Get started with these questions:</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {promptSuggestions.slice(0, 6).map((suggestion, index) => (
                         <Button
                           key={index}
                           variant="outline"
-                          className="text-left justify-start h-auto p-3 text-sm ripple-effect"
+                          className="text-left justify-start h-auto p-4 text-sm ripple-effect whitespace-normal leading-relaxed min-h-[60px]"
                           onClick={() => handlePromptSuggestionClick(suggestion)}
                           disabled={isLoading}
                         >
-                          {suggestion}
+                          <span className="break-words">{suggestion}</span>
                         </Button>
                       ))}
                     </div>
