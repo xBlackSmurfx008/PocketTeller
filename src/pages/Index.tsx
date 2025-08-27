@@ -4,11 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useReveal } from '@/hooks/useReveal';
 import { useSiteMetrics } from '@/hooks/useSiteMetrics';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 import TrustedByMarquee from '@/components/TrustedByMarquee';
 import CountUp from '@/components/CountUp';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicFooter from '@/components/PublicFooter';
 
@@ -18,6 +21,11 @@ const Index = () => {
   const { isDemo } = useDemo();
   const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const { toast } = useToast();
   
   // Animation hooks
   const featuresReveal = useReveal();
@@ -34,6 +42,84 @@ const Index = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Countdown to October 16th
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      let launchDate = new Date(currentYear, 9, 16); // October 16th (month is 0-indexed)
+      
+      // If we've passed Oct 16 this year, use next year
+      if (now > launchDate) {
+        launchDate = new Date(currentYear + 1, 9, 16);
+      }
+      
+      const difference = launchDate.getTime() - now.getTime();
+      
+      if (difference <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+      
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      
+      setCountdown({ days, hours, minutes, seconds });
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('waitlist_signups')
+        .insert({
+          email: email.trim(),
+          source: 'home_hero',
+          user_agent: navigator.userAgent
+        });
+
+      if (error) {
+        if (error.code === '23505') { // Unique violation
+          toast({
+            title: "Already signed up!",
+            description: "You're already on the list with that email.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Something went wrong. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        setJoined(true);
+        toast({
+          title: "Welcome to the waitlist!",
+          description: "Thanks for signing up. We'll be in touch before Oct 16.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
   
 
 
@@ -94,6 +180,49 @@ const Index = () => {
             >
               Try Demo
             </Button>
+          </div>
+
+          {/* Waitlist Signup */}
+          <div className="max-w-md mx-auto mt-8">
+            {!joined ? (
+              <form onSubmit={handleWaitlistSubmit} className="flex gap-3 items-center justify-center">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={submitting}
+                  required
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={submitting || !email.trim()}
+                  className="whitespace-nowrap"
+                >
+                  {submitting ? "Joining..." : "Join Waitlist"}
+                </Button>
+              </form>
+            ) : (
+              <div className="text-center">
+                <p className="text-success font-medium">You're on the list! We'll be in touch before Oct 16.</p>
+              </div>
+            )}
+            
+            {/* Countdown */}
+            <div className="text-center mt-4">
+              {countdown.days === 0 && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0 ? (
+                <p className="text-lg font-semibold text-primary">Launching today! 🚀</p>
+              ) : (
+                <p className="text-muted-foreground">
+                  Launching in <span className="font-mono font-semibold text-foreground">
+                    {countdown.days}d {countdown.hours.toString().padStart(2, '0')}:
+                    {countdown.minutes.toString().padStart(2, '0')}:
+                    {countdown.seconds.toString().padStart(2, '0')}
+                  </span>
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </section>
