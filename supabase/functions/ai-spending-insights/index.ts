@@ -245,22 +245,36 @@ Important: Use the exact category names and totals provided above. Keep descript
     let insights: SpendingInsight;
     try {
       const cleanedText = responseText.replace(/```json\n?|\n?```/g, '').trim();
-      insights = JSON.parse(cleanedText);
+      const parsed = JSON.parse(cleanedText);
       
-      // Validate and use our computed topCategories
-      insights.topCategories = topCategories;
-      
-      // Clamp savings estimates
-      if (insights.savingsOpportunities) {
-        insights.savingsOpportunities = insights.savingsOpportunities.map(opp => ({
-          ...opp,
-          estimatedMonthlySavings: Math.min(Math.max(opp.estimatedMonthlySavings || 0, 0), totalSpend / 2)
-        }));
-      }
+      // Normalize and validate the response
+      insights = {
+        summary: parsed?.summary || `You spent $${totalSpend.toFixed(2)} across ${transactionCount} transactions in the last ${days} days.`,
+        topCategories: topCategories, // Always use our computed categories
+        savingsOpportunities: Array.isArray(parsed?.savingsOpportunities) 
+          ? parsed.savingsOpportunities
+              .filter(opp => opp && typeof opp.title === 'string')
+              .map(opp => ({
+                title: opp.title || 'Savings Opportunity',
+                description: opp.description || 'Review your spending patterns for potential savings.',
+                estimatedMonthlySavings: Math.min(Math.max(opp.estimatedMonthlySavings || 0, 0), totalSpend / 2)
+              }))
+          : [],
+        anomalies: Array.isArray(parsed?.anomalies)
+          ? parsed.anomalies
+              .filter(anomaly => anomaly && typeof anomaly.description === 'string')
+              .map(anomaly => ({
+                description: anomaly.description || 'Pattern detected',
+                date: anomaly.date || undefined,
+                amount: typeof anomaly.amount === 'number' ? anomaly.amount : undefined
+              }))
+          : [],
+        notes: parsed?.notes || undefined
+      };
       
     } catch (parseError) {
       console.error('Failed to parse Gemini response:', responseText);
-      // Fallback response
+      // Fallback response with normalized structure
       insights = {
         summary: `You spent $${totalSpend.toFixed(2)} across ${transactionCount} transactions in the last ${days} days.`,
         topCategories,

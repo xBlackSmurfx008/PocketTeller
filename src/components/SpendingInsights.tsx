@@ -27,6 +27,23 @@ interface SpendingInsight {
   notes?: string;
 }
 
+// Helper function to safely normalize insights data
+const normalizeInsights = (rawInsights: any): SpendingInsight => {
+  return {
+    summary: rawInsights?.summary || 'No summary available',
+    topCategories: Array.isArray(rawInsights?.topCategories) 
+      ? rawInsights.topCategories.filter(cat => cat && typeof cat.name === 'string')
+      : [],
+    savingsOpportunities: Array.isArray(rawInsights?.savingsOpportunities)
+      ? rawInsights.savingsOpportunities.filter(opp => opp && typeof opp.title === 'string')
+      : [],
+    anomalies: Array.isArray(rawInsights?.anomalies)
+      ? rawInsights.anomalies.filter(anomaly => anomaly && typeof anomaly.description === 'string')
+      : [],
+    notes: rawInsights?.notes || undefined
+  };
+};
+
 export default function SpendingInsights() {
   const [insights, setInsights] = useState<SpendingInsight | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,7 +92,8 @@ export default function SpendingInsights() {
         return;
       }
 
-      setInsights(data);
+      const normalizedInsights = normalizeInsights(data);
+      setInsights(normalizedInsights);
       localStorage.setItem(THROTTLE_KEY, new Date().toISOString());
       
       toast({
@@ -176,7 +194,7 @@ export default function SpendingInsights() {
             </div>
 
             {/* Top Categories */}
-            {insights.topCategories.length > 0 && (
+            {insights.topCategories && insights.topCategories.length > 0 && (
               <div>
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
@@ -185,9 +203,9 @@ export default function SpendingInsights() {
                 <div className="space-y-2">
                   {insights.topCategories.map((category, index) => (
                     <div key={index} className="flex justify-between items-center text-sm">
-                      <span>{category.name}</span>
+                      <span>{category?.name || 'Unknown'}</span>
                       <span className="font-medium">
-                        ${category.total.toFixed(2)} ({category.percent}%)
+                        ${(category?.total || 0).toFixed(2)} ({category?.percent || 0}%)
                       </span>
                     </div>
                   ))}
@@ -196,7 +214,7 @@ export default function SpendingInsights() {
             )}
 
             {/* Savings Opportunities */}
-            {insights.savingsOpportunities.length > 0 && (
+            {insights.savingsOpportunities && insights.savingsOpportunities.length > 0 && (
               <div>
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <Lightbulb className="h-4 w-4" />
@@ -205,13 +223,13 @@ export default function SpendingInsights() {
                 <div className="space-y-3">
                   {insights.savingsOpportunities.map((opportunity, index) => (
                     <div key={index} className="p-3 bg-muted rounded-lg">
-                      <div className="font-medium text-sm mb-1">{opportunity.title}</div>
+                      <div className="font-medium text-sm mb-1">{opportunity?.title || 'Savings Opportunity'}</div>
                       <p className="text-xs text-muted-foreground mb-2">
-                        {opportunity.description}
+                        {opportunity?.description || 'No description available'}
                       </p>
-                      {opportunity.estimatedMonthlySavings > 0 && (
+                      {(opportunity?.estimatedMonthlySavings || 0) > 0 && (
                         <div className="text-xs font-medium text-green-600">
-                          Potential monthly savings: ${opportunity.estimatedMonthlySavings.toFixed(2)}
+                          Potential monthly savings: ${(opportunity?.estimatedMonthlySavings || 0).toFixed(2)}
                         </div>
                       )}
                     </div>
@@ -221,7 +239,7 @@ export default function SpendingInsights() {
             )}
 
             {/* Anomalies */}
-            {insights.anomalies.length > 0 && (
+            {insights.anomalies && insights.anomalies.length > 0 && (
               <div>
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
@@ -230,8 +248,8 @@ export default function SpendingInsights() {
                 <div className="space-y-2">
                   {insights.anomalies.map((anomaly, index) => (
                     <div key={index} className="text-sm p-2 bg-orange-50 border border-orange-200 rounded">
-                      <p>{anomaly.description}</p>
-                      {anomaly.date && anomaly.amount && (
+                      <p>{anomaly?.description || 'Pattern detected'}</p>
+                      {anomaly?.date && anomaly?.amount && (
                         <p className="text-xs text-muted-foreground mt-1">
                           {anomaly.date}: ${Math.abs(anomaly.amount).toFixed(2)}
                         </p>
