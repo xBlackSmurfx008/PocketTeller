@@ -143,6 +143,7 @@ export default function RecentTransactions() {
 
   const fetchTransactions = async () => {
     try {
+      console.log('Fetching transactions for user:', user?.id);
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
@@ -150,8 +151,11 @@ export default function RecentTransactions() {
         .order('date', { ascending: false })
         .limit(50);
 
+      console.log('Transactions fetch result:', { data: data?.length || 0, error });
       if (error) throw error;
+      
       setTransactions(data || []);
+      console.log('Transactions state updated with', data?.length || 0, 'items');
     } catch (error) {
       console.error('Error fetching transactions:', error);
       toast({
@@ -165,6 +169,7 @@ export default function RecentTransactions() {
   };
 
   const filterTransactions = () => {
+    console.log('Filtering transactions. Raw count:', transactions.length);
     let filtered = transactions;
 
     if (searchTerm) {
@@ -187,6 +192,7 @@ export default function RecentTransactions() {
       filtered = filtered.filter(t => t.category === categoryFilter);
     }
 
+    console.log('After filtering:', filtered.length, 'transactions. Search:', searchTerm, 'Category filter:', categoryFilter);
     setFilteredTransactions(filtered);
   };
 
@@ -459,7 +465,9 @@ export default function RecentTransactions() {
         <div className="space-y-2 max-h-[50vh] sm:max-h-[400px] overflow-y-auto">
           {!filteredTransactions || filteredTransactions.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              No transactions found
+              <p>No transactions found</p>
+              <p className="text-xs mt-2">Raw transactions: {transactions.length} | Filtered: {filteredTransactions.length}</p>
+              <p className="text-xs">Search: "{searchTerm}" | Category: "{categoryFilter}"</p>
             </div>
           ) : viewMode === 'list' ? (
             (filteredTransactions || []).map((transaction) => (
