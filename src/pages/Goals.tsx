@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Reveal } from '@/components/Reveal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -337,51 +338,53 @@ export default function Goals() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background content-visible">
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0 ripple-effect">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financial Goals</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground text-gradient">Financial Goals</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <Button 
               onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none btn-magnetic ripple-effect"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
               <span className="sm:inline">Add Goal</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="shrink-0 ripple-effect">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative">
+      <main className="max-w-7xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative content-visible">
         {goals.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardHeader>
-              <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle>No Goals Yet</CardTitle>
-              <CardDescription>
-                Create your first financial goal to start tracking your progress
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => isDemo && !user ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Goal
-              </Button>
-            </CardContent>
-          </Card>
+          <Reveal>
+            <Card className="text-center py-12 card-hover-lift">
+              <CardHeader>
+                <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <CardTitle>No Goals Yet</CardTitle>
+                <CardDescription>
+                  Create your first financial goal to start tracking your progress
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => isDemo && !user ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)} className="btn-magnetic ripple-effect">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Goal
+                </Button>
+              </CardContent>
+            </Card>
+          </Reveal>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" data-tour-id="goals-list">
-            {goals.map((goal) => {
+            {goals.map((goal, index) => {
               const financialProgress = getGoalProgress(goal);
               const taskProgress = getTaskProgress(goal.id);
               const onTrack = isGoalOnTrack(goal);
@@ -390,89 +393,91 @@ export default function Goals() {
               const isOverdue = goal.deadline && goal.deadline.trim() !== '' && isPast(new Date(goal.deadline));
 
               return (
-                 <Card key={goal.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedGoal(selectedGoal === goal.id ? null : goal.id)}>
-                   <CardHeader>
-                     <div className="flex justify-between items-start">
-                       <div className="flex items-center gap-2 flex-1">
-                         {selectedGoal === goal.id ? 
-                           <ChevronDown className="h-4 w-4 text-muted-foreground" /> : 
-                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                         }
-                         <CardTitle className="text-lg">{goal.goal_name}</CardTitle>
-                       </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditGoal(goal);
-                            }}
-                            title="Edit goal"
-                            aria-label="Edit goal"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletingGoalId(goal.id);
-                            }}
-                            title="Delete goal"
-                            aria-label="Delete goal"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isDemo) {
-                                toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
-                              } else {
-                                setSelectedGoal(goal.id);
-                                setIsAddTaskOpen(true);
-                              }
-                            }}
-                            title="Add task to this goal"
-                            aria-label="Add task to this goal"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add Task
-                          </Button>
-                         {onTrack ? (
-                           <Badge variant="outline" className="text-green-600 border-green-600">
-                             On Track
-                           </Badge>
-                         ) : (
-                           <Badge variant="destructive">
-                             {isOverdue ? 'Overdue' : 'Behind'}
-                           </Badge>
-                         )}
-                       </div>
-                     </div>
-                     <CardDescription>
-                       ${goal.current_amount.toLocaleString()} of ${goal.target_amount.toLocaleString()}
-                       {goal.deadline && goal.deadline.trim() !== '' && (
-                         <span className="block text-sm mt-1">
-                           {isOverdue ? 
-                             `Overdue by ${Math.abs(daysUntilDeadline!)} days` : 
-                             daysUntilDeadline !== null ? `${daysUntilDeadline} days remaining` : ''
-                           }
-                         </span>
-                       )}
-                       {selectedGoal !== goal.id && (
-                         <span className="block text-xs text-muted-foreground mt-1">
-                           Click to view tasks
-                         </span>
-                       )}
-                     </CardDescription>
-                  </CardHeader>
+                <Reveal key={goal.id} delay={index * 100}>
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow card-hover-lift" onClick={() => setSelectedGoal(selectedGoal === goal.id ? null : goal.id)}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2 flex-1">
+                          {selectedGoal === goal.id ? 
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" /> : 
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          }
+                          <CardTitle className="text-lg">{goal.goal_name}</CardTitle>
+                        </div>
+                         <div className="flex items-center gap-2">
+                           <Button
+                             size="icon"
+                             variant="ghost"
+                             className="h-8 w-8 ripple-effect"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleEditGoal(goal);
+                             }}
+                             title="Edit goal"
+                             aria-label="Edit goal"
+                           >
+                             <Edit className="h-3 w-3" />
+                           </Button>
+                           <Button
+                             size="icon"
+                             variant="ghost"
+                             className="h-8 w-8 text-destructive hover:text-destructive ripple-effect"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setDeletingGoalId(goal.id);
+                             }}
+                             title="Delete goal"
+                             aria-label="Delete goal"
+                           >
+                             <Trash2 className="h-3 w-3" />
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             className="ripple-effect"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (isDemo) {
+                                 toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
+                               } else {
+                                 setSelectedGoal(goal.id);
+                                 setIsAddTaskOpen(true);
+                               }
+                             }}
+                             title="Add task to this goal"
+                             aria-label="Add task to this goal"
+                           >
+                             <Plus className="h-3 w-3 mr-1" />
+                             Add Task
+                           </Button>
+                          {onTrack ? (
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              On Track
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              {isOverdue ? 'Overdue' : 'Behind'}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <CardDescription>
+                        ${goal.current_amount.toLocaleString()} of ${goal.target_amount.toLocaleString()}
+                        {goal.deadline && goal.deadline.trim() !== '' && (
+                          <span className="block text-sm mt-1">
+                            {isOverdue ? 
+                              `Overdue by ${Math.abs(daysUntilDeadline!)} days` : 
+                              daysUntilDeadline !== null ? `${daysUntilDeadline} days remaining` : ''
+                            }
+                          </span>
+                        )}
+                        {selectedGoal !== goal.id && (
+                          <span className="block text-xs text-muted-foreground mt-1">
+                            Click to view tasks
+                          </span>
+                        )}
+                      </CardDescription>
+                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <div className="flex justify-between text-sm mb-2">
@@ -602,12 +607,13 @@ export default function Goals() {
                         </Tabs>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                   </CardContent>
+                  </Card>
+                </Reveal>
+               );
+             })}
+           </div>
+         )}
 
         {/* Mobile FAB for adding goals */}
         <div className="fixed bottom-6 right-6 md:hidden">

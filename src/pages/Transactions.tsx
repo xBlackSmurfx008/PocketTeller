@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
+import { Reveal } from '@/components/Reveal';
 
 interface Transaction {
   id: string;
@@ -51,25 +52,33 @@ export default function Transactions() {
   }, [user, isDemo, sampleData]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background content-visible">
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex items-center gap-3 sm:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0" aria-label="Back to dashboard">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="ripple-effect shrink-0" aria-label="Back to dashboard">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Transactions</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground text-gradient">Transactions</h1>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
+      <main className="max-w-7xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 content-visible">
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <SpendingPieChart transactions={transactions} />
-          <SpendingInsights />
-        </div>
+        <Reveal>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="card-hover-lift">
+              <SpendingPieChart transactions={transactions} />
+            </div>
+            <div className="card-hover-lift">
+              <SpendingInsights />
+            </div>
+          </div>
+        </Reveal>
 
         {/* Transactions List */}
-        <RecentTransactions />
+        <Reveal delay={100}>
+          <RecentTransactions />
+        </Reveal>
       </main>
     </div>
   );

@@ -12,6 +12,7 @@ import { useConversation, EducationSuggestion } from "@/hooks/useConversation";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { EducationPanel } from "@/components/chat/EducationPanel";
+import { Reveal } from "@/components/Reveal";
 
 const ConversationalAI = () => {
   const { threadId } = useParams();

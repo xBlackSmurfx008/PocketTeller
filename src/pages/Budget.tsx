@@ -12,6 +12,7 @@ import { useDemo } from '@/hooks/useDemo';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { BudgetCategoryManager } from '@/components/budget/BudgetCategoryManager';
 import { BudgetSummaryCards } from '@/components/budget/BudgetSummaryCards';
+import { Reveal } from '@/components/Reveal';
 
 export default function Budget() {
   const { isDemo } = useDemo();
@@ -112,157 +113,173 @@ export default function Budget() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background content-visible">
       <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Budget</h1>
-            <p className="text-muted-foreground">Manage your monthly budget</p>
+        <Reveal>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground text-gradient">Budget</h1>
+              <p className="text-muted-foreground">Manage your monthly budget</p>
+            </div>
+            <Button onClick={() => navigate('/')} variant="outline" className="ripple-effect">
+              Back to Dashboard
+            </Button>
           </div>
-          <Button onClick={() => navigate('/')} variant="outline">
-            Back to Dashboard
-          </Button>
-        </div>
+        </Reveal>
 
         {/* Month Selector */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Label htmlFor="month">Budget Month:</Label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => {
-                    const date = new Date();
-                    date.setMonth(date.getMonth() - 6 + i);
-                    const value = format(date, 'yyyy-MM');
-                    return (
-                      <SelectItem key={value} value={value}>
-                        {format(date, 'MMMM yyyy')}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <Reveal delay={50}>
+          <Card className="card-hover-lift">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Label htmlFor="month">Budget Month:</Label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const date = new Date();
+                      date.setMonth(date.getMonth() - 6 + i);
+                      const value = format(date, 'yyyy-MM');
+                      return (
+                        <SelectItem key={value} value={value}>
+                          {format(date, 'MMMM yyyy')}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </Reveal>
 
         {/* Summary Cards */}
-        <BudgetSummaryCards 
-          budgetData={budgetData} 
-          actualTransactions={actualTransactions} 
-        />
+        <Reveal delay={100}>
+          <div className="card-hover-lift">
+            <BudgetSummaryCards 
+              budgetData={budgetData} 
+              actualTransactions={actualTransactions} 
+            />
+          </div>
+        </Reveal>
 
         {/* Totals Visuals */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Totals Overview</CardTitle>
-            <CardDescription>View your income and expenses breakdown</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="monthly" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                <TabsTrigger value="yearly">Yearly</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="monthly" className="mt-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b border-border">
-                    <span className="text-sm font-medium">Income</span>
-                    <span className="text-sm font-semibold text-primary">${monthlyTotals.income.toFixed(2)}</span>
+        <Reveal delay={150}>
+          <Card className="card-hover-lift">
+            <CardHeader>
+              <CardTitle>Totals Overview</CardTitle>
+              <CardDescription>View your income and expenses breakdown</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="monthly" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                  <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="monthly" className="mt-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b border-border">
+                      <span className="text-sm font-medium">Income</span>
+                      <span className="text-sm font-semibold text-primary">${monthlyTotals.income.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-border">
+                      <span className="text-sm font-medium">Expenses</span>
+                      <span className="text-sm font-semibold">${monthlyTotals.expenses.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-border">
+                      <span className="text-sm font-medium">Net</span>
+                      <span className={`text-sm font-semibold ${monthlyTotals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                        ${monthlyTotals.net.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {format(new Date(selectedMonth), 'MMMM yyyy')} totals
+                    </p>
                   </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border">
-                    <span className="text-sm font-medium">Expenses</span>
-                    <span className="text-sm font-semibold">${monthlyTotals.expenses.toFixed(2)}</span>
+                </TabsContent>
+                
+                <TabsContent value="yearly" className="mt-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b border-border">
+                      <span className="text-sm font-medium">Income</span>
+                      <span className="text-sm font-semibold text-primary">${yearlyTotals.income.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-border">
+                      <span className="text-sm font-medium">Expenses</span>
+                      <span className="text-sm font-semibold">${yearlyTotals.expenses.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-border">
+                      <span className="text-sm font-medium">Net</span>
+                      <span className={`text-sm font-semibold ${yearlyTotals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                        ${yearlyTotals.net.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(selectedMonth).getFullYear()} totals
+                    </p>
                   </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border">
-                    <span className="text-sm font-medium">Net</span>
-                    <span className={`text-sm font-semibold ${monthlyTotals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                      ${monthlyTotals.net.toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {format(new Date(selectedMonth), 'MMMM yyyy')} totals
-                  </p>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="yearly" className="mt-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b border-border">
-                    <span className="text-sm font-medium">Income</span>
-                    <span className="text-sm font-semibold text-primary">${yearlyTotals.income.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border">
-                    <span className="text-sm font-medium">Expenses</span>
-                    <span className="text-sm font-semibold">${yearlyTotals.expenses.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border">
-                    <span className="text-sm font-medium">Net</span>
-                    <span className={`text-sm font-semibold ${yearlyTotals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                      ${yearlyTotals.net.toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {new Date(selectedMonth).getFullYear()} totals
-                  </p>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </Reveal>
 
         {/* Income Input */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Income</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="income">Expected Income</Label>
-              <Input
-                id="income"
-                type="number"
-                value={budgetData.income}
-                onChange={(e) => setBudgetData(prev => ({ ...prev, income: Number(e.target.value) }))}
-                placeholder="Enter your monthly income"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <Reveal delay={200}>
+          <Card className="card-hover-lift">
+            <CardHeader>
+              <CardTitle>Monthly Income</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="income">Expected Income</Label>
+                <Input
+                  id="income"
+                  type="number"
+                  value={budgetData.income}
+                  onChange={(e) => setBudgetData(prev => ({ ...prev, income: Number(e.target.value) }))}
+                  placeholder="Enter your monthly income"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Reveal>
 
         {/* Budget Categories */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Budget Categories</CardTitle>
-            <CardDescription>Plan your spending by category</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BudgetCategoryManager
-              budgetData={budgetData}
-              actualTransactions={actualTransactions}
-              onUpdateBudget={setBudgetData}
-            />
-          </CardContent>
-        </Card>
+        <Reveal delay={250}>
+          <Card className="card-hover-lift">
+            <CardHeader>
+              <CardTitle>Budget Categories</CardTitle>
+              <CardDescription>Plan your spending by category</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BudgetCategoryManager
+                budgetData={budgetData}
+                actualTransactions={actualTransactions}
+                onUpdateBudget={setBudgetData}
+              />
+            </CardContent>
+          </Card>
+        </Reveal>
 
         {/* Save Button */}
-        <div className="flex justify-end">
-          <Button onClick={handleSaveBudget} disabled={saving} className="min-w-32">
-            {saving ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Budget
-              </>
-            )}
-          </Button>
-        </div>
+        <Reveal delay={300}>
+          <div className="flex justify-end">
+            <Button onClick={handleSaveBudget} disabled={saving} className="min-w-32 btn-magnetic ripple-effect">
+              {saving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Budget
+                </>
+              )}
+            </Button>
+          </div>
+        </Reveal>
 
         {isDemo && (
           <Card className="border-primary/20 bg-primary/5">

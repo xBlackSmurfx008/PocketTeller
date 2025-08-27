@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { format } from 'date-fns';
 import AddTransactionDialog from '@/components/AddTransactionDialog';
 import { TransactionSyncButton } from '@/components/TransactionSyncButton';
+import { Reveal } from '@/components/Reveal';
 import { 
   CATEGORIES, 
   autoCategorizeTransaction, 

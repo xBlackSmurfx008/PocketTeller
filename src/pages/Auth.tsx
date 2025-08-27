@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/utils/authConfig';
 import { Play, Eye, EyeOff, ArrowLeft, Mail, RotateCcw } from 'lucide-react';
 import PublicFooter from '@/components/PublicFooter';
+import { Reveal } from '@/components/Reveal';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
