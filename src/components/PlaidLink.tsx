@@ -27,7 +27,7 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
     });
 
     try {
-      console.log('Starting Plaid token exchange...');
+      console.log('Starting Plaid token exchange...', { public_token, metadata });
       const { data, error } = await supabase.functions.invoke('plaid-link-exchange', {
         body: { public_token }
       });
@@ -39,7 +39,12 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
         throw new Error(error.message || 'Failed to exchange token');
       }
 
-      console.log('Bank connection successful');
+      if (data?.error) {
+        console.error('Plaid exchange data error:', data.error);
+        throw new Error(data.error || 'Failed to exchange token');
+      }
+
+      console.log('Bank connection successful', data);
       toast({
         title: "Bank Connected",
         description: `Successfully connected ${metadata.institution.name}`,
