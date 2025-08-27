@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -26,16 +27,6 @@ const handler = async (req: Request): Promise<Response> => {
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
-
-  // Set function name for RLS context
-  try {
-    await supabase.rpc('set_config', {
-      setting_name: 'app.current_function_name',
-      new_value: 'send-waitlist-confirmation'
-    });
-  } catch (configError) {
-    console.log('Failed to set function context:', configError);
-  }
 
   try {
     const { email, source = 'unknown', user_agent }: WaitlistEmailRequest = await req.json();
@@ -104,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check rate limiting
+    // Check rate limiting (now properly fixed)
     const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc('check_waitlist_email_rate', {
       email_param: email,
       ip_param: safeIP
@@ -216,9 +207,9 @@ const handler = async (req: Request): Promise<Response> => {
     </html>
     `;
 
-    // Send the email using Resend
+    // Send the email using Resend with your verified domain
     const emailResponse = await resend.emails.send({
-      from: "Pocket Banker <noreply@resend.dev>",
+      from: "Pocket Banker <hello@pocketbanker.app>",
       to: [email],
       subject: "Welcome to the Pocket Banker Waitlist! 🤖",
       html: emailHtml,
