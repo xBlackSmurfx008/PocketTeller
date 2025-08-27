@@ -824,6 +824,10 @@ export type Database = {
         Args: { email_param: string; ip_param: unknown }
         Returns: boolean
       }
+      check_waitlist_rate_limit: {
+        Args: { email_input: string; ip_input: unknown }
+        Returns: boolean
+      }
       clear_user_audit_logs: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -905,6 +909,10 @@ export type Database = {
         Args: { share_id: string }
         Returns: boolean
       }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       log_budget_share_access: {
         Args:
           | { ip_address?: string; share_id: string; user_agent?: string }
@@ -934,6 +942,10 @@ export type Database = {
       }
       validate_sms_content: {
         Args: { message: string; phone_number: string }
+        Returns: boolean
+      }
+      validate_waitlist_email: {
+        Args: { email_input: string }
         Returns: boolean
       }
     }
