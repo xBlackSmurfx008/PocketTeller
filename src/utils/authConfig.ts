@@ -1,7 +1,8 @@
 // Centralized auth configuration for consistent redirect URLs
 
 export const getAuthRedirectUrl = (path: string = '') => {
-  const baseUrl = window.location.origin;
+  // Use production domain for email confirmations instead of local development URLs
+  const baseUrl = 'https://pocketbanker.app';
   return `${baseUrl}${path}`;
 };
 
