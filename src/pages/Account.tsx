@@ -206,6 +206,14 @@ export default function Account() {
                   ? "Manage your connected bank account - sync data or disconnect."
                   : "Connect your bank account to automatically sync transactions and get personalized insights."
                 }
+                {!hasPlaidToken && (
+                  <>
+                    <br />
+                    <span className="text-xs text-muted-foreground mt-2 block">
+                      For testing, use: <strong>Username:</strong> user_good, <strong>Password:</strong> pass_good, <strong>Phone:</strong> 415-555-0011
+                    </span>
+                  </>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>

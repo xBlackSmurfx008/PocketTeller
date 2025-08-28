@@ -189,6 +189,10 @@ export default function Dashboard() {
               <CardTitle>Bank Connection</CardTitle>
               <CardDescription>
                 Connect your bank account to automatically sync transactions and get personalized insights.
+                <br />
+                <span className="text-xs text-muted-foreground mt-2 block">
+                  For testing, use: <strong>Username:</strong> user_good, <strong>Password:</strong> pass_good, <strong>Phone:</strong> 415-555-0011
+                </span>
               </CardDescription>
             </CardHeader>
             <CardContent>
