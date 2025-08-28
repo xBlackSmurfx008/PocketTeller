@@ -241,42 +241,6 @@ export default function SpendingInsights() {
               </div>
             )}
 
-            {/* Anomalies */}
-            {insights.anomalies && insights.anomalies.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-3 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Notable Patterns
-                </h4>
-                <div className="space-y-2">
-                  {insights.anomalies.map((anomaly, index) => (
-                    <div key={index} className="text-sm p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <p className="font-medium">{anomaly?.description || 'Pattern detected'}</p>
-                          {anomaly?.date && anomaly?.amount && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {anomaly.date}: ${Math.abs(anomaly.amount).toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-                        {anomaly?.transactionId && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate('/transactions')}
-                            className="text-xs gap-1 h-auto p-1"
-                            title="View in transactions"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Notes */}
             {insights.notes && (
