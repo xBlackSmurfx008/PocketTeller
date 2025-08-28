@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/utils/authConfig';
-import { Play, Eye, EyeOff, ArrowLeft, Mail, RotateCcw } from 'lucide-react';
+import { Play, Eye, EyeOff, ArrowLeft, Mail, RotateCcw, AlertCircle } from 'lucide-react';
 import PublicFooter from '@/components/PublicFooter';
 import { Reveal } from '@/components/Reveal';
 
@@ -327,6 +327,14 @@ export default function Auth() {
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
+          
+          {/* Test Environment Alert */}
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              This is a test environment. Bank connections are currently disabled. You can explore features using the Demo. Real bank linking will be available at launch.
+            </AlertDescription>
+          </Alert>
           
           <Card className="w-full">
             <CardHeader>

@@ -187,6 +187,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">
+      {/* Sign In Button */}
+      <div className="absolute top-4 right-4 z-20">
+        <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
+          Sign In
+        </Button>
+      </div>
+      
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 px-4 aurora-bg content-visible">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
