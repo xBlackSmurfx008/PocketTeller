@@ -158,6 +158,61 @@ serve(async (req) => {
     const totalSpend = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
     const transactionCount = transactions.length;
 
+    // Deterministic anomaly detection
+    const detectAnomalies = () => {
+      const anomalies: Array<{description: string; date?: string; amount?: number; transactionId?: string}> = [];
+      const avgTransactionAmount = totalSpend / transactionCount;
+      const largeThreshold = Math.max(avgTransactionAmount * 3, 200); // 3x average or $200, whichever is higher
+      
+      // Large transactions
+      const largeTransactions = transactions.filter(t => Math.abs(t.amount) > largeThreshold);
+      largeTransactions.slice(0, 3).forEach(t => {
+        anomalies.push({
+          description: `Large ${t.category} transaction: ${t.description}`,
+          date: t.date,
+          amount: Math.abs(t.amount),
+          transactionId: t.id
+        });
+      });
+
+      // Duplicate amounts (potential recurring charges)
+      const amountGroups = transactions.reduce((acc, t) => {
+        const amount = Math.abs(t.amount);
+        if (!acc[amount]) acc[amount] = [];
+        acc[amount].push(t);
+        return acc;
+      }, {} as Record<number, any[]>);
+
+      Object.entries(amountGroups)
+        .filter(([, txns]) => txns.length >= 3)
+        .slice(0, 2)
+        .forEach(([amount, txns]) => {
+          anomalies.push({
+            description: `Recurring $${amount} charges (${txns.length} times)`,
+            amount: parseFloat(amount),
+            transactionId: txns[0].id
+          });
+        });
+
+      // Category spending spikes
+      const avgDailySpend = totalSpend / days;
+      Object.entries(categoryTotals)
+        .filter(([, total]) => total > avgDailySpend * 10) // Category > 10 days of average spending
+        .slice(0, 2)
+        .forEach(([category, total]) => {
+          const categoryTxns = transactions.filter(t => t.category === category);
+          anomalies.push({
+            description: `High ${category} spending: ${categoryTxns.length} transactions`,
+            amount: total,
+            transactionId: categoryTxns[0]?.id
+          });
+        });
+
+      return anomalies.slice(0, 5); // Limit to 5 anomalies
+    };
+
+    const deterministicAnomalies = detectAnomalies();
+
     const topCategories = Object.entries(categoryTotals)
       .sort(([,a], [,b]) => b - a)
       .slice(0, topN)
@@ -260,7 +315,7 @@ Important: Use the exact category names and totals provided above. Keep descript
                 estimatedMonthlySavings: Math.min(Math.max(opp.estimatedMonthlySavings || 0, 0), totalSpend / 2)
               }))
           : [],
-        anomalies: Array.isArray(parsed?.anomalies)
+        anomalies: [...deterministicAnomalies, ...(Array.isArray(parsed?.anomalies)
           ? parsed.anomalies
               .filter(anomaly => anomaly && typeof anomaly.description === 'string')
               .map(anomaly => ({
@@ -268,7 +323,7 @@ Important: Use the exact category names and totals provided above. Keep descript
                 date: anomaly.date || undefined,
                 amount: typeof anomaly.amount === 'number' ? anomaly.amount : undefined
               }))
-          : [],
+          : [])].slice(0, 6), // Combine deterministic + AI anomalies, limit to 6
         notes: parsed?.notes || undefined
       };
       
@@ -279,7 +334,7 @@ Important: Use the exact category names and totals provided above. Keep descript
         summary: `You spent $${totalSpend.toFixed(2)} across ${transactionCount} transactions in the last ${days} days.`,
         topCategories,
         savingsOpportunities: [],
-        anomalies: [],
+        anomalies: deterministicAnomalies, // Use deterministic anomalies as fallback
         notes: 'AI analysis temporarily unavailable'
       };
     }

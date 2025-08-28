@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, TrendingUp, AlertTriangle, Lightbulb } from 'lucide-react';
+import { RefreshCw, TrendingUp, AlertTriangle, Lightbulb, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDemo } from '@/hooks/useDemo';
+import { useNavigate } from 'react-router-dom';
 
 interface SpendingInsight {
   summary: string;
@@ -23,6 +24,7 @@ interface SpendingInsight {
     description: string;
     date?: string;
     amount?: number;
+    transactionId?: string;
   }>;
   notes?: string;
 }
@@ -49,6 +51,7 @@ export default function SpendingInsights() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { isDemo } = useDemo();
+  const navigate = useNavigate();
 
   const THROTTLE_KEY = 'aiInsightsLastRun';
   const THROTTLE_HOURS = 1;
@@ -247,13 +250,28 @@ export default function SpendingInsights() {
                 </h4>
                 <div className="space-y-2">
                   {insights.anomalies.map((anomaly, index) => (
-                    <div key={index} className="text-sm p-2 bg-orange-50 border border-orange-200 rounded">
-                      <p>{anomaly?.description || 'Pattern detected'}</p>
-                      {anomaly?.date && anomaly?.amount && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {anomaly.date}: ${Math.abs(anomaly.amount).toFixed(2)}
-                        </p>
-                      )}
+                    <div key={index} className="text-sm p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="font-medium">{anomaly?.description || 'Pattern detected'}</p>
+                          {anomaly?.date && anomaly?.amount && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {anomaly.date}: ${Math.abs(anomaly.amount).toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                        {anomaly?.transactionId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate('/transactions')}
+                            className="text-xs gap-1 h-auto p-1"
+                            title="View in transactions"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
