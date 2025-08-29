@@ -6,6 +6,7 @@ import { useReveal } from '@/hooks/useReveal';
 import { useSiteMetrics } from '@/hooks/useSiteMetrics';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Sparkles, Landmark, BarChart3, CreditCard, Target, CalendarCheck2 } from 'lucide-react';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 import TrustedByMarquee from '@/components/TrustedByMarquee';
@@ -314,7 +315,7 @@ const Index = () => {
           <div className="grid-modern">
             <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🤖</span>
+                <Sparkles className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">AI Financial Assistant</h3>
               <p className="text-muted-foreground">
@@ -324,7 +325,7 @@ const Index = () => {
             
             <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🏦</span>
+                <Landmark className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Bank Integration</h3>
               <p className="text-muted-foreground">
@@ -334,7 +335,7 @@ const Index = () => {
             
             <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📊</span>
+                <BarChart3 className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Smart Analytics</h3>
               <p className="text-muted-foreground">
@@ -344,7 +345,7 @@ const Index = () => {
             
             <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">💳</span>
+                <CreditCard className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Transaction Tracking</h3>
               <p className="text-muted-foreground">
@@ -354,7 +355,7 @@ const Index = () => {
             
             <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🎯</span>
+                <Target className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Goal Setting</h3>
               <p className="text-muted-foreground">
@@ -364,7 +365,7 @@ const Index = () => {
             
             <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📅</span>
+                <CalendarCheck2 className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Bill Management</h3>
               <p className="text-muted-foreground">
