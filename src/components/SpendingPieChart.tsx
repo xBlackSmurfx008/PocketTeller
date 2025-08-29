@@ -116,25 +116,19 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
           <div className="h-72 w-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                  <defs>
-                    <linearGradient id="brandGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--brand-start))" />
-                      <stop offset="100%" stopColor="hsl(var(--brand-end))" />
-                    </linearGradient>
-                  </defs>
-                  <Pie
-                    data={chartData}
-                    dataKey="value"
-                    nameKey="category"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    innerRadius={50}
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={2}
-                  >
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="category"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  innerRadius={50}
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                  stroke="rgba(255,255,255,0.2)"
+                  strokeWidth={2}
+                >
                   {chartData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 

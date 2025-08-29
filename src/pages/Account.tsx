@@ -139,7 +139,7 @@ export default function Account() {
 
       <main className="max-w-4xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 content-visible">
         <Reveal>
-          <Card className="glass-card card-hover-lift">
+          <Card className="card-hover-lift">
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
               <CardDescription>Your account details</CardDescription>
@@ -158,7 +158,7 @@ export default function Account() {
         </Reveal>
 
         <Reveal delay={100}>
-          <Card className="glass-card card-hover-lift">
+          <Card className="card-hover-lift">
             <CardHeader>
               <CardTitle>Layout & Display</CardTitle>
               <CardDescription>Customize how Budget AI looks and feels</CardDescription>
@@ -198,7 +198,7 @@ export default function Account() {
         </Reveal>
 
         <Reveal delay={150}>
-          <Card className="glass-card card-hover-lift">
+          <Card className="card-hover-lift">
             <CardHeader>
               <CardTitle>Bank Connection</CardTitle>
               <CardDescription>
@@ -238,7 +238,7 @@ export default function Account() {
         </Reveal>
 
         <Reveal delay={350}>
-          <Card className="border-destructive glass-card card-hover-lift">
+          <Card className="border-destructive card-hover-lift">
             <CardHeader>
               <CardTitle className="text-destructive flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />

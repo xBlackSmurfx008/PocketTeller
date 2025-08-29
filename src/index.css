@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 217 91% 60%;
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -26,7 +26,7 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 246 83% 67%;
+    --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -34,13 +34,9 @@ All colors MUST be HSL.
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 217 91% 60%;
+    --ring: 222.2 84% 4.9%;
 
-    /* Brand gradients */
-    --brand-start: 224 76% 55%;
-    --brand-end: 217 91% 60%;
-
-    --radius: 1rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -60,37 +56,33 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222 50% 5%;
+    --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    --card: 222 36% 9%;
+    --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 36% 9%;
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 223 33% 17%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 18% 12%;
-    --muted-foreground: 215 16% 70%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 246 83% 67%;
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 223 33% 17%;
-    --input: 223 33% 17%;
-    --ring: 217 91% 60%;
-
-    /* Brand gradients */
-    --brand-start: 224 76% 55%;
-    --brand-end: 217 91% 60%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -388,28 +380,6 @@ All colors MUST be HSL.
 .parallax-subtle {
   transform: translateY(var(--scroll-y, 0));
   transition: transform 0.1s ease-out;
-}
-
-/* Modern glass card and glow utilities */
-.glass-card {
-  background: linear-gradient(145deg, hsl(var(--card) / 0.6), hsl(var(--card) / 0.4));
-  backdrop-filter: blur(16px);
-  border-color: hsl(var(--border) / 0.5);
-  box-shadow: 0 10px 30px hsl(var(--primary) / 0.08), inset 0 1px 0 hsl(var(--foreground) / 0.05);
-}
-
-.neon-glow { 
-  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5), 0 12px 30px hsl(var(--primary) / 0.25); 
-}
-
-.hero-accent-ring::before {
-  content: "";
-  position: absolute; 
-  inset: -20%;
-  background: radial-gradient(600px 600px at 50% 40%, hsl(var(--brand-end) / 0.25), transparent 60%);
-  filter: blur(40px); 
-  pointer-events: none; 
-  z-index: -1;
 }
 
 /* Enhanced Button Hover Effects */

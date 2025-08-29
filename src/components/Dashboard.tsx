@@ -184,7 +184,7 @@ export default function Dashboard() {
       <main className={`max-w-7xl mx-auto space-y-4 sm:space-y-6 ${showMobileLayout ? 'p-3' : 'p-4'}`}>
         {/* Bank Connection Card - Only show when not connected and not in demo */}
         {!hasPlaidToken && !isDemo && (
-          <Card className="glass-card card-hover-lift">
+          <Card>
             <CardHeader>
               <CardTitle>Bank Connection</CardTitle>
               <CardDescription>
