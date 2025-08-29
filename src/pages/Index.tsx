@@ -195,7 +195,7 @@ const Index = () => {
       </div>
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4 aurora-bg content-visible">
+      <section className="relative overflow-hidden py-20 px-4 aurora-bg hero-accent-ring content-visible">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
         
         <div 
@@ -212,8 +212,9 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={() => navigate('/auth')} 
+              variant="neon"
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
+              className="text-lg px-8 py-3 h-auto btn-magnetic ripple-effect"
             >
               Get Started Free
             </Button>
@@ -312,7 +313,7 @@ const Index = () => {
             Everything you need to manage your finances
           </h2>
           <div className="grid-modern">
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className={`text-center p-6 glass-card card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🤖</span>
               </div>
@@ -322,7 +323,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className={`text-center p-6 glass-card card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🏦</span>
               </div>
@@ -332,7 +333,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className={`text-center p-6 glass-card card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📊</span>
               </div>
@@ -342,7 +343,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className={`text-center p-6 glass-card card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">💳</span>
               </div>
@@ -352,7 +353,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className={`text-center p-6 glass-card card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🎯</span>
               </div>
@@ -362,7 +363,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className={`text-center p-6 glass-card card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📅</span>
               </div>
@@ -391,8 +392,9 @@ const Index = () => {
           <div className={`flex flex-col sm:flex-row gap-4 justify-center scroll-reveal reveal-delay-2 ${ctaReveal.isVisible ? 'in-view' : ''}`}>
             <Button 
               onClick={() => navigate('/auth')} 
+              variant="neon"
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
+              className="text-lg px-8 py-3 h-auto btn-magnetic ripple-effect"
             >
               Start Your Financial Journey
             </Button>
