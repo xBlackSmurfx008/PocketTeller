@@ -199,32 +199,6 @@ const ForNonProfits = () => {
         </section>
       </Reveal>
 
-      {/* Testimonials */}
-      <Reveal>
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card className="p-6">
-                  <p className="text-muted-foreground mb-4">
-                    "Pocket Banker amplified our financial education programs—community members now have tools at their fingertips!"
-                  </p>
-                  <p className="font-semibold">— Non-Profit Director</p>
-                </Card>
-                <Card className="p-6">
-                  <p className="text-muted-foreground mb-4">
-                    "Affordable and effective; the reminders keep our participants engaged long-term."
-                  </p>
-                  <p className="font-semibold">— Education Coordinator</p>
-                </Card>
-              </div>
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                (Testimonials illustrative; similar to outcomes reported by well-known literacy initiatives.)
-              </p>
-            </div>
-          </div>
-        </section>
-      </Reveal>
 
       {/* TrustedByMarquee */}
       <TrustedByMarquee />
