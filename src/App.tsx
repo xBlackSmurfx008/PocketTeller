@@ -28,6 +28,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
+const ForInstitutions = lazy(() => import("./pages/ForInstitutions"));
 
 const queryClient = new QueryClient();
 
@@ -56,8 +57,9 @@ const App = () => (
                     <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
                     <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                     <Route path="/share/budget/:token" element={<SharedBudget />} />
+                    <Route path="/for-institutions" element={<ForInstitutions />} />
                     <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/terms" element={<Terms />} />
+<Route path="/terms" element={<Terms />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
