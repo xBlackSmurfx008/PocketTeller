@@ -12,7 +12,7 @@ const ForInstitutions = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-foreground">
                 Pocket Banker for Financial Institutions
               </h1>
               <h2 className="text-2xl lg:text-3xl font-semibold mb-6 text-foreground">
