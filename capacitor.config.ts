@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.10b94a651aec426e960530f91b3cf1ac',
+  appId: 'app.pocketbanker',
   appName: 'pocketbankerai',
   webDir: 'dist',
   server: {
