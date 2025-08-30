@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicFooter from '@/components/PublicFooter';
+import PublicHeader from '@/components/PublicHeader';
 
 
 const Index = () => {
@@ -33,6 +34,11 @@ const Index = () => {
   const ctaReveal = useReveal();
   const kpiReveal = useReveal();
   const { metrics } = useSiteMetrics();
+
+  // Set page title
+  useEffect(() => {
+    document.title = "Pocket Banker - Smart AI-Powered Finance Management";
+  }, []);
 
   // Scroll-driven animations
   useEffect(() => {
@@ -188,33 +194,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">
-      {/* Navigation Header */}
-      <header className="absolute top-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border/50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="font-semibold text-lg">Pocket Banker</div>
-          <nav className="flex items-center gap-6">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
-              For Institutions
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
-              For Non-Profits
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
-              Sign In
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <PublicHeader />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-4 aurora-bg content-visible">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
+      <section className="relative overflow-hidden pt-32 pb-20 px-4 bg-subtle-grid content-visible">
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm pointer-events-none -z-10" />
         
         <div 
           className="relative z-10 max-w-6xl mx-auto text-center parallax-subtle"
           style={{ '--scroll-y': `${scrollY * 0.1}px` } as React.CSSProperties}
         >
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-gradient">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-foreground">
             Smart AI-Powered Finance Management
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto scroll-reveal in-view">
@@ -225,7 +215,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
+              className="text-lg px-8 py-3 h-auto hover-scale"
             >
               Get Started Free
             </Button>
@@ -233,7 +223,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-magnetic"
+              className="text-lg px-8 py-3 h-auto hover-scale"
             >
               Try Demo
             </Button>
@@ -393,7 +383,7 @@ const Index = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h2 
             ref={ctaReveal.ref}
-            className={`text-3xl md:text-4xl font-bold mb-6 text-gradient reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-3xl md:text-4xl font-bold mb-6 text-foreground reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
           >
             Ready to take control of your finances?
           </h2>
@@ -404,7 +394,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
+              className="text-lg px-8 py-3 h-auto hover-scale"
             >
               Start Your Financial Journey
             </Button>
@@ -412,7 +402,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-magnetic"
+              className="text-lg px-8 py-3 h-auto hover-scale"
             >
               Explore Demo First
             </Button>
