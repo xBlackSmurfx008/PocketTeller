@@ -3,29 +3,14 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Heart, BookOpen, Users, Shield, BarChart3, Phone, MessageCircle, TrendingUp, HelpCircle } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { useNavigate } from "react-router-dom";
+import PublicHeader from "@/components/PublicHeader";
 
 const ForNonProfits = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Header */}
-      <header className="absolute top-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border/50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="font-semibold text-lg cursor-pointer" onClick={() => navigate('/')}>Pocket Banker</div>
-          <nav className="flex items-center gap-6">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
-              For Institutions
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
-              For Non-Profits
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
-              Sign In
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <PublicHeader />
       {/* Hero Section */}
       <Reveal>
         <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">

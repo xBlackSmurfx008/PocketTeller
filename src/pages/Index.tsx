@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicFooter from '@/components/PublicFooter';
+import PublicHeader from '@/components/PublicHeader';
 
 
 const Index = () => {
@@ -188,23 +189,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">
-      {/* Navigation Header */}
-      <header className="absolute top-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border/50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="font-semibold text-lg">Pocket Banker</div>
-          <nav className="flex items-center gap-6">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
-              For Institutions
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
-              For Non-Profits
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
-              Sign In
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <PublicHeader />
       
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-32 pb-20 px-4 aurora-bg content-visible">
