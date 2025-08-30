@@ -1,6 +1,6 @@
 # Pocket Banker - AI-Powered Personal Finance Manager
 
-[![Deploy](https://img.shields.io/badge/Deploy-Lovable-brightgreen)](https://lovable.dev)
+[![Website](https://img.shields.io/badge/Website-Live-brightgreen)](https://pocketbanker.app/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
@@ -9,7 +9,7 @@
 
 > 🚀 **Now Live!** Transform your financial life with AI-powered insights, smart budgeting, and seamless bank integration.
 
-**[Try Demo](https://pocket-banker.lovable.app/demo)** | **[Join Waitlist](https://pocket-banker.lovable.app/)** | **[View Live App](https://pocket-banker.lovable.app/)**
+**[Try Demo](https://pocketbanker.app/demo)** | **[Join Waitlist](https://pocketbanker.app/)** | **[View Live App](https://pocketbanker.app/)**
 
 ## 🚀 Features
 
@@ -53,9 +53,9 @@
 ## 🚀 Quick Start
 
 ### 🎮 Try It Now
-- **[Live Demo](https://pocket-banker.lovable.app/demo)** - Experience all features with sample data
-- **[Create Account](https://pocket-banker.lovable.app/auth)** - Get started with your own financial data
-- **[Waitlist](https://pocket-banker.lovable.app/)** - Join for early access to new features
+- **[Live Demo](https://pocketbanker.app/demo)** - Experience all features with sample data
+- **[Create Account](https://pocketbanker.app/auth)** - Get started with your own financial data
+- **[Waitlist](https://pocketbanker.app/)** - Join for early access to new features
 
 ### 🛠️ Development Setup
 
@@ -124,7 +124,7 @@
 7. **Access the application**
    - **App**: `http://localhost:5173`
    - **Demo Mode**: Click "Try Demo" for instant access with sample data
-   - **Live Version**: [pocket-banker.lovable.app](https://pocket-banker.lovable.app)
+   - **Live Version**: [pocketbanker.app](https://pocketbanker.app)
 
 ## 🏗️ Architecture
 
@@ -386,8 +386,8 @@ Recent comprehensive security and functionality audit ensures:
 
 ## 🆘 Support & Community
 
-- 📱 **Live Demo**: [Try Pocket Banker](https://pocket-banker.lovable.app/demo)
-- 🚀 **Production App**: [pocket-banker.lovable.app](https://pocket-banker.lovable.app) 
+- 📱 **Live Demo**: [Try Pocket Banker](https://pocketbanker.app/demo)
+- 🚀 **Production App**: [pocketbanker.app](https://pocketbanker.app)
 - 📚 **Documentation**: Comprehensive setup and usage guides
 - 🐛 **Issue Tracker**: Report bugs and request features on GitHub
 - 💬 **Community**: Join discussions about personal finance and AI
@@ -408,8 +408,8 @@ Recent comprehensive security and functionality audit ensures:
 <div align="center">
   <strong>🚀 Built with ❤️ for smarter financial management</strong>
   <br><br>
-  <a href="https://pocket-banker.lovable.app/demo">🎮 Try Demo</a> •
-  <a href="https://pocket-banker.lovable.app/">🌟 Join Waitlist</a> •
+  <a href="https://pocketbanker.app/demo">🎮 Try Demo</a> •
+  <a href="https://pocketbanker.app/">🌟 Join Waitlist</a> •
   <a href="#-features">✨ Features</a> •
   <a href="#-quick-start">🚀 Quick Start</a> •
   <a href="#-security-enterprise-grade">🛡️ Security</a>
