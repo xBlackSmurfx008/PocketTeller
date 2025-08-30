@@ -227,13 +227,6 @@ const ForInstitutions = () => {
               <p className="text-lg text-muted-foreground mb-8">
                 Financially confident members keep primary relationships, use more products, and are better prepared for loans when the time is right. Pocket Banker turns your checking account into a daily engagement engine—so you can focus staff on high-value conversations.
               </p>
-              <Card className="p-6 max-w-2xl mx-auto">
-                <p className="text-muted-foreground mb-4">
-                  "Pocket Banker transformed our member engagement—fewer overdrafts, more qualified loan inquiries."
-                </p>
-                <p className="font-semibold">— Credit Union Executive</p>
-                <p className="text-sm text-muted-foreground mt-2">(illustrative testimonial—replace with a verified quote when available)</p>
-              </Card>
             </div>
           </div>
         </section>
