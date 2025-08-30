@@ -2,13 +2,33 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Building2, TrendingUp, Shield, Users, BarChart3, Clock, MessageCircle, Target, HelpCircle, Lock } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
+import { useNavigate } from "react-router-dom";
 
 const ForInstitutions = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="font-semibold text-lg cursor-pointer" onClick={() => navigate('/')}>Pocket Banker</div>
+          <nav className="flex items-center gap-6">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
+              For Institutions
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
+              For Non-Profits
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
+              Sign In
+            </Button>
+          </nav>
+        </div>
+      </header>
       {/* Hero Section */}
       <Reveal>
-        <section className="relative py-20 lg:py-32 overflow-hidden">
+        <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
