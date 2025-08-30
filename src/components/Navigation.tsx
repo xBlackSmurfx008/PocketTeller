@@ -20,19 +20,19 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
               Product
             </a>
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
               Features
             </a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
               Pricing
             </a>
-            <a href="#company" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#company" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
               Company
             </a>
-            <a href="#blog" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#blog" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
               Blog
             </a>
           </div>
@@ -63,39 +63,39 @@ const Navigation = () => {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden glass border-t border-border/50 animate-fade-in">
+        <div className="md:hidden glass border-t border-border/50 motion-safe:animate-fade-in motion-safe:animate-slide-in-right">
           <div className="px-4 py-6 space-y-4">
             <a
               href="#features"
-              className="block text-muted-foreground hover:text-foreground transition-colors"
+              className="block text-muted-foreground hover:text-foreground transition-colors focus-ring"
               onClick={() => setIsMenuOpen(false)}
             >
               Product
             </a>
             <a
               href="#features"
-              className="block text-muted-foreground hover:text-foreground transition-colors"
+              className="block text-muted-foreground hover:text-foreground transition-colors focus-ring"
               onClick={() => setIsMenuOpen(false)}
             >
               Features
             </a>
             <a
               href="#pricing"
-              className="block text-muted-foreground hover:text-foreground transition-colors"
+              className="block text-muted-foreground hover:text-foreground transition-colors focus-ring"
               onClick={() => setIsMenuOpen(false)}
             >
               Pricing
             </a>
             <a
               href="#company"
-              className="block text-muted-foreground hover:text-foreground transition-colors"
+              className="block text-muted-foreground hover:text-foreground transition-colors focus-ring"
               onClick={() => setIsMenuOpen(false)}
             >
               Company
             </a>
             <a
               href="#blog"
-              className="block text-muted-foreground hover:text-foreground transition-colors"
+              className="block text-muted-foreground hover:text-foreground transition-colors focus-ring"
               onClick={() => setIsMenuOpen(false)}
             >
               Blog

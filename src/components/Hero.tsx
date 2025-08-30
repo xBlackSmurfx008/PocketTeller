@@ -1,5 +1,6 @@
 import { ArrowRight, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import heroMockup from '@/assets/hero-mockup.jpg';
 
 const Hero = () => {
   return (
@@ -45,9 +46,12 @@ const Hero = () => {
           {/* Mockup card */}
           <div className="relative glass rounded-2xl p-8 shadow-2xl animate-fade-in">
             <img
-              src="/src/assets/hero-mockup.jpg"
+              src={heroMockup}
               alt="Modern financial dashboard interface showing charts, budgets, and AI insights in a clean dark theme design"
               className="w-full h-auto rounded-xl border border-border/50"
+              loading="lazy"
+              decoding="async"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
             />
           </div>
         </div>

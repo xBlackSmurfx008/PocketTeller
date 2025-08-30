@@ -11,13 +11,13 @@ const PublicHeader = () => {
           Pocket Banker
         </div>
         <nav className="flex items-center gap-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')} className="focus-ring">
             For Institutions
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')} className="focus-ring">
             For Non-Profits
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
+          <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in" className="focus-ring">
             Sign In
           </Button>
         </nav>

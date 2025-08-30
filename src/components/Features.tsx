@@ -53,7 +53,7 @@ const Features = () => {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="group glass rounded-2xl p-8 hover-scale transition-all duration-300 hover:shadow-[0_0_30px_hsl(250_100%_75%/0.1)] animate-fade-in"
+              className="group glass rounded-2xl p-8 hover-scale transition-all duration-300 hover:shadow-[0_0_30px_hsl(250_100%_75%/0.1)] motion-safe:animate-fade-in"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="mb-6">

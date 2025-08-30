@@ -22,22 +22,22 @@ const Footer = () => {
             <h4 className="font-semibold text-foreground mb-4">Product</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Features
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Integrations
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Pricing
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Changelog
                 </a>
               </li>
@@ -49,22 +49,22 @@ const Footer = () => {
             <h4 className="font-semibold text-foreground mb-4">Company</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   About
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Blog
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Careers
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Press
                 </a>
               </li>
@@ -76,22 +76,22 @@ const Footer = () => {
             <h4 className="font-semibold text-foreground mb-4">Resources</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Documentation
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Help Center
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Community
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Contact
                 </a>
               </li>
@@ -103,22 +103,22 @@ const Footer = () => {
             <h4 className="font-semibold text-foreground mb-4">Developers</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   API Docs
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   SDKs
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Tools
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors focus-ring">
                   Open Source
                 </a>
               </li>
@@ -132,10 +132,10 @@ const Footer = () => {
             <p className="text-muted-foreground text-sm">
               © {currentYear} Pocket Banker. All rights reserved.
             </p>
-            <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+            <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors focus-ring">
               Privacy Policy
             </a>
-            <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+            <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors focus-ring">
               Terms
             </a>
           </div>
@@ -144,21 +144,21 @@ const Footer = () => {
           <div className="flex items-center space-x-4">
             <a
               href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors focus-ring"
               aria-label="Twitter"
             >
               <Twitter className="h-5 w-5" />
             </a>
             <a
               href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors focus-ring"
               aria-label="GitHub"
             >
               <Github className="h-5 w-5" />
             </a>
             <a
               href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors focus-ring"
               aria-label="LinkedIn"
             >
               <Linkedin className="h-5 w-5" />

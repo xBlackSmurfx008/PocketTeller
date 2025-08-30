@@ -97,6 +97,18 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Subtle grid background */
+  .bg-subtle-grid {
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.02) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+
+  /* Focus ring utility */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
   /* Linear-style animations */
   .animate-fade-in {
     animation: fadeIn 0.6s ease-out;
