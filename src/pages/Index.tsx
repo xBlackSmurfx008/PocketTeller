@@ -217,7 +217,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale"
+              className="text-lg px-8 py-3 h-auto hover-scale focus-ring"
             >
               Get Started Free
             </Button>
@@ -225,7 +225,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale"
+              className="text-lg px-8 py-3 h-auto hover-scale focus-ring"
             >
               Try Demo
             </Button>
@@ -360,7 +360,7 @@ const Index = () => {
               onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
               variant="outline"
               size="lg"
-              className="hover-scale"
+              className="hover-scale focus-ring"
             >
               See How It Works →
             </Button>
@@ -375,7 +375,7 @@ const Index = () => {
             Everything you need to manage your finances
           </h2>
           <div className="grid-modern">
-            <Card className="text-center p-6 card-hover-lift scroll-reveal">
+            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
@@ -385,7 +385,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-1">
+            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in reveal-delay-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Landmark className="w-6 h-6 text-primary" />
               </div>
@@ -395,7 +395,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-2">
+            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in reveal-delay-2">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
@@ -405,7 +405,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift scroll-reveal">
+            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-6 h-6 text-primary" />
               </div>
@@ -415,7 +415,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-1">
+            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in reveal-delay-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Target className="w-6 h-6 text-primary" />
               </div>

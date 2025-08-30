@@ -11,13 +11,13 @@ const PublicFooter = () => {
           <div className="flex space-x-6 text-sm">
             <Link 
               to="/privacy" 
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors focus-ring"
             >
               Privacy Policy
             </Link>
             <Link 
               to="/terms" 
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors focus-ring"
             >
               Terms of Service
             </Link>
