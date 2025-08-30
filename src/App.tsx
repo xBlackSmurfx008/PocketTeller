@@ -29,6 +29,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 const ForInstitutions = lazy(() => import("./pages/ForInstitutions"));
+const ForNonProfits = lazy(() => import("./pages/ForNonProfits"));
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
                     <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                     <Route path="/share/budget/:token" element={<SharedBudget />} />
                     <Route path="/for-institutions" element={<ForInstitutions />} />
+                    <Route path="/for-nonprofits" element={<ForNonProfits />} />
                     <Route path="/privacy" element={<Privacy />} />
 <Route path="/terms" element={<Terms />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -196,6 +196,9 @@ const Index = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
               For Institutions
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
+              For Non-Profits
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
               Sign In
             </Button>
