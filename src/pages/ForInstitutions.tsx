@@ -3,27 +3,33 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Building2, TrendingUp, Shield, Users, BarChart3, Clock, MessageCircle, Target, HelpCircle, Lock } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import TrustedByMarquee from "@/components/TrustedByMarquee";
-import PublicFooter from "@/components/PublicFooter";
-import PublicHeader from "@/components/PublicHeader";
 
 const ForInstitutions = () => {
   const navigate = useNavigate();
 
-  // Set page title
-  useEffect(() => {
-    document.title = "For Financial Institutions - Pocket Banker";
-  }, []);
-
   return (
     <div className="min-h-screen bg-background">
-      <PublicHeader />
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="font-semibold text-lg cursor-pointer" onClick={() => navigate('/')}>Pocket Banker</div>
+          <nav className="flex items-center gap-6">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
+              For Institutions
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
+              For Non-Profits
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
+              Sign In
+            </Button>
+          </nav>
+        </div>
+      </header>
       {/* Hero Section */}
       <Reveal>
-        <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-subtle-grid">
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
+        <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-foreground">
@@ -39,19 +45,10 @@ const ForInstitutions = () => {
                 Help members course-correct daily, weekly, and monthly—without adding workload to your staff.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="text-lg px-8 py-4 hover-scale">
+                <Button size="lg" className="text-lg px-8 py-4">
                   Schedule a Demo
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="text-lg px-8 py-4 hover-scale"
-                  onClick={() => {
-                    document.getElementById('how-it-works')?.scrollIntoView({ 
-                      behavior: 'smooth' 
-                    });
-                  }}
-                >
+                <Button variant="outline" size="lg" className="text-lg px-8 py-4">
                   See How It Works
                 </Button>
               </div>
@@ -78,24 +75,24 @@ const ForInstitutions = () => {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">Why Pocket Banker?</h2>
+              <h2 className="text-3xl font-bold text-center mb-12">Why Pocket Banker?</h2>
               <div className="prose prose-lg max-w-none text-muted-foreground mb-12">
                 <p className="text-center">
                   You're building relationships, not just managing accounts. Pocket Banker is an affordable, branded experience that improves financial wellness, deepens engagement, and creates clear paths to deposits and future lending—without adding headcount or manual coaching.
                 </p>
               </div>
               <div className="grid md:grid-cols-3 gap-6">
-                <Card className="p-6 text-center card-hover-lift">
+                <Card className="p-6 text-center">
                   <Building2 className="w-12 h-12 text-primary mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Built for checking value</h3>
                   <p className="text-muted-foreground">Turn your account into a daily financial hub members actually use.</p>
                 </Card>
-                <Card className="p-6 text-center card-hover-lift">
+                <Card className="p-6 text-center">
                   <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Frictionless adoption</h3>
                   <p className="text-muted-foreground">Works with leading aggregators for secure data sync; no manual entry required.</p>
                 </Card>
-                <Card className="p-6 text-center card-hover-lift">
+                <Card className="p-6 text-center">
                   <Target className="w-12 h-12 text-primary mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">Brand-forward</h3>
                   <p className="text-muted-foreground">White-label visuals and messaging so it feels like your app from day one.</p>
@@ -227,17 +224,21 @@ const ForInstitutions = () => {
               <p className="text-lg text-muted-foreground mb-8">
                 Financially confident members keep primary relationships, use more products, and are better prepared for loans when the time is right. Pocket Banker turns your checking account into a daily engagement engine—so you can focus staff on high-value conversations.
               </p>
+              <Card className="p-6 max-w-2xl mx-auto">
+                <p className="text-muted-foreground mb-4">
+                  "Pocket Banker transformed our member engagement—fewer overdrafts, more qualified loan inquiries."
+                </p>
+                <p className="font-semibold">— Credit Union Executive</p>
+                <p className="text-sm text-muted-foreground mt-2">(illustrative testimonial—replace with a verified quote when available)</p>
+              </Card>
             </div>
           </div>
         </section>
       </Reveal>
 
-      {/* TrustedByMarquee */}
-      <TrustedByMarquee />
-
       {/* How It Works */}
       <Reveal>
-        <section className="py-16" id="how-it-works">
+        <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
@@ -274,41 +275,35 @@ const ForInstitutions = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl font-bold text-center mb-12">FAQs</h2>
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="item-1">
-                  <AccordionTrigger className="text-left">
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      Does this replace our financial counseling?
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold mb-2">Does this replace our financial counseling?</h3>
+                      <p className="text-muted-foreground">No—Pocket Banker handles day-to-day guidance between touchpoints and escalates to your team when needed.</p>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground ml-8">
-                    No—Pocket Banker handles day-to-day guidance between touchpoints and escalates to your team when needed.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-2">
-                  <AccordionTrigger className="text-left">
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      Is member data sold or shared?
+                  </div>
+                </Card>
+                <Card className="p-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold mb-2">Is member data sold or shared?</h3>
+                      <p className="text-muted-foreground">No. We don't sell data. Analytics for institutions are aggregated and anonymized.</p>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground ml-8">
-                    No. We don't sell data. Analytics for institutions are aggregated and anonymized.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-3">
-                  <AccordionTrigger className="text-left">
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      Which cores/digital providers are supported?
+                  </div>
+                </Card>
+                <Card className="p-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold mb-2">Which cores/digital providers are supported?</h3>
+                      <p className="text-muted-foreground">We integrate through standard APIs and major data aggregators; ask for current compatibility.</p>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground ml-8">
-                    We integrate through standard APIs and major data aggregators; ask for current compatibility.
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                  </div>
+                </Card>
+              </div>
             </div>
           </div>
         </section>
@@ -356,8 +351,6 @@ const ForInstitutions = () => {
           </div>
         </section>
       </Reveal>
-
-      <PublicFooter />
     </div>
   );
 };

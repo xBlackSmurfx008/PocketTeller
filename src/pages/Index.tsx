@@ -6,18 +6,15 @@ import { useReveal } from '@/hooks/useReveal';
 import { useSiteMetrics } from '@/hooks/useSiteMetrics';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Landmark, BarChart3, CreditCard, Target, CalendarCheck2, Shield, Eye, Fingerprint, Lock, Database, Zap } from 'lucide-react';
+import { Sparkles, Landmark, BarChart3, CreditCard, Target, CalendarCheck2 } from 'lucide-react';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 import TrustedByMarquee from '@/components/TrustedByMarquee';
 import CountUp from '@/components/CountUp';
-import SecurityToken from '@/components/SecurityToken';
-import TokenGrid from '@/components/TokenGrid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicFooter from '@/components/PublicFooter';
-import PublicHeader from '@/components/PublicHeader';
 
 
 const Index = () => {
@@ -36,11 +33,6 @@ const Index = () => {
   const ctaReveal = useReveal();
   const kpiReveal = useReveal();
   const { metrics } = useSiteMetrics();
-
-  // Set page title
-  useEffect(() => {
-    document.title = "Pocket Banker - Smart AI-Powered Finance Management";
-  }, []);
 
   // Scroll-driven animations
   useEffect(() => {
@@ -196,17 +188,33 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">
-      <PublicHeader />
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="font-semibold text-lg">Pocket Banker</div>
+          <nav className="flex items-center gap-6">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
+              For Institutions
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
+              For Non-Profits
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
+              Sign In
+            </Button>
+          </nav>
+        </div>
+      </header>
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-4 bg-subtle-grid content-visible">
-        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm pointer-events-none -z-10" />
+      <section className="relative overflow-hidden pt-32 pb-20 px-4 aurora-bg content-visible">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
         
         <div 
           className="relative z-10 max-w-6xl mx-auto text-center parallax-subtle"
           style={{ '--scroll-y': `${scrollY * 0.1}px` } as React.CSSProperties}
         >
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-foreground">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-gradient">
             Smart AI-Powered Finance Management
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto scroll-reveal in-view">
@@ -217,7 +225,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale focus-ring"
+              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
             >
               Get Started Free
             </Button>
@@ -225,7 +233,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale focus-ring"
+              className="text-lg px-8 py-3 h-auto btn-magnetic"
             >
               Try Demo
             </Button>
@@ -306,76 +314,17 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Security Identity Platform Section */}
+      {/* Features Section */}
       <section className="py-20 px-4 bg-muted/30 content-visible">
         <div className="max-w-6xl mx-auto">
           <h2 
             ref={featuresReveal.ref}
-            className={`text-3xl md:text-4xl font-bold text-center mb-4 text-foreground reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-3xl md:text-4xl font-bold text-center mb-12 text-foreground reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}
           >
-            Industry-First Universal Financial Identity Security Platform
-          </h2>
-          <p className={`text-center text-muted-foreground mb-12 max-w-3xl mx-auto scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
-            Secure your financial data, accounts, and transactions with enterprise-grade protection and AI-powered monitoring.
-          </p>
-          
-          <TokenGrid className={`mb-12 scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
-            <SecurityToken
-              icon={<Eye className="w-6 h-6 text-primary" />}
-              title="Visibility"
-              description="Complete oversight of all financial identities, accounts, and access patterns across your entire ecosystem."
-            />
-            <SecurityToken
-              icon={<Shield className="w-6 h-6 text-primary" />}
-              title="Protection"
-              description="Multi-layered security ensuring your financial data remains private and protected from unauthorized access."
-              variant="clone"
-            />
-            <SecurityToken
-              icon={<Fingerprint className="w-6 h-6 text-primary" />}
-              title="Identity Lineage™"
-              description="Track the complete lifecycle and relationships of financial identities for comprehensive security."
-              variant="hidden"
-            />
-            <SecurityToken
-              icon={<Lock className="w-6 h-6 text-primary" />}
-              title="Access Control"
-              description="Granular permissions and automated access management for all financial services and integrations."
-            />
-            <SecurityToken
-              icon={<Database className="w-6 h-6 text-primary" />}
-              title="Data Governance"
-              description="Enterprise-grade data handling with complete audit trails and compliance reporting."
-              variant="clone"
-            />
-            <SecurityToken
-              icon={<Zap className="w-6 h-6 text-primary" />}
-              title="Instant Setup"
-              description="Deploy security controls in minutes with one-click integrations and automated configuration."
-            />
-          </TokenGrid>
-          
-          <div className="text-center">
-            <Button 
-              onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-              variant="outline"
-              size="lg"
-              className="hover-scale focus-ring"
-            >
-              See How It Works →
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="how-it-works" className="py-20 px-4 content-visible">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-foreground">
             Everything you need to manage your finances
           </h2>
           <div className="grid-modern">
-            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in">
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
@@ -385,7 +334,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in reveal-delay-1">
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Landmark className="w-6 h-6 text-primary" />
               </div>
@@ -395,7 +344,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in reveal-delay-2">
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
@@ -405,7 +354,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in">
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-6 h-6 text-primary" />
               </div>
@@ -415,7 +364,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift motion-safe:animate-fade-in reveal-delay-1">
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Target className="w-6 h-6 text-primary" />
               </div>
@@ -425,7 +374,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-2">
+            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <CalendarCheck2 className="w-6 h-6 text-primary" />
               </div>
@@ -444,7 +393,7 @@ const Index = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h2 
             ref={ctaReveal.ref}
-            className={`text-3xl md:text-4xl font-bold mb-6 text-foreground reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-3xl md:text-4xl font-bold mb-6 text-gradient reveal ${ctaReveal.isVisible ? 'is-visible' : ''}`}
           >
             Ready to take control of your finances?
           </h2>
@@ -455,7 +404,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale"
+              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
             >
               Start Your Financial Journey
             </Button>
@@ -463,7 +412,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto hover-scale"
+              className="text-lg px-8 py-3 h-auto btn-magnetic"
             >
               Explore Demo First
             </Button>

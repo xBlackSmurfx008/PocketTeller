@@ -420,48 +420,9 @@ All colors MUST be HSL.
   animation: gradient-shift 4s ease infinite;
 }
 
-/* Token grid system */
-.token-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr;
-}
-
-.token-card {
-  @apply relative p-6 rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-300;
-  @apply hover:shadow-md hover:scale-105 card-hover-lift;
-}
-
-.token-hidden {
-  @apply opacity-50 scale-95;
-}
-
-.token-clone {
-  @apply border-primary/20 bg-primary/5;
-}
-
-.token-icon {
-  @apply w-12 h-12 rounded-lg flex items-center justify-center transition-colors bg-primary/10;
-}
-
-.token-clone .token-icon {
-  @apply bg-primary/20;
-}
-
 @keyframes gradient-shift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
-}
-
-/* Subtle Grid Background */
-.bg-subtle-grid {
-  background-image: 
-    linear-gradient(hsl(var(--border) / 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / 0.1) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-/* Focus Ring Utility */
-.focus-ring {
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
 }
 
 /* High Contrast Mode Support */
@@ -475,12 +436,6 @@ All colors MUST be HSL.
     background: none;
     -webkit-text-fill-color: currentColor;
     color: hsl(var(--foreground));
-  }
-  
-  .bg-subtle-grid {
-    background-image: 
-      linear-gradient(hsl(var(--foreground) / 0.5) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--foreground) / 0.5) 1px, transparent 1px);
   }
 }
 
@@ -519,10 +474,6 @@ All colors MUST be HSL.
     transform: none;
   }
   
-  .bg-subtle-grid {
-    background-image: none;
-  }
-
   .parallax-subtle {
     transform: none;
   }

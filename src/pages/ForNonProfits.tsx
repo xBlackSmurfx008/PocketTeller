@@ -3,27 +3,33 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Heart, BookOpen, Users, Shield, BarChart3, Phone, MessageCircle, TrendingUp, HelpCircle } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import TrustedByMarquee from "@/components/TrustedByMarquee";
-import PublicFooter from "@/components/PublicFooter";
-import PublicHeader from "@/components/PublicHeader";
 
 const ForNonProfits = () => {
   const navigate = useNavigate();
 
-  // Set page title
-  useEffect(() => {
-    document.title = "For Non-Profits - Pocket Banker";
-  }, []);
-
   return (
     <div className="min-h-screen bg-background">
-      <PublicHeader />
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="font-semibold text-lg cursor-pointer" onClick={() => navigate('/')}>Pocket Banker</div>
+          <nav className="flex items-center gap-6">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-institutions')}>
+              For Institutions
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/for-nonprofits')}>
+              For Non-Profits
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} aria-label="Sign in">
+              Sign In
+            </Button>
+          </nav>
+        </div>
+      </header>
       {/* Hero Section */}
       <Reveal>
-        <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-subtle-grid">
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
+        <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-foreground">
@@ -36,19 +42,10 @@ const ForNonProfits = () => {
                 Give the people you serve an AI-powered app that builds habits, delivers reminders, and answers money questions—right on their phone. You fund access; they keep control.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="text-lg px-8 py-4 hover-scale">
+                <Button size="lg" className="text-lg px-8 py-4">
                   Contact Us
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="text-lg px-8 py-4 hover-scale"
-                  onClick={() => {
-                    document.getElementById('how-it-works')?.scrollIntoView({ 
-                      behavior: 'smooth' 
-                    });
-                  }}
-                >
+                <Button variant="outline" size="lg" className="text-lg px-8 py-4">
                   See How It Works
                 </Button>
               </div>
@@ -78,9 +75,9 @@ const ForNonProfits = () => {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">What participants get</h2>
-              <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {/* Daily */}
-              <Card className="p-6 text-center card-hover-lift">
+              <Card className="p-6 text-center">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <Heart className="w-6 h-6 text-primary" />
                 </div>
@@ -98,7 +95,7 @@ const ForNonProfits = () => {
               </Card>
 
               {/* Weekly */}
-              <Card className="p-6 text-center card-hover-lift">
+              <Card className="p-6 text-center">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <BookOpen className="w-6 h-6 text-primary" />
                 </div>
@@ -116,7 +113,7 @@ const ForNonProfits = () => {
               </Card>
 
               {/* Monthly */}
-              <Card className="p-6 text-center card-hover-lift">
+              <Card className="p-6 text-center">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <BarChart3 className="w-6 h-6 text-primary" />
                 </div>
@@ -199,13 +196,36 @@ const ForNonProfits = () => {
         </section>
       </Reveal>
 
-
-      {/* TrustedByMarquee */}
-      <TrustedByMarquee />
+      {/* Testimonials */}
+      <Reveal>
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="p-6">
+                  <p className="text-muted-foreground mb-4">
+                    "Pocket Banker amplified our financial education programs—community members now have tools at their fingertips!"
+                  </p>
+                  <p className="font-semibold">— Non-Profit Director</p>
+                </Card>
+                <Card className="p-6">
+                  <p className="text-muted-foreground mb-4">
+                    "Affordable and effective; the reminders keep our participants engaged long-term."
+                  </p>
+                  <p className="font-semibold">— Education Coordinator</p>
+                </Card>
+              </div>
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                (Testimonials illustrative; similar to outcomes reported by well-known literacy initiatives.)
+              </p>
+            </div>
+          </div>
+        </section>
+      </Reveal>
 
       {/* How It Works */}
       <Reveal>
-        <section className="py-16" id="how-it-works">
+        <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl font-bold text-center mb-12">How it works</h2>
@@ -267,52 +287,44 @@ const ForNonProfits = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl font-bold text-center mb-12">FAQs</h2>
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="item-1">
-                  <AccordionTrigger className="text-left">
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      Do we ever handle participants' money?
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold mb-2">Do we ever handle participants' money?</h3>
+                      <p className="text-muted-foreground">No. You sponsor access; participants keep complete control.</p>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground ml-8">
-                    No. You sponsor access; participants keep complete control.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-2">
-                  <AccordionTrigger className="text-left">
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      Can we customize content?
+                  </div>
+                </Card>
+                <Card className="p-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold mb-2">Can we customize content?</h3>
+                      <p className="text-muted-foreground">Yes—select modules by audience (e.g., rebuilding credit, managing irregular income).</p>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground ml-8">
-                    Yes—select modules by audience (e.g., rebuilding credit, managing irregular income).
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-3">
-                  <AccordionTrigger className="text-left">
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      What about privacy?
+                  </div>
+                </Card>
+                <Card className="p-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold mb-2">What about privacy?</h3>
+                      <p className="text-muted-foreground">We do not sell data. Aggregated analytics only; no individual financial details.</p>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground ml-8">
-                    We do not sell data. Aggregated analytics only; no individual financial details.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-4">
-                  <AccordionTrigger className="text-left">
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      Does it replace counseling?
+                  </div>
+                </Card>
+                <Card className="p-6">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold mb-2">Does it replace counseling?</h3>
+                      <p className="text-muted-foreground">No—it fills the gaps between sessions with daily reinforcement.</p>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground ml-8">
-                    No—it fills the gaps between sessions with daily reinforcement.
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                  </div>
+                </Card>
+              </div>
             </div>
           </div>
         </section>
@@ -327,15 +339,13 @@ const ForNonProfits = () => {
               <p className="text-lg text-muted-foreground mb-8">
                 Join nonprofits transforming financial confidence with Pocket Banker.
               </p>
-              <Button size="lg" className="text-lg px-8 py-4 hover-scale">
+              <Button size="lg" className="text-lg px-8 py-4">
                 Contact Us for a Free Consultation
               </Button>
             </div>
           </div>
         </section>
       </Reveal>
-
-      <PublicFooter />
     </div>
   );
 };
