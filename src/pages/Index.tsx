@@ -6,11 +6,13 @@ import { useReveal } from '@/hooks/useReveal';
 import { useSiteMetrics } from '@/hooks/useSiteMetrics';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Landmark, BarChart3, CreditCard, Target, CalendarCheck2 } from 'lucide-react';
+import { Sparkles, Landmark, BarChart3, CreditCard, Target, CalendarCheck2, Shield, Eye, Fingerprint, Lock, Database, Zap } from 'lucide-react';
 
 const Dashboard = lazy(() => import('@/components/Dashboard'));
 import TrustedByMarquee from '@/components/TrustedByMarquee';
 import CountUp from '@/components/CountUp';
+import SecurityToken from '@/components/SecurityToken';
+import TokenGrid from '@/components/TokenGrid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -304,17 +306,76 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Security Identity Platform Section */}
       <section className="py-20 px-4 bg-muted/30 content-visible">
         <div className="max-w-6xl mx-auto">
           <h2 
             ref={featuresReveal.ref}
-            className={`text-3xl md:text-4xl font-bold text-center mb-12 text-foreground reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}
+            className={`text-3xl md:text-4xl font-bold text-center mb-4 text-foreground reveal ${featuresReveal.isVisible ? 'is-visible' : ''}`}
           >
+            Industry-First Universal Financial Identity Security Platform
+          </h2>
+          <p className={`text-center text-muted-foreground mb-12 max-w-3xl mx-auto scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            Secure your financial data, accounts, and transactions with enterprise-grade protection and AI-powered monitoring.
+          </p>
+          
+          <TokenGrid className={`mb-12 scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <SecurityToken
+              icon={<Eye className="w-6 h-6 text-primary" />}
+              title="Visibility"
+              description="Complete oversight of all financial identities, accounts, and access patterns across your entire ecosystem."
+            />
+            <SecurityToken
+              icon={<Shield className="w-6 h-6 text-primary" />}
+              title="Protection"
+              description="Multi-layered security ensuring your financial data remains private and protected from unauthorized access."
+              variant="clone"
+            />
+            <SecurityToken
+              icon={<Fingerprint className="w-6 h-6 text-primary" />}
+              title="Identity Lineage™"
+              description="Track the complete lifecycle and relationships of financial identities for comprehensive security."
+              variant="hidden"
+            />
+            <SecurityToken
+              icon={<Lock className="w-6 h-6 text-primary" />}
+              title="Access Control"
+              description="Granular permissions and automated access management for all financial services and integrations."
+            />
+            <SecurityToken
+              icon={<Database className="w-6 h-6 text-primary" />}
+              title="Data Governance"
+              description="Enterprise-grade data handling with complete audit trails and compliance reporting."
+              variant="clone"
+            />
+            <SecurityToken
+              icon={<Zap className="w-6 h-6 text-primary" />}
+              title="Instant Setup"
+              description="Deploy security controls in minutes with one-click integrations and automated configuration."
+            />
+          </TokenGrid>
+          
+          <div className="text-center">
+            <Button 
+              onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+              variant="outline"
+              size="lg"
+              className="hover-scale"
+            >
+              See How It Works →
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="how-it-works" className="py-20 px-4 content-visible">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-foreground">
             Everything you need to manage your finances
           </h2>
           <div className="grid-modern">
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className="text-center p-6 card-hover-lift scroll-reveal">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
@@ -324,7 +385,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Landmark className="w-6 h-6 text-primary" />
               </div>
@@ -334,7 +395,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-2">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
@@ -344,7 +405,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className="text-center p-6 card-hover-lift scroll-reveal">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-6 h-6 text-primary" />
               </div>
@@ -354,7 +415,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-1 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Target className="w-6 h-6 text-primary" />
               </div>
@@ -364,7 +425,7 @@ const Index = () => {
               </p>
             </Card>
             
-            <Card className={`text-center p-6 card-hover-lift scroll-reveal reveal-delay-2 ${featuresReveal.isVisible ? 'in-view' : ''}`}>
+            <Card className="text-center p-6 card-hover-lift scroll-reveal reveal-delay-2">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <CalendarCheck2 className="w-6 h-6 text-primary" />
               </div>
