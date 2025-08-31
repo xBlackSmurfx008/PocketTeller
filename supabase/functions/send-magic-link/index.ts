@@ -61,7 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: 'magiclink',
       email: normalizedEmail,
       options: {
-        redirectTo: 'https://app.pocketbanker.app/'
+        redirectTo: 'https://app.pocketbanker.app/confirm'
       }
     });
 

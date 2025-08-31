@@ -15,6 +15,8 @@ export const APP_ROUTES = [
   '/account',
   '/demo',
   '/conversational-ai',
+  '/chat',
+  '/share',
   '/shared-budget',
   '/confirm',
   '/reset-password',

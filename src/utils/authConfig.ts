@@ -20,7 +20,7 @@ export const AuthConfig = {
   passwordResetRedirect: getAuthRedirectUrl('/reset-password'),
   
   // Default post-auth redirect
-  defaultRedirect: getAuthRedirectUrl('/'),
+  defaultRedirect: getAuthRedirectUrl('/budget'),
   
   // Error messages
   errorMessages: {

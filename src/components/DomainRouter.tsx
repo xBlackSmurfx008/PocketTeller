@@ -6,9 +6,16 @@ export const DomainRouter = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Only redirect in production, not in development
-    if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+    // Only redirect when on actual pocketbanker.app domains, not in development/preview
+    if (typeof window !== 'undefined' && window.location.hostname.endsWith('pocketbanker.app')) {
       const currentHost = window.location.hostname;
+      
+      // Special case: if on app.pocketbanker.app root, redirect to /budget
+      if (currentHost === 'app.pocketbanker.app' && location.pathname === '/') {
+        window.location.replace('https://app.pocketbanker.app/budget' + location.search + location.hash);
+        return;
+      }
+      
       const redirectUrl = shouldRedirectToDomain(currentHost, location.pathname);
       
       if (redirectUrl) {
