@@ -375,10 +375,7 @@ export default function Goals() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => isDemo && !user ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)} className="btn-magnetic ripple-effect">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Goal
-                </Button>
+                {/* Empty state - no action button needed */}
               </CardContent>
             </Card>
           </Reveal>

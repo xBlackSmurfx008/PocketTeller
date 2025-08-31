@@ -91,10 +91,7 @@ export default function GoalsOverview() {
         {goals.length === 0 ? (
           <div className="text-center py-8">
             <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">No goals set yet</p>
-            <Button onClick={() => navigate('/goals')}>
-              Create Your First Goal
-            </Button>
+            <p className="text-muted-foreground">No goals set yet</p>
           </div>
           ) : (
             (displayGoals || []).map((goal) => {
