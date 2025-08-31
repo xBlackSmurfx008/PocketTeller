@@ -67,7 +67,7 @@ export const PlaidSecuritySettings = () => {
       if (!user.user) throw new Error('User not authenticated');
 
       const { data: profile, error: profileError } = await supabase
-        .rpc('get_user_profile_secure', { target_user_id: user.user.id });
+        .rpc('get_secure_profile', { target_user_id: user.user.id });
 
       if (profileError) throw profileError;
       setSecuritySettings(profile?.[0] || null);
@@ -76,7 +76,7 @@ export const PlaidSecuritySettings = () => {
       console.error('Error fetching security data:', error);
       toast({
         title: "Error",
-        description: "Failed to load security information",
+        description: `Failed to load security information: ${(error as Error)?.message}`,
         variant: "destructive",
       });
     } finally {

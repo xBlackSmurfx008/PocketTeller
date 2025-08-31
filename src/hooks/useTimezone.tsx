@@ -18,7 +18,7 @@ export function useTimezone() {
       try {
         // First, get the user's saved timezone using secure function
         const { data: profile } = await supabase
-          .rpc('get_user_profile_secure', { target_user_id: user.id });
+          .rpc('get_secure_profile', { target_user_id: user.id });
 
         const savedTimezone = profile?.[0]?.timezone;
         
