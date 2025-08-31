@@ -11,7 +11,6 @@ import { Share2, Copy, Mail, MessageSquare, Download, FileText, FileSpreadsheet,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DOMAINS } from "@/utils/domainConfig";
 
 interface ShareBudgetDialogProps {
   budgetData: any;
@@ -61,7 +60,7 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
 
       if (error) throw error;
 
-      const url = `${DOMAINS.APP}/share/budget/${token}`;
+      const url = `${window.location.origin}/share/budget/${token}`;
       setShareUrl(url);
       
       toast({

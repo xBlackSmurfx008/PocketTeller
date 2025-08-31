@@ -20,7 +20,6 @@ export default function Budget() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [saving, setSaving] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const {
     budgetData,
@@ -67,14 +66,8 @@ export default function Budget() {
   const handleSaveBudget = async () => {
     setSaving(true);
     await saveBudget(budgetData);
-    setHasUnsavedChanges(false);
     setSaving(false);
   };
-
-  // Track unsaved changes
-  useEffect(() => {
-    setHasUnsavedChanges(true);
-  }, [budgetData]);
 
   if (loading) {
     return (
@@ -128,21 +121,9 @@ export default function Budget() {
               <h1 className="text-3xl font-bold text-foreground text-gradient">Budget</h1>
               <p className="text-muted-foreground">Manage your monthly budget</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Button onClick={handleSaveBudget} disabled={saving} variant="default" size="sm" className="ripple-effect">
-                {saving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </>
-                )}
-              </Button>
-              <Button onClick={() => navigate('/dashboard')} variant="outline" className="ripple-effect">
-                Back to Dashboard
-              </Button>
-            </div>
+            <Button onClick={() => navigate('/')} variant="outline" className="ripple-effect">
+              Back to Dashboard
+            </Button>
           </div>
         </Reveal>
 
@@ -310,27 +291,6 @@ export default function Budget() {
           </Card>
         )}
       </div>
-
-      {/* Sticky Save Bar */}
-      {hasUnsavedChanges && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg p-4 z-50">
-          <div className="container mx-auto flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              You have unsaved changes
-            </div>
-            <Button onClick={handleSaveBudget} disabled={saving} className="ripple-effect">
-              {saving ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Budget
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

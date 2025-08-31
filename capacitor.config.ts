@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'pocketbankerai',
   webDir: 'dist',
   server: {
-    url: 'https://app.pocketbanker.app',
+    url: 'https://10b94a65-1aec-426e-9605-30f91b3cf1ac.lovableproject.com?forceHideBadge=true',
     cleartext: true
   },
   plugins: {

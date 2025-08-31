@@ -1,13 +1,7 @@
 // Centralized auth configuration for consistent redirect URLs
 
 export const getAuthRedirectUrl = (path: string = '') => {
-  // Always use app subdomain for auth flows and application features
-  const baseUrl = 'https://app.pocketbanker.app';
-  return `${baseUrl}${path}`;
-};
-
-export const getWebsiteUrl = (path: string = '') => {
-  // Use main domain for marketing/website pages
+  // Use production domain for email confirmations instead of local development URLs
   const baseUrl = 'https://pocketbanker.app';
   return `${baseUrl}${path}`;
 };
@@ -20,7 +14,7 @@ export const AuthConfig = {
   passwordResetRedirect: getAuthRedirectUrl('/reset-password'),
   
   // Default post-auth redirect
-  defaultRedirect: getAuthRedirectUrl('/budget'),
+  defaultRedirect: getAuthRedirectUrl('/'),
   
   // Error messages
   errorMessages: {
