@@ -1,8 +1,9 @@
 // Centralized auth configuration for consistent redirect URLs
 
 export const getAuthRedirectUrl = (path: string = '') => {
-  // Use production domain for email confirmations instead of local development URLs
-  const baseUrl = 'https://pocketbanker.app';
+  // Use app subdomain for auth flows in production
+  const isProduction = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
+  const baseUrl = isProduction ? 'https://app.pocketbanker.app' : 'https://pocketbanker.app';
   return `${baseUrl}${path}`;
 };
 

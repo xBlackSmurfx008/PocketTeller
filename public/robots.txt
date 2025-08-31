@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pocketbanker.app/sitemap.xml
+Sitemap: https://app.pocketbanker.app/sitemap.xml
