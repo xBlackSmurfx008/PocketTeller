@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://financemanager-ai.lovable.app/sitemap.xml
+Sitemap: https://pocketbanker.app/sitemap.xml
