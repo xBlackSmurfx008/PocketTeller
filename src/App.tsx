@@ -12,6 +12,7 @@ import { DemoProvider } from "@/hooks/useDemo";
 import { CoachMarks } from "@/components/CoachMarks";
 import { RouteProgress } from "@/components/RouteProgress";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { DomainRouter } from "@/components/DomainRouter";
 
 // Lazy load page components to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
@@ -42,6 +43,7 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <BrowserRouter>
+                <DomainRouter />
                 <RouteProgress />
                 <ScrollToTop />
                 <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="pulse h-8 w-8 rounded-full bg-primary/20"></div></div>}>
