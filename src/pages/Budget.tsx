@@ -121,9 +121,21 @@ export default function Budget() {
               <h1 className="text-3xl font-bold text-foreground text-gradient">Budget</h1>
               <p className="text-muted-foreground">Manage your monthly budget</p>
             </div>
-            <Button onClick={() => navigate('/')} variant="outline" className="ripple-effect">
-              Back to Dashboard
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSaveBudget} disabled={saving} className="ripple-effect">
+                {saving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Budget
+                  </>
+                )}
+              </Button>
+              <Button onClick={() => navigate('/')} variant="outline" className="ripple-effect">
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
         </Reveal>
 
