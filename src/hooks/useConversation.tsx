@@ -53,6 +53,7 @@ export const useConversation = (threadId?: string) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
 
   // Load conversation thread
   const loadThread = useCallback(async (id: string) => {
@@ -152,15 +153,37 @@ export const useConversation = (threadId?: string) => {
       const response = data as GeminiChatResponse;
       const aiContent = response.response || response.message || 'No response received';
 
-      // Add AI response
+      // Add AI response with typewriter effect
+      const aiMessageId = `ai-${Date.now()}`;
       const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
+        id: aiMessageId,
         role: 'assistant',
-        content: aiContent,
+        content: '',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      setTypingMessageId(aiMessageId);
+
+      // Simulate typewriter effect
+      let currentIndex = 0;
+      const typeNextChar = () => {
+        if (currentIndex < aiContent.length) {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === aiMessageId 
+                ? { ...msg, content: aiContent.slice(0, currentIndex + 1) }
+                : msg
+            )
+          );
+          currentIndex++;
+          setTimeout(typeNextChar, 30); // Adjust speed here (30ms per character)
+        } else {
+          setTypingMessageId(null);
+        }
+      };
+
+      setTimeout(typeNextChar, 100); // Initial delay
 
       return {
         success: true,
@@ -199,7 +222,8 @@ export const useConversation = (threadId?: string) => {
     error,
     sendMessage,
     clearMessages,
-    loadThread
+    loadThread,
+    typingMessageId
   };
 };
 

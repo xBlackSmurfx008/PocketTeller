@@ -9,9 +9,10 @@ import aiAvatar from '@/assets/ai-avatar.png';
 interface MessageBubbleProps {
   message: Message;
   onRemoveAttachment?: (attachment: FileAttachment) => void;
+  isTyping?: boolean;
 }
 
-export const MessageBubble = ({ message, onRemoveAttachment }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, onRemoveAttachment, isTyping = false }: MessageBubbleProps) => {
   const isUser = message.role === 'user';
 
   return (
@@ -34,7 +35,7 @@ export const MessageBubble = ({ message, onRemoveAttachment }: MessageBubbleProp
               : 'bg-muted text-muted-foreground'
           }`}
         >
-          <MessageContent content={message.content} />
+          <MessageContent content={message.content} isTyping={isTyping} />
         </div>
         
         {/* Attachments */}
@@ -61,9 +62,19 @@ export const MessageBubble = ({ message, onRemoveAttachment }: MessageBubbleProp
 
 interface MessageContentProps {
   content: string;
+  isTyping?: boolean;
 }
 
-const MessageContent = ({ content }: MessageContentProps) => {
+const MessageContent = ({ content, isTyping = false }: MessageContentProps) => {
+  // If typing, show plain text with cursor
+  if (isTyping) {
+    return (
+      <span className="inline-flex items-center">
+        {content}
+        <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+      </span>
+    );
+  }
   // Split by lines and process each line
   const lines = content.split('\n');
   const processedLines: React.ReactNode[] = [];
