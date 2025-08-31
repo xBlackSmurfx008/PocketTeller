@@ -96,6 +96,7 @@ const ConversationalAI = () => {
 
   // Handle quick question clicks
   const handleQuestionClick = (question: string) => {
+    console.debug('Question clicked:', question);
     handleSendMessage(question, [], false);
   };
 
