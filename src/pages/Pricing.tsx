@@ -8,12 +8,28 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PRICING_PLANS, PricingPlan } from '@/types/pricing';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useDemo } from '@/hooks/useDemo';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Pricing() {
   const navigate = useNavigate();
   const { selectPlan } = useCheckout();
+  const { isDemo } = useDemo();
+  const { toast } = useToast();
 
   const handleSelectPlan = (plan: PricingPlan) => {
+    if (isDemo) {
+      // In demo mode, just show a toast instead of actual checkout
+      toast({
+        title: "Demo Mode",
+        description: `You selected the ${plan.name} plan! In the full version, this would proceed to checkout. Try the demo features instead.`,
+        duration: 4000,
+      });
+      // Navigate back to dashboard to continue demo
+      navigate('/');
+      return;
+    }
+    
     selectPlan(plan);
     navigate('/checkout');
   };

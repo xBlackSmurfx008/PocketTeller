@@ -3,6 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PricingPlan } from '@/types/pricing';
+import { useDemo } from '@/hooks/useDemo';
 
 interface PlanCardProps {
   plan: PricingPlan;
@@ -11,6 +12,7 @@ interface PlanCardProps {
 }
 
 export function PlanCard({ plan, selected, onSelect }: PlanCardProps) {
+  const { isDemo } = useDemo();
   return (
     <Card className={`relative transition-all duration-300 ${
       selected ? 'ring-2 ring-primary' : 'hover:shadow-lg'
@@ -46,7 +48,7 @@ export function PlanCard({ plan, selected, onSelect }: PlanCardProps) {
           variant={selected ? "default" : plan.popular ? "default" : "outline"}
           className="w-full"
         >
-          {selected ? 'Selected' : 'Choose Plan'}
+          {selected ? 'Selected' : isDemo ? 'View Plan (Demo)' : 'Choose Plan'}
         </Button>
       </CardFooter>
     </Card>

@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { PRICING_PLANS } from '@/types/pricing';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useDemo } from '@/hooks/useDemo';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -18,11 +20,24 @@ interface PaywallModalProps {
 export function PaywallModal({ isOpen, onClose, feature, description }: PaywallModalProps) {
   const navigate = useNavigate();
   const { selectPlan } = useCheckout();
+  const { isDemo } = useDemo();
+  const { toast } = useToast();
   const [selectedPlanId, setSelectedPlanId] = useState('pro');
 
   const selectedPlan = PRICING_PLANS.find(p => p.id === selectedPlanId) || PRICING_PLANS[1];
 
   const handleUpgrade = () => {
+    if (isDemo) {
+      // In demo mode, just show upgrade info without actual checkout
+      toast({
+        title: "Demo Mode",
+        description: `You would upgrade to ${selectedPlan.name} for $${selectedPlan.price}/${selectedPlan.interval}! In the full version, this would proceed to checkout.`,
+        duration: 4000,
+      });
+      onClose();
+      return;
+    }
+    
     selectPlan(selectedPlan);
     onClose();
     navigate('/checkout');
