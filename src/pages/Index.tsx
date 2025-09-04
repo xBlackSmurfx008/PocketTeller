@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemo } from "@/hooks/useDemo";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import Dashboard from "@/components/Dashboard";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { Hero, ValueProps, SocialProof, FinalCTA } from "@/components/home";
 import TrustedByMarquee from "@/components/TrustedByMarquee";
+import { MobileLanding } from "@/components/mobile/MobileLanding";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -18,6 +20,7 @@ const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { isDemo, startDemo } = useDemo();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWaitlistForm, setShowWaitlistForm] = useState(false);
@@ -142,6 +145,16 @@ const Index = () => {
       <>
         <HomeSEO />
         <Dashboard />
+      </>
+    );
+  }
+
+  // Mobile users see the mobile-optimized landing page
+  if (isMobile) {
+    return (
+      <>
+        <HomeSEO />
+        <MobileLanding />
       </>
     );
   }
