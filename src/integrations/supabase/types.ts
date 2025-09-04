@@ -239,6 +239,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          inquiry_type: string
+          ip_address: unknown | null
+          message: string
+          name: string
+          organization: string | null
+          phone: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          inquiry_type: string
+          ip_address?: unknown | null
+          message: string
+          name: string
+          organization?: string | null
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          inquiry_type?: string
+          ip_address?: unknown | null
+          message?: string
+          name?: string
+          organization?: string | null
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       conversation_threads: {
         Row: {
           created_at: string
@@ -1001,6 +1049,10 @@ export type Database = {
       }
       check_budget_share_rate_limit_enhanced: {
         Args: { ip_address: string; share_id: string; user_email?: string }
+        Returns: boolean
+      }
+      check_contact_rate_limit: {
+        Args: { email_param: string; ip_param: unknown }
         Returns: boolean
       }
       check_link_token_rate: {

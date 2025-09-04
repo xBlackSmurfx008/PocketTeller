@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Mail, Building2, Phone, MessageCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContactDialogProps {
   open: boolean;
@@ -57,21 +58,23 @@ export function ContactDialog({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('https://dscndbpqvhvylukvcgpq.supabase.co/functions/v1/submit-contact-form', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const { data, error } = await supabase.functions.invoke('submit-contact-form', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          organization: formData.organization,
+          phone: formData.phone,
+          inquiryType: formData.inquiryType,
+          subject: formData.subject,
+          message: formData.message
+        }
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Submission failed');
+      if (error) {
+        throw new Error(error.message || 'Failed to submit form');
       }
-      
-      toast.success(result.message || "Thank you for your inquiry! We'll get back to you within 24 hours.", {
+
+      toast.success(data?.message || "Thank you for your inquiry! We'll get back to you within 24 hours.", {
         description: "Check your email for a confirmation."
       });
       
@@ -81,8 +84,8 @@ export function ContactDialog({
         email: "",
         organization: "",
         phone: "",
-        inquiryType: "general",
-        subject: "",
+        inquiryType: defaultType,
+        subject: defaultSubject,
         message: "",
       });
       
