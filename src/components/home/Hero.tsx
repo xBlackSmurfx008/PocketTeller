@@ -1,8 +1,8 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Sparkles, TrendingUp, Shield } from "lucide-react";
+import { ArrowRight, Sparkles, TrendingUp, Shield, Users, DollarSign, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ShadeButton } from "@/components/shade/ShadeButton";
 
 interface HeroProps {
   onGetStarted: () => void;
@@ -11,80 +11,103 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ onGetStarted, onTryDemo }) => {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
-      {/* Animated Background Elements */}
+    <section className="relative min-h-[95vh] flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
+      {/* Enhanced Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/3 rounded-full blur-3xl animate-pulse-soft" />
+        <div className="absolute inset-0 hero-grid" />
+        <div className="absolute inset-0 halo-aurora" />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/8 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/8 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse-soft" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Announcement Badge */}
-          <div className="mb-10 animate-fade-in">
-            <Badge variant="secondary" className="px-6 py-3 text-sm font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
-              <Sparkles className="w-4 h-4 mr-2" />
-              New: AI-Powered Financial Insights
-            </Badge>
-          </div>
-
-          {/* Main Headline */}
-          <h1 className="typography-hero font-display font-bold leading-tight mb-8 animate-slide-up">
-            <span className="text-gradient">Smart Finance</span>
-            <br />
-            <span className="text-foreground">Simplified</span>
-          </h1>
-
-          {/* Subheadline */}
-          <p className="typography-subtitle text-muted-foreground max-w-4xl mx-auto mb-12 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Transform your financial life with AI-powered insights, automated budgeting, and intelligent expense tracking. 
-            Join thousands taking control of their money.
-          </p>
-
-          {/* Value Props */}
-          <div className="flex flex-wrap justify-center gap-8 mb-16 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            <div className="flex items-center text-muted-foreground group">
-              <TrendingUp className="w-6 h-6 mr-3 text-success group-hover:scale-110 transition-transform duration-300" />
-              <span className="typography-body-lg">Average 30% savings increase</span>
+        <div className="max-w-5xl mx-auto">
+          {/* Glass Container */}
+          <div className="glass-container rounded-3xl p-12 md:p-16 text-center">
+            {/* Announcement Badge */}
+            <div className="mb-12 animate-fade-in">
+              <Badge variant="secondary" className="px-8 py-4 text-base font-medium bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition-all duration-300 hover:scale-105">
+                <Sparkles className="w-5 h-5 mr-3" />
+                New: AI-Powered Financial Insights
+              </Badge>
             </div>
-            <div className="flex items-center text-muted-foreground group">
-              <Shield className="w-6 h-6 mr-3 text-primary group-hover:scale-110 transition-transform duration-300" />
-              <span className="typography-body-lg">Bank-level security</span>
+
+            {/* Main Headline */}
+            <h1 className="typography-hero font-display font-bold leading-tight mb-10 animate-slide-up">
+              <span className="text-gradient bg-gradient-to-r from-primary via-primary/90 to-accent bg-clip-text text-transparent">Smart Finance</span>
+              <br />
+              <span className="text-foreground">Simplified</span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="typography-subtitle text-muted-foreground max-w-4xl mx-auto mb-14 animate-fade-in leading-relaxed" style={{ animationDelay: "0.2s" }}>
+              Transform your financial life with AI-powered insights, automated budgeting, and intelligent expense tracking. 
+              Join thousands taking control of their money.
+            </p>
+
+            {/* Credibility Strip */}
+            <div className="flex flex-wrap justify-center gap-12 mb-16 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+              <div className="flex items-center text-muted-foreground group">
+                <Users className="w-7 h-7 mr-4 text-primary group-hover:scale-110 transition-transform duration-300" />
+                <div className="text-left">
+                  <div className="typography-body-lg font-semibold text-foreground stat-counter">50K+</div>
+                  <div className="text-sm">Active Users</div>
+                </div>
+              </div>
+              <div className="flex items-center text-muted-foreground group">
+                <DollarSign className="w-7 h-7 mr-4 text-success group-hover:scale-110 transition-transform duration-300" />
+                <div className="text-left">
+                  <div className="typography-body-lg font-semibold text-foreground stat-counter">$2.5M+</div>
+                  <div className="text-sm">Money Saved</div>
+                </div>
+              </div>
+              <div className="flex items-center text-muted-foreground group">
+                <Star className="w-7 h-7 mr-4 text-accent group-hover:scale-110 transition-transform duration-300" />
+                <div className="text-left">
+                  <div className="typography-body-lg font-semibold text-foreground stat-counter">4.9/5</div>
+                  <div className="text-sm">User Rating</div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-scale-in" style={{ animationDelay: "0.6s" }}>
-            <Button 
-              size="lg" 
-              className="px-12 py-5 text-lg font-semibold btn-shimmer btn-magnetic ripple-effect bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
-              onClick={onGetStarted}
-            >
-              Start Free Today
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="px-12 py-5 text-lg font-semibold border-2 hover:bg-muted/50 hover:scale-105 transition-all duration-300 rounded-xl"
-              onClick={onTryDemo}
-            >
-              Try Live Demo
-            </Button>
-          </div>
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-scale-in" style={{ animationDelay: "0.5s" }}>
+              <ShadeButton 
+                intent="primary"
+                size="lg" 
+                className="px-14 py-6 text-xl font-semibold rounded-2xl group"
+                onClick={onGetStarted}
+              >
+                Start Free Today
+                <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform duration-300" />
+              </ShadeButton>
+              <ShadeButton 
+                intent="secondary"
+                size="lg" 
+                className="px-14 py-6 text-xl font-semibold rounded-2xl glass-container border-2"
+                onClick={onTryDemo}
+              >
+                Try Live Demo
+              </ShadeButton>
+            </div>
 
-          {/* Social Proof */}
-          <div className="mt-12 pt-8 border-t border-border/50 animate-fade-in" style={{ animationDelay: "0.8s" }}>
-            <p className="text-sm text-muted-foreground mb-4">Trusted by leading organizations</p>
-            <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-              {/* Placeholder for logos - would be replaced with actual partner logos */}
-              <div className="text-2xl font-bold text-muted-foreground/50">TechCorp</div>
-              <div className="text-2xl font-bold text-muted-foreground/50">FinanceInc</div>
-              <div className="text-2xl font-bold text-muted-foreground/50">StartupCo</div>
+            {/* Trust Indicators */}
+            <div className="mt-14 pt-8 border-t border-border/30 animate-fade-in" style={{ animationDelay: "0.7s" }}>
+              <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
+                <div className="flex items-center">
+                  <Shield className="w-4 h-4 mr-2 text-primary" />
+                  Bank-level security
+                </div>
+                <div className="flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-2 text-success" />
+                  30% average savings increase
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Scroll Indicator */}
