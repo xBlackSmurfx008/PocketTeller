@@ -79,7 +79,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted, onTryDemo }) => {
                 className="px-14 py-6 text-xl font-semibold rounded-2xl group"
                 onClick={onGetStarted}
               >
-                Start Free Today
+                JOIN WAITLIST
                 <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform duration-300" />
               </ShadeButton>
               <ShadeButton 
