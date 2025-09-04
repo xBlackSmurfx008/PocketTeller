@@ -57,10 +57,21 @@ export function ContactDialog({
     setIsSubmitting(true);
 
     try {
-      // Simulate form submission - in real app, this would call an API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('https://dscndbpqvhvylukvcgpq.supabase.co/functions/v1/submit-contact-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Submission failed');
+      }
       
-      toast.success("Thank you for your inquiry! We'll get back to you within 24 hours.", {
+      toast.success(result.message || "Thank you for your inquiry! We'll get back to you within 24 hours.", {
         description: "Check your email for a confirmation."
       });
       
@@ -76,8 +87,9 @@ export function ContactDialog({
       });
       
       onOpenChange(false);
-    } catch (error) {
-      toast.error("Something went wrong. Please try again or email us directly.", {
+    } catch (error: any) {
+      console.error('Contact form error:', error);
+      toast.error(error.message || "Something went wrong. Please try again or email us directly.", {
         description: "hello@pocketbanker.ai"
       });
     } finally {
