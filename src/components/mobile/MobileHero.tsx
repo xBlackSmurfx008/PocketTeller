@@ -33,7 +33,7 @@ export const MobileHero: React.FC<MobileHeroProps> = ({
         <div className="space-y-4">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
             Your AI
-            <span className="block text-gradient">Financial Manager</span>
+            <span className="block text-gradient">Financial Accountability</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-sm mx-auto leading-relaxed">
             Get personalized financial insights and achieve your money goals with AI-powered guidance
