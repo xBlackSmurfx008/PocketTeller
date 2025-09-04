@@ -62,11 +62,20 @@ class Logger {
     // In production, send critical logs to remote service
     if (!this.isDevelopment && (entry.level === 'error' || entry.level === 'warn')) {
       try {
-        // This could be Sentry, LogRocket, or custom endpoint
-        // For now, we'll prepare the structure
-        console.warn('TODO: Implement remote logging service', entry);
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        await supabase.functions.invoke('log-collector', {
+          body: {
+            logs: [entry],
+            userId: entry.userId,
+            batchId: this.sessionId
+          }
+        });
       } catch (error) {
         // Fail silently to avoid infinite loops
+        if (this.isDevelopment) {
+          console.error('Remote logging failed:', error);
+        }
       }
     }
   }

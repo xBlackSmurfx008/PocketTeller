@@ -38,9 +38,24 @@ const verifyWebhookSignature = (body: string, signature: string): boolean => {
     return false;
   }
   
-  // Note: In production, implement proper HMAC verification
-  // This is a placeholder for webhook signature verification
-  return true;
+  try {
+    // Implement proper HMAC-SHA256 verification for Plaid webhooks
+    const crypto = import('node:crypto');
+    const hmac = crypto.createHmac('sha256', plaidWebhookVerificationKey);
+    hmac.update(body, 'utf8');
+    const expectedSignature = hmac.digest('hex');
+    
+    // Compare signatures in constant time to prevent timing attacks
+    let isValid = signature.length === expectedSignature.length;
+    for (let i = 0; i < signature.length; i++) {
+      isValid = isValid && (signature[i] === expectedSignature[i]);
+    }
+    
+    return isValid;
+  } catch (error) {
+    logWebhookEvent('error', 'Signature verification failed', { error: error.message });
+    return false;
+  }
 };
 
 serve(async (req) => {

@@ -5,6 +5,7 @@ import { useDemo } from '@/hooks/useDemo';
 import { useSignOutAction } from '@/hooks/useSignOutAction';
 import { useLayoutPreference } from '@/hooks/useLayoutPreference';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FinancialHealthSnapshot from '@/components/FinancialHealthSnapshot';
@@ -60,7 +61,7 @@ export default function Dashboard() {
               filter: `user_id=eq.${user.id}`
             },
             () => {
-              console.log('Budget updated, refreshing dashboard data');
+              // Budget updated, will refresh automatically
               debouncedFetchBudgetData();
             }
           )
@@ -90,7 +91,7 @@ export default function Dashboard() {
         setHasPlaidToken(true);
       }
     } catch (error) {
-      console.error('Error checking Plaid connection:', error);
+      logger.error('Error checking Plaid connection', { error: error.message });
     }
   };
 
@@ -109,7 +110,7 @@ export default function Dashboard() {
         setBudgetData(data);
       }
     } catch (error) {
-      console.error('Error fetching budget data:', error);
+      logger.error('Error fetching budget data', { error: error.message });
     }
   };
 

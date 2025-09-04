@@ -66,3 +66,6 @@ verify_jwt = false
 
 [functions.plaid-webhook]
 verify_jwt = false
+
+[functions.log-collector]
+verify_jwt = true
