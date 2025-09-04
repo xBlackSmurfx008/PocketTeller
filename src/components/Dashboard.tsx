@@ -126,7 +126,7 @@ export default function Dashboard() {
             {showMobileLayout ? (
               <>
                 <TourLauncher />
-                <Button variant="ghost" size="icon" onClick={() => navigate('/chat')} aria-label="AI Chat">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/chat')} aria-label="AI Chat" data-tour-id="ai-chat-button">
                   <MessageSquare className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => navigate('/goals')} aria-label="Goals">

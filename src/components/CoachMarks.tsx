@@ -144,7 +144,7 @@ export function CoachMarks() {
       return;
     }
 
-    const timer = setTimeout(() => findElement(), 300);
+    const timer = setTimeout(() => findElement(), 500);
 
     return () => {
       clearTimeout(timer);

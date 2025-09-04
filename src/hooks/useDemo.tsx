@@ -74,19 +74,29 @@ const SAMPLE_DATA = {
       id: '1',
       user_id: 'demo-user',
       title: 'Emergency Fund',
+      description: 'Build up emergency savings for unexpected expenses',
       target_amount: 10000,
       current_amount: 3500,
       target_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      created_at: new Date().toISOString()
+      category: 'savings',
+      priority: 'high',
+      is_completed: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
       id: '2',
       user_id: 'demo-user',
       title: 'Vacation to Europe',
+      description: 'Save for a 2-week European vacation',
       target_amount: 5000,
       current_amount: 1200,
       target_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      created_at: new Date().toISOString()
+      category: 'travel',
+      priority: 'medium',
+      is_completed: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ],
   bills: [
@@ -96,8 +106,13 @@ const SAMPLE_DATA = {
       name: 'Electric Bill',
       amount: 120.50,
       due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      category: 'utilities',
+      description: 'Monthly electricity bill',
       is_recurring: true,
-      created_at: new Date().toISOString()
+      reminder_days: 3,
+      is_paid: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
       id: '2',
@@ -105,8 +120,13 @@ const SAMPLE_DATA = {
       name: 'Internet',
       amount: 79.99,
       due_date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      category: 'utilities',
+      description: 'Monthly internet service',
       is_recurring: true,
-      created_at: new Date().toISOString()
+      reminder_days: 3,
+      is_paid: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ],
   accounts: [

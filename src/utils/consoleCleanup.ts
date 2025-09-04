@@ -43,6 +43,12 @@ if (import.meta.env.PROD) {
 if (typeof window !== 'undefined') {
   // Set up global error handler
   window.addEventListener('unhandledrejection', (event) => {
+    // Filter out MetaMask extension errors
+    if (event.reason?.message?.includes?.('MetaMask') || 
+        event.reason?.stack?.includes?.('chrome-extension://')) {
+      return;
+    }
+    
     logger.error('Unhandled promise rejection', { 
       reason: event.reason,
       url: window.location.href 

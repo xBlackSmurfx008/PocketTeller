@@ -139,8 +139,8 @@ const Index = () => {
     );
   }
 
-  // Authenticated users see dashboard
-  if (user && !isDemo) {
+  // Authenticated users or demo mode see dashboard
+  if (user || isDemo) {
     return (
       <>
         <HomeSEO />
