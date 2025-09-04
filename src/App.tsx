@@ -16,6 +16,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { AppShell } from "@/components/layouts/AppShell";
 import { ErrorBoundaryProvider } from "@/components/ErrorBoundary";
 import { CheckoutProvider } from "@/hooks/useCheckout";
+import { SubscriptionProvider } from "@/hooks/useSubscriptionMock";
 
 // Lazy load page components to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
@@ -38,6 +39,7 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceled = lazy(() => import("./pages/PaymentCanceled"));
+const ProPreview = lazy(() => import("./pages/ProPreview"));
 
 const queryClient = new QueryClient();
 
@@ -50,7 +52,8 @@ const App = () => (
             <AccentProvider>
               <TooltipProvider>
                 <CheckoutProvider>
-                  <ErrorBoundaryProvider>
+                  <SubscriptionProvider>
+                    <ErrorBoundaryProvider>
                   <BrowserRouter>
                     <RouteProgress />
                     <ScrollToTop />
@@ -76,12 +79,14 @@ const App = () => (
                         <Route path="/checkout" element={<AppShell><Checkout /></AppShell>} />
                         <Route path="/payment-success" element={<AppShell><PaymentSuccess /></AppShell>} />
                         <Route path="/payment-canceled" element={<AppShell><PaymentCanceled /></AppShell>} />
+                        <Route path="/pro-preview" element={<AppShell><ProPreview /></AppShell>} />
                         <Route path="*" element={<AppShell><NotFound /></AppShell>} />
                       </Routes>
                     </Suspense>
                     <CoachMarks />
                   </BrowserRouter>
-                  </ErrorBoundaryProvider>
+                    </ErrorBoundaryProvider>
+                  </SubscriptionProvider>
                 </CheckoutProvider>
               </TooltipProvider>
             </AccentProvider>

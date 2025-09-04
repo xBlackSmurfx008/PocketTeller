@@ -133,7 +133,7 @@ export const MobileLanding: React.FC = () => {
         <MobileHero onGetStarted={handleGetStarted} onTryDemo={handleTryDemo} />
         <MobileFeatures />
         <MobileSocialProof />
-        <MobileCTA onGetStarted={handleGetStarted} onTryDemo={handleTryDemo} />
+        <MobileCTA onGetStarted={handleGetStarted} onTryDemo={handleTryDemo} onGoPro={() => navigate('/pricing')} />
       </main>
 
       <PublicFooter />

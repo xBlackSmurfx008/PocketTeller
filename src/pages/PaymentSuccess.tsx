@@ -5,6 +5,7 @@ import { SEOHead } from '@/components/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useSubscription } from '@/hooks/useSubscriptionMock';
 
 interface OrderData {
   orderId: string;
@@ -17,6 +18,7 @@ export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const { upgrade } = useSubscription();
   
   const orderId = searchParams.get('orderId');
 
@@ -28,6 +30,11 @@ export default function PaymentSuccess() {
         const parsed = JSON.parse(storedOrder);
         if (parsed.orderId === orderId) {
           setOrderData(parsed);
+          
+          // Auto-unlock subscription for purchased plan
+          if (parsed.plan) {
+            upgrade(parsed.plan.id);
+          }
         }
       } catch (error) {
         console.error('Error parsing order data:', error);
@@ -40,7 +47,7 @@ export default function PaymentSuccess() {
     }, 5 * 60 * 1000);
 
     return () => clearTimeout(timeout);
-  }, [orderId]);
+  }, [orderId, upgrade]);
 
   const nextSteps = [
     {

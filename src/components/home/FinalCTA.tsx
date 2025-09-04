@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, CheckCircle, Sparkles, Timer } from "lucide-react";
@@ -9,6 +10,7 @@ interface FinalCTAProps {
 }
 
 export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) => {
+  const navigate = useNavigate();
   return (
     <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
       {/* Background decoration */}
@@ -68,9 +70,9 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
               variant="outline" 
               size="lg" 
               className="px-12 py-5 text-lg font-semibold border-2 hover:bg-muted/50 hover:scale-105 transition-all duration-300 rounded-xl"
-              onClick={onTryDemo}
+              onClick={() => navigate('/pricing')}
             >
-              Watch 2-Min Demo
+              View Pricing
             </Button>
           </div>
 

@@ -17,6 +17,8 @@ const PublicHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navigationItems = [
+    { label: "Pricing", path: "/pricing" },
+    { label: "Pro Features", path: "/pro-preview" },
     { label: "For Institutions", path: "/for-institutions" },
     { label: "For Non-Profits", path: "/for-nonprofits" },
   ];
