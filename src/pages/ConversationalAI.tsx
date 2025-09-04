@@ -182,8 +182,8 @@ const ConversationalAI = () => {
                     <CardTitle className="text-lg">Get started with these questions:</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {promptSuggestions.slice(0, 6).map((suggestion, index) => (
+                    <div className="grid grid-cols-1 gap-4">
+                      {promptSuggestions.slice(0, 2).map((suggestion, index) => (
                         <Button 
                           key={index} 
                           variant="outline" 
