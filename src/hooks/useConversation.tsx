@@ -276,33 +276,90 @@ const getDemoResponse = (userMessage: string, sampleData: any): string => {
   
   // Spending patterns
   if (message.includes('spending') || message.includes('expense')) {
-    return `Looking at your demo account, I can see you've spent $${totalExpenses.toFixed(2)} this month. Your largest expense categories are groceries ($${sampleData.transactions?.find((t: any) => t.category === 'groceries')?.amount ? Math.abs(sampleData.transactions.find((t: any) => t.category === 'groceries').amount).toFixed(2) : '450.30'}) and utilities. Your spending seems well-controlled relative to your $${monthlyIncome} monthly income.`;
+    return `Looking at your demo account, I can see you've spent $${totalExpenses.toFixed(2)} this month.
+
+Your largest expense categories are:
+- Groceries: $${sampleData.transactions?.find((t: any) => t.category === 'groceries')?.amount ? Math.abs(sampleData.transactions.find((t: any) => t.category === 'groceries').amount).toFixed(2) : '450.30'}
+- Utilities and other monthly expenses
+
+Your spending seems well-controlled relative to your $${monthlyIncome} monthly income. This shows good financial discipline.`;
   }
   
   // Budget questions
   if (message.includes('budget')) {
     const savingsRate = ((monthlyIncome - totalExpenses) / monthlyIncome * 100).toFixed(1);
-    return `Based on your demo account data, you're currently saving ${savingsRate}% of your income ($${(monthlyIncome - totalExpenses).toFixed(2)} out of $${monthlyIncome}). I recommend following the 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings. You're doing well with your current pattern!`;
+    return `Based on your demo account data, you're currently saving ${savingsRate}% of your income.
+
+Here's your current breakdown:
+- Monthly income: $${monthlyIncome}
+- Monthly expenses: $${totalExpenses.toFixed(2)}
+- Monthly savings: $${(monthlyIncome - totalExpenses).toFixed(2)}
+
+I recommend following the 50/30/20 rule:
+- 50% for needs (rent, utilities, groceries)
+- 30% for wants (entertainment, dining out)
+- 20% for savings and debt payments
+
+You're doing well with your current savings pattern!`;
   }
   
   // Account balance questions
   if (message.includes('balance') || message.includes('account')) {
-    return `Your demo accounts show a total balance of $${totalBalance.toFixed(2)} across ${sampleData.accounts?.length || 2} accounts. Your checking account has $${sampleData.accounts?.[0]?.balance?.toFixed(2) || '3250.00'} and your savings account has $${sampleData.accounts?.[1]?.balance?.toFixed(2) || '5500.00'}.`;
+    return `Your demo accounts show a total balance of $${totalBalance.toFixed(2)} across ${sampleData.accounts?.length || 2} accounts.
+
+Account breakdown:
+- Checking account: $${sampleData.accounts?.[0]?.balance?.toFixed(2) || '3250.00'}
+- Savings account: $${sampleData.accounts?.[1]?.balance?.toFixed(2) || '5500.00'}
+
+This is a healthy balance distribution with good liquidity in checking and solid savings reserves.`;
   }
   
   // Goals questions
   if (message.includes('goal')) {
     const emergencyGoal = sampleData.goals?.find((g: any) => g.title.includes('Emergency'));
     const vacationGoal = sampleData.goals?.find((g: any) => g.title.includes('Vacation'));
-    return `You have 2 active goals in your demo account. Your Emergency Fund goal is ${emergencyGoal ? ((emergencyGoal.current_amount / emergencyGoal.target_amount) * 100).toFixed(1) : '35'}% complete ($${emergencyGoal?.current_amount || 3500} of $${emergencyGoal?.target_amount || 10000}), and your Vacation to Europe goal is ${vacationGoal ? ((vacationGoal.current_amount / vacationGoal.target_amount) * 100).toFixed(1) : '24'}% complete ($${vacationGoal?.current_amount || 1200} of $${vacationGoal?.target_amount || 5000}).`;
+    return `You have 2 active goals in your demo account:
+
+Emergency Fund Progress:
+- Target: $${emergencyGoal?.target_amount || 10000}
+- Current: $${emergencyGoal?.current_amount || 3500}
+- Progress: ${emergencyGoal ? ((emergencyGoal.current_amount / emergencyGoal.target_amount) * 100).toFixed(1) : '35'}% complete
+
+Vacation to Europe Progress:
+- Target: $${vacationGoal?.target_amount || 5000}
+- Current: $${vacationGoal?.current_amount || 1200}
+- Progress: ${vacationGoal ? ((vacationGoal.current_amount / vacationGoal.target_amount) * 100).toFixed(1) : '24'}% complete
+
+Great job staying committed to your financial goals!`;
   }
   
   // Bills questions
   if (message.includes('bill') || message.includes('due')) {
     const upcomingBills = sampleData.bills?.filter((b: any) => !b.is_paid) || [];
-    return `You have ${upcomingBills.length} upcoming bills in your demo account. Your Electric Bill ($${upcomingBills[0]?.amount || 120.50}) is due in 5 days, and your Internet bill ($${upcomingBills[1]?.amount || 79.99}) is due in 12 days. Total upcoming bills: $${upcomingBills.reduce((sum: number, b: any) => sum + b.amount, 0).toFixed(2)}.`;
+    return `You have ${upcomingBills.length} upcoming bills in your demo account:
+
+Upcoming payments:
+- Electric Bill: $${upcomingBills[0]?.amount || 120.50} (due in 5 days)
+- Internet bill: $${upcomingBills[1]?.amount || 79.99} (due in 12 days)
+
+Total upcoming bills: $${upcomingBills.reduce((sum: number, b: any) => sum + b.amount, 0).toFixed(2)}
+
+Consider setting up autopay for these recurring bills to avoid late fees.`;
   }
   
   // Default helpful response
-  return `I'm here to help you with your finances! In your demo account, I can see you have $${totalBalance.toFixed(2)} total balance, ${sampleData.goals?.length || 2} financial goals, and ${sampleData.bills?.length || 2} upcoming bills. You can ask me about your spending patterns, budgeting advice, account balances, or financial goals. What specific aspect of your finances would you like to discuss?`;
+  return `I'm here to help you with your finances!
+
+Your demo account summary:
+- Total balance: $${totalBalance.toFixed(2)}
+- Active goals: ${sampleData.goals?.length || 2}
+- Upcoming bills: ${sampleData.bills?.length || 2}
+
+I can help you with:
+- Spending patterns and budgeting advice
+- Account balance management
+- Financial goal tracking
+- Bill payment reminders
+
+What specific aspect of your finances would you like to discuss?`;
 };
