@@ -4,9 +4,13 @@ import { CheckCircle, Building2, TrendingUp, Shield, Users, BarChart3, Clock, Me
 import { Reveal } from "@/components/Reveal";
 import { useNavigate } from "react-router-dom";
 import PublicHeader from "@/components/PublicHeader";
+import { ContactDialog } from "@/components/ContactDialog";
+import { useState } from "react";
 
 const ForInstitutions = () => {
   const navigate = useNavigate();
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactType, setContactType] = useState<"demo" | "quote" | "consultation" | "general">("general");
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,10 +34,22 @@ const ForInstitutions = () => {
                 Help members course-correct daily, weekly, and monthly—without adding workload to your staff.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="text-lg px-8 py-4">
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-4"
+                  onClick={() => {
+                    setContactType("demo");
+                    setContactOpen(true);
+                  }}
+                >
                   Schedule a Demo
                 </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="text-lg px-8 py-4"
+                  onClick={() => navigate("/demo")}
+                >
                   See How It Works
                 </Button>
               </div>
@@ -325,10 +341,25 @@ const ForInstitutions = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="text-lg px-8 py-4">
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-4"
+                  onClick={() => {
+                    setContactType("demo");
+                    setContactOpen(true);
+                  }}
+                >
                   Schedule a Demo
                 </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="text-lg px-8 py-4"
+                  onClick={() => {
+                    setContactType("quote");
+                    setContactOpen(true);
+                  }}
+                >
                   Request a Quote
                 </Button>
               </div>
@@ -336,6 +367,12 @@ const ForInstitutions = () => {
           </div>
         </section>
       </Reveal>
+      
+      <ContactDialog 
+        open={contactOpen}
+        onOpenChange={setContactOpen}
+        defaultType={contactType}
+      />
     </div>
   );
 };
