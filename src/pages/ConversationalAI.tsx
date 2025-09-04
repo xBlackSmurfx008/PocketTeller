@@ -187,8 +187,11 @@ const ConversationalAI = () => {
                         <Button 
                           key={index} 
                           variant="outline" 
-                          className="flex items-start justify-start h-auto p-6 text-sm whitespace-normal leading-relaxed min-h-[96px] hover:bg-muted/50 active:bg-muted cursor-pointer touch-manipulation pointer-events-auto rounded-lg border-2 hover:border-primary/20 transition-all duration-200 relative z-10" 
-                          onClick={() => handlePromptSuggestionClick(suggestion)} 
+                          className="flex items-start justify-start h-auto p-6 text-sm whitespace-normal leading-relaxed min-h-[96px] hover:bg-muted/50 active:bg-muted cursor-pointer touch-manipulation pointer-events-auto rounded-lg border-2 hover:border-primary/20 transition-all duration-200 relative z-50" 
+                          onClick={(e) => {
+                            console.log('Button clicked:', suggestion, e.target);
+                            handlePromptSuggestionClick(suggestion);
+                          }} 
                           disabled={isLoading}
                           aria-label={`Ask: ${suggestion}`}
                         >
