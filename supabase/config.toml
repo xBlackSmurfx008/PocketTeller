@@ -69,3 +69,6 @@ verify_jwt = false
 
 [functions.log-collector]
 verify_jwt = true
+
+[functions.secure-waitlist-signup]
+verify_jwt = false

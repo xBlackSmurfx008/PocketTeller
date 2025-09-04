@@ -55,46 +55,69 @@ const Index = () => {
     setIsSubmitting(true);
 
     try {
-      const { error: insertError } = await supabase
-        .from('waitlist_signups')
-        .insert([{ email: email.trim() }]);
+      // Use secure waitlist signup endpoint
+      const { data, error } = await supabase.functions.invoke('secure-waitlist-signup', {
+        body: { 
+          email: email.trim(),
+          source: 'home_hero',
+          user_agent: navigator.userAgent
+        }
+      });
 
-      if (insertError) {
-        if (insertError.code === '23505') {
+      if (error) {
+        throw new Error(error.message || 'Failed to process signup');
+      }
+
+      if (!data.success) {
+        if (data.error === 'Email already on waitlist') {
           toast({
             title: "Already Signed Up",
             description: "You're already on our waitlist! We'll notify you when ready.",
             variant: "default"
           });
+        } else if (data.error === 'Rate limit exceeded') {
+          toast({
+            title: "Too Many Attempts",
+            description: "Please wait before trying again.",
+            variant: "destructive"
+          });
         } else {
-          throw insertError;
-        }
-      } else {
-        const { error: functionError } = await supabase.functions.invoke('send-waitlist-confirmation', {
-          body: { email: email.trim() }
-        });
-
-        if (functionError) {
-          logger.warn('Waitlist confirmation email failed', {
-            error: functionError.message,
-            email: email.trim()
+          toast({
+            title: "Signup Failed",
+            description: data.error || "Please try again.",
+            variant: "destructive"
           });
         }
-
-        toast({
-          title: "Welcome to the Waitlist!",
-          description: "Thanks for signing up! Check your email for confirmation.",
-          variant: "default"
-        });
-        
-        setEmail("");
-        setShowWaitlistForm(false);
+        return;
       }
+
+      // Send confirmation email
+      const { error: functionError } = await supabase.functions.invoke('send-waitlist-confirmation', {
+        body: { email: email.trim() }
+      });
+
+      if (functionError) {
+        logger.warn('Waitlist confirmation email failed', {
+          error: functionError.message,
+          email: email.trim()
+        });
+      }
+
+      toast({
+        title: "Welcome to the Waitlist!",
+        description: "Thanks for signing up! Check your email for confirmation.",
+        variant: "default"
+      });
+      
+      setEmail("");
+      setShowWaitlistForm(false);
+      
     } catch (error) {
       logger.error('Waitlist signup failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
         email: email.trim()
       });
+      
       toast({
         title: "Something went wrong",
         description: "Please try again later.",

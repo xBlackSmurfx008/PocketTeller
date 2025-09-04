@@ -33,22 +33,40 @@ const logWebhookEvent = (level: 'info' | 'warn' | 'error', message: string, data
   console.log(JSON.stringify(logEntry));
 };
 
-const verifyWebhookSignature = (body: string, signature: string): boolean => {
+const verifyWebhookSignature = async (body: string, signature: string): Promise<boolean> => {
   if (!plaidWebhookVerificationKey || !signature) {
     return false;
   }
   
   try {
-    // Implement proper HMAC-SHA256 verification for Plaid webhooks
-    const crypto = import('node:crypto');
-    const hmac = crypto.createHmac('sha256', plaidWebhookVerificationKey);
-    hmac.update(body, 'utf8');
-    const expectedSignature = hmac.digest('hex');
+    // Import the secret key for HMAC using Web Crypto API
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(plaidWebhookVerificationKey),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
     
-    // Compare signatures in constant time to prevent timing attacks
-    let isValid = signature.length === expectedSignature.length;
-    for (let i = 0; i < signature.length; i++) {
-      isValid = isValid && (signature[i] === expectedSignature[i]);
+    // Sign the payload
+    const signatureBuffer = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(body)
+    );
+    
+    // Convert to hex string
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Compare with provided signature (strip any prefix)
+    const providedSignature = signature.replace(/^sha256=/, '');
+    
+    // Constant time comparison
+    let isValid = expectedSignature.length === providedSignature.length;
+    for (let i = 0; i < expectedSignature.length && i < providedSignature.length; i++) {
+      isValid = isValid && (expectedSignature[i] === providedSignature[i]);
     }
     
     return isValid;
@@ -71,16 +89,28 @@ serve(async (req) => {
   }
 
   try {
-    const signature = req.headers.get('plaid-verification') || '';
+    const signature = req.headers.get('plaid-signature') || ''; // Correct Plaid header
     const body = await req.text();
     
-    // Verify webhook signature in production
-    if (Deno.env.get('PLAID_ENV') === 'production' && !verifyWebhookSignature(body, signature)) {
-      logWebhookEvent('warn', 'Invalid webhook signature', { signature });
-      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Verify webhook signature in staging/production
+    const environment = Deno.env.get('PLAID_ENV') || 'sandbox';
+    if (environment !== 'sandbox' && plaidWebhookVerificationKey) {
+      if (!signature) {
+        logWebhookEvent('warn', 'Missing webhook signature', { environment });
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      const isValid = await verifyWebhookSignature(body, signature);
+      if (!isValid) {
+        logWebhookEvent('warn', 'Invalid webhook signature', { environment });
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const payload: PlaidWebhookPayload = JSON.parse(body);

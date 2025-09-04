@@ -203,8 +203,7 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ 
-        error: `Plaid link token failed: ${linkTokenData.error_message}`,
-        plaid_error_code: linkTokenData.error_code 
+        error: "Failed to create link token"
       }), {
         status: linkTokenData.error_code === 'INVALID_REQUEST' ? 400 : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -237,7 +236,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in plaid-link-token:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Failed to create link token" }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

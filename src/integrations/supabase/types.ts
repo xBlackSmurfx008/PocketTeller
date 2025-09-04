@@ -1050,6 +1050,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       waitlist_email_log: {
         Row: {
           created_at: string
@@ -1235,6 +1256,13 @@ export type Database = {
         Args: { days_param?: number; email_param: string }
         Returns: boolean
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_budget_share_view: {
         Args: { share_id: string }
         Returns: boolean
@@ -1258,6 +1286,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      sanitize_email_content: {
+        Args: { content: string }
+        Returns: string
+      }
       validate_email_content: {
         Args: { content: string }
         Returns: boolean
@@ -1278,9 +1310,17 @@ export type Database = {
         Args: { email_input: string }
         Returns: boolean
       }
+      waitlist_signup: {
+        Args: {
+          email_param: string
+          source_param?: string
+          user_agent_param?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1407,6 +1447,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

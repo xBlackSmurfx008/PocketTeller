@@ -111,22 +111,34 @@ const handler = async (req: Request): Promise<Response> => {
       const resend = new Resend(resendApiKey)
       
       try {
+        // Sanitize content for email
+        const sanitizeName = (str: string) => str.replace(/[<>&"']/g, (char) => {
+          const entities: { [key: string]: string } = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#x27;' };
+          return entities[char] || char;
+        });
+        
+        const { data: sanitizedMessage } = await supabase.rpc('sanitize_email_content', { content: message });
+        const safeMessage = sanitizedMessage || message.replace(/[<>&"']/g, (char) => {
+          const entities: { [key: string]: string } = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#x27;' };
+          return entities[char] || char;
+        }).replace(/\n/g, '<br>');
+
         // Send notification to team
         await resend.emails.send({
           from: 'Pocket Banker <notifications@pocketbanker.ai>',
           to: ['team@pocketbanker.ai'],
-          subject: `New ${inquiryType} inquiry from ${name}`,
+          subject: `New ${inquiryType} inquiry from ${sanitizeName(name)}`,
           html: `
             <h2>New Contact Form Submission</h2>
-            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Name:</strong> ${sanitizeName(name)}</p>
             <p><strong>Email:</strong> ${email}</p>
-            ${organization ? `<p><strong>Organization:</strong> ${organization}</p>` : ''}
-            ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+            ${organization ? `<p><strong>Organization:</strong> ${sanitizeName(organization)}</p>` : ''}
+            ${phone ? `<p><strong>Phone:</strong> ${sanitizeName(phone)}</p>` : ''}
             <p><strong>Inquiry Type:</strong> ${inquiryType}</p>
-            <p><strong>Subject:</strong> ${subject || inquiryType}</p>
+            <p><strong>Subject:</strong> ${sanitizeName(subject || inquiryType)}</p>
             <p><strong>Message:</strong></p>
             <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
-              ${message.replace(/\n/g, '<br>')}
+              ${safeMessage}
             </div>
             <p><strong>Submitted:</strong> ${new Date().toISOString()}</p>
             <p><strong>IP Address:</strong> ${clientIP}</p>
@@ -139,12 +151,12 @@ const handler = async (req: Request): Promise<Response> => {
           to: [email],
           subject: 'Thank you for contacting Pocket Banker',
           html: `
-            <h2>Thank you for your inquiry, ${name}!</h2>
+            <h2>Thank you for your inquiry, ${sanitizeName(name)}!</h2>
             <p>We've received your message about <strong>${inquiryType}</strong> and will get back to you within 24 hours.</p>
             <p>Here's a copy of your message:</p>
             <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-              <p><strong>Subject:</strong> ${subject || inquiryType}</p>
-              <p><strong>Message:</strong><br>${message.replace(/\n/g, '<br>')}</p>
+              <p><strong>Subject:</strong> ${sanitizeName(subject || inquiryType)}</p>
+              <p><strong>Message:</strong><br>${safeMessage}</p>
             </div>
             <p>Best regards,<br>The Pocket Banker Team</p>
           `
