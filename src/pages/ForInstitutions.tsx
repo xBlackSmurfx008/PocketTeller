@@ -5,6 +5,7 @@ import { Reveal } from "@/components/Reveal";
 import { useNavigate } from "react-router-dom";
 import PublicHeader from "@/components/PublicHeader";
 import { ContactDialog } from "@/components/ContactDialog";
+import { InstitutionsSEO } from "@/components/SEOHead";
 import { useState } from "react";
 
 const ForInstitutions = () => {
@@ -13,6 +14,8 @@ const ForInstitutions = () => {
   const [contactType, setContactType] = useState<"demo" | "quote" | "consultation" | "general" | "partnership" | "support">("general");
 
   return (
+    <>
+      <InstitutionsSEO />
     <div className="min-h-screen bg-background">
       <PublicHeader />
       {/* Hero Section */}
@@ -374,6 +377,7 @@ const ForInstitutions = () => {
         defaultType={contactType}
       />
     </div>
+    </>
   );
 };
 

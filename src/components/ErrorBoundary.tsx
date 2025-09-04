@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useErrorBoundary } from '@/hooks/useErrorBoundary';
+import { logger } from '@/utils/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -15,14 +15,20 @@ interface ErrorBoundaryProps {
   fallback?: React.ComponentType<{ error: Error; reset: () => void }>;
 }
 
+// Context for error logging
+const ErrorLoggerContext = createContext<{
+  logError: (error: Error, errorInfo?: React.ErrorInfo, userId?: string) => void;
+}>({
+  logError: () => {}
+});
+
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  private errorBoundaryHook: { logError: (error: Error, errorInfo?: React.ErrorInfo) => void };
+  static contextType = ErrorLoggerContext;
+  declare context: React.ContextType<typeof ErrorLoggerContext>;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
-    // We'll inject this via a provider or context
-    this.errorBoundaryHook = { logError: () => {} };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -31,14 +37,29 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     this.setState({ error, errorInfo });
-    this.errorBoundaryHook.logError(error, errorInfo);
+    
+    // Use proper logger instead of console
+    logger.error('React Error Boundary caught error', {
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      errorInfo: {
+        componentStack: errorInfo.componentStack
+      },
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    });
   }
 
   handleReset = () => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    logger.info('Error boundary reset by user');
   };
 
   handleGoHome = () => {
+    logger.info('User navigated to home from error boundary');
     window.location.href = '/';
   };
 
@@ -101,15 +122,37 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 }
 
-// Hook-based error boundary for functional components
+// Hook-based error boundary provider with proper logger integration
 export function ErrorBoundaryProvider({ children }: { children: React.ReactNode }) {
-  const { logError } = useErrorBoundary();
-  
+  const logError = (error: Error, errorInfo?: React.ErrorInfo, userId?: string) => {
+    logger.error('Application error', {
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      errorInfo,
+      userId,
+      url: window.location.href
+    });
+  };
+
   return (
-    <ErrorBoundary>
-      {children}
-    </ErrorBoundary>
+    <ErrorLoggerContext.Provider value={{ logError }}>
+      <ErrorBoundary>
+        {children}
+      </ErrorBoundary>
+    </ErrorLoggerContext.Provider>
   );
+}
+
+// Hook to access error logger from functional components
+export function useErrorLogger() {
+  const context = useContext(ErrorLoggerContext);
+  if (!context) {
+    throw new Error('useErrorLogger must be used within ErrorBoundaryProvider');
+  }
+  return context;
 }
 
 // Simple error fallback component

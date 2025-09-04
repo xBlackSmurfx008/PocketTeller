@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { Mail, Building2, Phone, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 interface ContactDialogProps {
   open: boolean;

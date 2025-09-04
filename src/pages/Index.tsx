@@ -11,6 +11,8 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { HomeSEO } from "@/components/SEOHead";
+import { logger } from "@/utils/logger";
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -73,7 +75,10 @@ const Index = () => {
         });
 
         if (functionError) {
-          console.error('Error sending confirmation email:', functionError);
+          logger.warn('Waitlist confirmation email failed', {
+            error: functionError.message,
+            email: email.trim()
+          });
         }
 
         toast({
@@ -86,7 +91,10 @@ const Index = () => {
         setShowWaitlistForm(false);
       }
     } catch (error) {
-      console.error('Error adding to waitlist:', error);
+      logger.error('Waitlist signup failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        email: email.trim()
+      });
       toast({
         title: "Something went wrong",
         description: "Please try again later.",
@@ -105,12 +113,20 @@ const Index = () => {
     );
   }
 
-  if (user || isDemo) {
-    return <Dashboard />;
+  // Authenticated users see dashboard
+  if (user && !isDemo) {
+    return (
+      <>
+        <HomeSEO />
+        <Dashboard />
+      </>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <HomeSEO />
+      <div className="min-h-screen bg-background">
       <PublicHeader />
       
       <main>
@@ -169,8 +185,9 @@ const Index = () => {
         )}
       </main>
 
-      <PublicFooter />
-    </div>
+        <PublicFooter />
+      </div>
+    </>
   );
 };
 
