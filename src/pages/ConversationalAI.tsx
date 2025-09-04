@@ -177,17 +177,17 @@ const ConversationalAI = () => {
 
             {/* Prompt Suggestions */}
             {showPromptSuggestions && messages.length === 0 && <Reveal delay={300}>
-                <Card className="mx-auto max-w-2xl card-hover-lift">
+                <Card className="mx-auto max-w-2xl card-hover-lift relative z-20 pointer-events-auto">
                   <CardHeader>
                     <CardTitle className="text-lg">Get started with these questions:</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {promptSuggestions.slice(0, 6).map((suggestion, index) => (
                         <Button 
                           key={index} 
                           variant="outline" 
-                          className="text-left justify-start h-auto p-6 text-sm ripple-effect whitespace-normal leading-relaxed min-h-[80px] hover:bg-muted/50 active:bg-muted cursor-pointer touch-manipulation" 
+                          className="block w-full text-left justify-start h-auto p-6 text-sm ripple-effect whitespace-normal leading-relaxed min-h-[96px] hover:bg-muted/50 active:bg-muted cursor-pointer touch-manipulation pointer-events-auto rounded-lg" 
                           onClick={() => handlePromptSuggestionClick(suggestion)} 
                           disabled={isLoading}
                         >
@@ -200,6 +200,8 @@ const ConversationalAI = () => {
               </Reveal>}
 
             <div ref={messagesEndRef} />
+            {/* Bottom spacer to ensure content is not overlapped */}
+            <div className="h-4"></div>
           </div>
         </ScrollArea>
 
@@ -227,10 +229,12 @@ const ConversationalAI = () => {
         </div>
       </div>
 
-      {/* Education Panel */}
-      <div data-tour-id="education-panel">
-        <EducationPanel suggestions={educationSuggestions} coachQuestions={coachQuestions} coachStage={coachStage} onQuestionClick={handleQuestionClick} onToggle={() => setShowSuggestions(!showSuggestions)} isVisible={showSuggestions} />
-      </div>
+      {/* Education Panel - only show after first message */}
+      {messages.length > 0 && (
+        <div data-tour-id="education-panel">
+          <EducationPanel suggestions={educationSuggestions} coachQuestions={coachQuestions} coachStage={coachStage} onQuestionClick={handleQuestionClick} onToggle={() => setShowSuggestions(!showSuggestions)} isVisible={showSuggestions} />
+        </div>
+      )}
     </div>;
 };
 export default ConversationalAI;
