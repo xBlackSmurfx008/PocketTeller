@@ -57,8 +57,8 @@ export function PaywallModal({ isOpen, onClose, feature, description }: PaywallM
           </div>
 
           {/* Plan Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {PRICING_PLANS.map((plan) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {PRICING_PLANS.filter(plan => plan.id === 'basic' || plan.id === 'pro').map((plan) => (
               <Card 
                 key={plan.id}
                 className={`cursor-pointer transition-all ${

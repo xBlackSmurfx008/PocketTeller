@@ -26,7 +26,7 @@ export function PlanCard({ plan, selected, onSelect }: PlanCardProps) {
         <h3 className="text-2xl font-bold">{plan.name}</h3>
         <p className="text-muted-foreground text-sm">{plan.description}</p>
         <div className="mt-4">
-          <span className="text-4xl font-bold">${plan.price}</span>
+          <span className="text-4xl font-bold">${plan.price.toFixed(2)}</span>
           <span className="text-muted-foreground">/{plan.interval}</span>
         </div>
       </CardHeader>

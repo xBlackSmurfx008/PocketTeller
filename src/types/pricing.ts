@@ -38,7 +38,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'basic',
     name: 'Basic',
-    price: 9.99,
+    price: 4.99,
     interval: 'month',
     description: 'Perfect for getting started with financial tracking',
     features: [
@@ -52,7 +52,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'pro',
     name: 'Pro',
-    price: 19.99,
+    price: 9.99,
     interval: 'month',
     description: 'Advanced features for serious financial management',
     popular: true,
@@ -64,22 +64,6 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Priority support',
       'Custom categories',
       'Export data'
-    ]
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: 39.99,
-    interval: 'month',
-    description: 'Complete financial ecosystem for power users',
-    features: [
-      'Everything in Pro',
-      'Personal financial advisor',
-      'Tax optimization tips',
-      'Credit score monitoring',
-      'White-glove onboarding',
-      'Phone support',
-      'Custom reports'
     ]
   }
 ];

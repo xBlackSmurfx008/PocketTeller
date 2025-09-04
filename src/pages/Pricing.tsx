@@ -83,8 +83,8 @@ export default function Pricing() {
         {/* Pricing Cards */}
         <section className="px-4 pb-16 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {PRICING_PLANS.map((plan) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {PRICING_PLANS.filter(plan => plan.id === 'basic' || plan.id === 'pro').map((plan) => (
                 <PlanCard
                   key={plan.id}
                   plan={plan}
