@@ -136,7 +136,7 @@ const ConversationalAI = () => {
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
         {/* Messages Area */}
         <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
+          <div className="space-y-4 pb-24">
             {/* Welcome Message */}
             {messages.length === 0 && <Reveal>
                 <Card className="mx-auto max-w-2xl card-hover-lift">
@@ -205,7 +205,7 @@ const ConversationalAI = () => {
 
             <div ref={messagesEndRef} />
             {/* Bottom spacer to ensure content is not overlapped */}
-            <div className="h-4"></div>
+            <div className="h-24"></div>
           </div>
         </ScrollArea>
 
