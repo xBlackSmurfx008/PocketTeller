@@ -15,6 +15,7 @@ import { PlaidSecuritySettings } from '@/components/PlaidSecuritySettings';
 import { Reveal } from '@/components/Reveal';
 import NotificationSettings from '@/components/NotificationSettings';
 import NotificationInbox from '@/components/NotificationInbox';
+import { useAccent, type AccentColor } from '@/contexts/AccentProvider';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ export default function Account() {
   const { user } = useAuth();
   const { handleSignOut } = useSignOutAction();
   const { layoutMode, setLayoutMode } = useLayoutPreference();
+  const { accentColor, setAccentColor } = useAccent();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -192,6 +194,36 @@ export default function Account() {
                   checked={layoutMode === 'desktop'}
                   onCheckedChange={(checked) => setLayoutMode(checked ? 'desktop' : 'auto')}
                 />
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="font-medium">Accent Color</p>
+                  <p className="text-sm text-muted-foreground">Choose your preferred accent color</p>
+                </div>
+                <div className="flex gap-3 flex-wrap">
+                  {(['violet', 'blue', 'emerald', 'amber', 'rose'] as AccentColor[]).map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setAccentColor(color)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        accentColor === color 
+                          ? 'border-primary ring-2 ring-primary/20' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                      style={{
+                        backgroundColor: `hsl(${
+                          color === 'violet' ? '262 83% 58%' :
+                          color === 'blue' ? '221 83% 53%' :
+                          color === 'emerald' ? '142 76% 36%' :
+                          color === 'amber' ? '45 93% 47%' :
+                          '330 81% 60%'
+                        })`
+                      }}
+                      aria-label={`Set accent color to ${color}`}
+                    />
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -9,6 +9,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LayoutPreferenceProvider } from "@/hooks/useLayoutPreference";
 import { DemoProvider } from "@/hooks/useDemo";
+import { AccentProvider } from "@/contexts/AccentProvider";
 import { CoachMarks } from "@/components/CoachMarks";
 import { RouteProgress } from "@/components/RouteProgress";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -36,10 +37,11 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="budget-ai-theme">
-      <LayoutPreferenceProvider>
-        <DemoProvider>
-          <AuthProvider>
+        <ThemeProvider defaultTheme="system" storageKey="budget-ai-theme">
+          <LayoutPreferenceProvider>
+            <DemoProvider>
+              <AccentProvider>
+                <AuthProvider>
             <TooltipProvider>
               <Toaster />
               <BrowserRouter>
@@ -71,9 +73,10 @@ const App = () => (
               </BrowserRouter>
             </TooltipProvider>
           </AuthProvider>
-        </DemoProvider>
-      </LayoutPreferenceProvider>
-    </ThemeProvider>
+        </AccentProvider>
+      </DemoProvider>
+    </LayoutPreferenceProvider>
+  </ThemeProvider>
   </QueryClientProvider>
 );
 
