@@ -22,43 +22,43 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted, onTryDemo }) => {
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Announcement Badge */}
-          <div className="mb-8 animate-fade-in">
-            <Badge variant="secondary" className="px-4 py-2 text-sm font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
+          <div className="mb-10 animate-fade-in">
+            <Badge variant="secondary" className="px-6 py-3 text-sm font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
               <Sparkles className="w-4 h-4 mr-2" />
               New: AI-Powered Financial Insights
             </Badge>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight mb-6 animate-slide-up">
+          <h1 className="typography-hero font-display font-bold leading-tight mb-8 animate-slide-up">
             <span className="text-gradient">Smart Finance</span>
             <br />
             <span className="text-foreground">Simplified</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <p className="typography-subtitle text-muted-foreground max-w-4xl mx-auto mb-12 animate-fade-in" style={{ animationDelay: "0.2s" }}>
             Transform your financial life with AI-powered insights, automated budgeting, and intelligent expense tracking. 
             Join thousands taking control of their money.
           </p>
 
           {/* Value Props */}
-          <div className="flex flex-wrap justify-center gap-6 mb-10 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            <div className="flex items-center text-muted-foreground">
-              <TrendingUp className="w-5 h-5 mr-2 text-success" />
-              <span>Average 30% savings increase</span>
+          <div className="flex flex-wrap justify-center gap-8 mb-16 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+            <div className="flex items-center text-muted-foreground group">
+              <TrendingUp className="w-6 h-6 mr-3 text-success group-hover:scale-110 transition-transform duration-300" />
+              <span className="typography-body-lg">Average 30% savings increase</span>
             </div>
-            <div className="flex items-center text-muted-foreground">
-              <Shield className="w-5 h-5 mr-2 text-primary" />
-              <span>Bank-level security</span>
+            <div className="flex items-center text-muted-foreground group">
+              <Shield className="w-6 h-6 mr-3 text-primary group-hover:scale-110 transition-transform duration-300" />
+              <span className="typography-body-lg">Bank-level security</span>
             </div>
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-scale-in" style={{ animationDelay: "0.6s" }}>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-scale-in" style={{ animationDelay: "0.6s" }}>
             <Button 
               size="lg" 
-              className="px-8 py-4 text-lg font-semibold btn-magnetic ripple-effect bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="px-12 py-5 text-lg font-semibold btn-shimmer btn-magnetic ripple-effect bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
               onClick={onGetStarted}
             >
               Start Free Today
@@ -67,7 +67,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted, onTryDemo }) => {
             <Button 
               variant="outline" 
               size="lg" 
-              className="px-8 py-4 text-lg font-semibold border-2 hover:bg-muted/50"
+              className="px-12 py-5 text-lg font-semibold border-2 hover:bg-muted/50 hover:scale-105 transition-all duration-300 rounded-xl"
               onClick={onTryDemo}
             >
               Try Live Demo

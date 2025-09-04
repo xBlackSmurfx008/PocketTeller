@@ -20,20 +20,20 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Urgency Badge */}
-          <div className="mb-6">
-            <Badge variant="secondary" className="px-4 py-2 bg-primary/10 text-primary border-primary/20">
+          <div className="mb-10">
+            <Badge variant="secondary" className="px-6 py-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 transition-colors duration-300">
               <Timer className="w-4 h-4 mr-2" />
               Limited Time: Free Setup + First Month
             </Badge>
           </div>
 
           {/* Main Headline */}
-          <h2 className="text-4xl md:text-6xl font-display font-bold mb-6">
+          <h2 className="typography-hero font-display font-bold mb-8">
             Ready to transform your
             <span className="text-gradient block mt-2">financial future?</span>
           </h2>
 
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+          <p className="typography-subtitle text-muted-foreground max-w-3xl mx-auto mb-12">
             Join thousands of families already saving money and building wealth with AI-powered financial management.
           </p>
 
@@ -54,10 +54,10 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
             <Button 
               size="lg" 
-              className="px-8 py-4 text-lg font-semibold btn-magnetic bg-primary hover:bg-primary/90 text-primary-foreground group"
+              className="px-12 py-5 text-lg font-semibold btn-shimmer btn-magnetic bg-primary hover:bg-primary/90 text-primary-foreground group rounded-xl"
               onClick={onGetStarted}
             >
               <Sparkles className="mr-2 h-5 w-5 group-hover:animate-spin" />
@@ -67,7 +67,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
             <Button 
               variant="outline" 
               size="lg" 
-              className="px-8 py-4 text-lg font-semibold border-2 hover:bg-muted/50"
+              className="px-12 py-5 text-lg font-semibold border-2 hover:bg-muted/50 hover:scale-105 transition-all duration-300 rounded-xl"
               onClick={onTryDemo}
             >
               Watch 2-Min Demo
@@ -81,19 +81,19 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
           </div>
 
           {/* Social proof numbers */}
-          <div className="mt-12 pt-8 border-t border-border/50">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-2xl font-display font-bold text-primary">15,000+</div>
-                <div className="text-sm text-muted-foreground">Active Users</div>
+          <div className="mt-16 pt-8 border-t border-border/50">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+              <div className="p-6 rounded-xl bg-card/50 border border-border/50 hover:bg-card transition-all duration-300 hover:scale-105">
+                <div className="text-3xl lg:text-4xl font-display font-bold text-primary mb-2">15,000+</div>
+                <div className="typography-body text-muted-foreground">Active Users</div>
               </div>
-              <div>
-                <div className="text-2xl font-display font-bold text-success">$12.8M</div>
-                <div className="text-sm text-muted-foreground">Total Savings</div>
+              <div className="p-6 rounded-xl bg-card/50 border border-border/50 hover:bg-card transition-all duration-300 hover:scale-105">
+                <div className="text-3xl lg:text-4xl font-display font-bold text-success mb-2">$12.8M</div>
+                <div className="typography-body text-muted-foreground">Total Savings</div>
               </div>
-              <div>
-                <div className="text-2xl font-display font-bold text-accent">4.9★</div>
-                <div className="text-sm text-muted-foreground">User Rating</div>
+              <div className="p-6 rounded-xl bg-card/50 border border-border/50 hover:bg-card transition-all duration-300 hover:scale-105">
+                <div className="text-3xl lg:text-4xl font-display font-bold text-accent mb-2">4.9★</div>
+                <div className="typography-body text-muted-foreground">User Rating</div>
               </div>
             </div>
           </div>

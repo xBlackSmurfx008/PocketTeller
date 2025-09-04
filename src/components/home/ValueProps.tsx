@@ -59,20 +59,20 @@ export const ValueProps: React.FC = () => {
   return (
     <section className="py-24 bg-muted/30">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <Badge variant="outline" className="mb-4 px-4 py-2">
+        <div className="text-center mb-20">
+          <Badge variant="outline" className="mb-6 px-6 py-3">
             Why Choose Pocket Banker
           </Badge>
-          <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+          <h2 className="typography-hero font-display font-bold mb-8">
             Everything you need to
             <span className="text-gradient block mt-2">master your money</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="typography-subtitle text-muted-foreground max-w-4xl mx-auto">
             Combining cutting-edge AI with intuitive design to deliver the most powerful financial management experience
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {valueProps.map((prop, index) => {
             const Icon = prop.icon;
             return (
@@ -80,13 +80,13 @@ export const ValueProps: React.FC = () => {
                 key={index} 
                 className={cn(
                   "card-hover-lift bg-card/50 backdrop-blur-sm border-border/50 h-full",
-                  "hover:border-primary/20 transition-all duration-300"
+                  "hover:border-primary/20 transition-all duration-500 hover:shadow-xl hover:-translate-y-2"
                 )}
               >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 rounded-2xl bg-primary/10 text-primary">
-                      <Icon className="w-6 h-6" />
+                <CardHeader className="pb-6">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="p-4 rounded-2xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110">
+                      <Icon className="w-7 h-7" />
                     </div>
                     <Badge variant={prop.badgeVariant} className="text-xs">
                       {prop.badge}
@@ -97,13 +97,13 @@ export const ValueProps: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                  <p className="typography-body text-muted-foreground mb-6 leading-relaxed">
                     {prop.description}
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {prop.benefits.map((benefit, idx) => (
-                      <li key={idx} className="flex items-center text-sm text-muted-foreground">
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full mr-3 flex-shrink-0" />
+                      <li key={idx} className="flex items-center typography-body text-muted-foreground">
+                        <div className="w-2 h-2 bg-primary rounded-full mr-4 flex-shrink-0" />
                         {benefit}
                       </li>
                     ))}

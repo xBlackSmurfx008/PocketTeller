@@ -39,8 +39,13 @@ export const ShadeButton = React.forwardRef<HTMLButtonElement, ShadeButtonProps>
       <Button
         ref={ref}
         className={cn(
+          // Enhanced micro-interactions
+          "btn-shimmer transition-all duration-300 ease-out",
           // Enhanced states
           loading && "opacity-70 cursor-wait",
+          // Intent-based styling
+          intent === "primary" && "btn-magnetic shadow-lg hover:shadow-xl",
+          intent === "secondary" && "hover:scale-105",
           className
         )}
         variant={getVariant()}

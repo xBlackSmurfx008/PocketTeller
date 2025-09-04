@@ -66,31 +66,31 @@ export const SocialProof: React.FC = () => {
     <section className="py-24 bg-background">
       <div className="container mx-auto px-6">
         {/* Metrics Section */}
-        <div className="text-center mb-20">
-          <Badge variant="outline" className="mb-4 px-4 py-2">
+        <div className="text-center mb-24">
+          <Badge variant="outline" className="mb-6 px-6 py-3">
             Trusted by Thousands
           </Badge>
-          <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+          <h2 className="typography-hero font-display font-bold mb-8">
             Real results from
             <span className="text-gradient block mt-2">real families</span>
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-16">
             {metrics.map((metric, index) => {
               const Icon = metric.icon;
               return (
-                <div key={index} className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
-                    <Icon className="w-8 h-8" />
+                <div key={index} className="text-center p-8 rounded-2xl bg-card/50 border border-border/50 hover:bg-card transition-all duration-300 hover:scale-105">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 text-primary mb-6">
+                    <Icon className="w-10 h-10" />
                   </div>
-                  <div className="text-4xl font-display font-bold text-foreground mb-2">
+                  <div className="text-4xl lg:text-5xl font-display font-bold text-foreground mb-4">
                     <CountUp end={metric.value} duration={2000} />
                     {metric.suffix}
                   </div>
-                  <div className="text-lg font-semibold text-foreground mb-1">
+                  <div className="typography-body-lg font-semibold text-foreground mb-2">
                     {metric.label}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="typography-body text-muted-foreground">
                     {metric.description}
                   </div>
                 </div>
