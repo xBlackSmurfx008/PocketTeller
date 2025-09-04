@@ -10,7 +10,7 @@ import { useState } from "react";
 const ForInstitutions = () => {
   const navigate = useNavigate();
   const [contactOpen, setContactOpen] = useState(false);
-  const [contactType, setContactType] = useState<"demo" | "quote" | "consultation" | "general">("general");
+  const [contactType, setContactType] = useState<"demo" | "quote" | "consultation" | "general" | "partnership" | "support">("general");
 
   return (
     <div className="min-h-screen bg-background">

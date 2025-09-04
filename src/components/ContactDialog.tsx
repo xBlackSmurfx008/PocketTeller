@@ -23,7 +23,7 @@ import { Mail, Building2, Phone, MessageCircle } from "lucide-react";
 interface ContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultType?: "demo" | "quote" | "consultation" | "general";
+  defaultType?: "demo" | "quote" | "consultation" | "general" | "partnership" | "support";
   defaultSubject?: string;
 }
 
@@ -33,7 +33,15 @@ export function ContactDialog({
   defaultType = "general",
   defaultSubject = "" 
 }: ContactDialogProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    organization: string;
+    phone: string;
+    inquiryType: "demo" | "quote" | "consultation" | "general" | "partnership" | "support";
+    subject: string;
+    message: string;
+  }>({
     name: "",
     email: "",
     organization: "",
@@ -161,7 +169,7 @@ export function ContactDialog({
             <Label htmlFor="inquiryType">Inquiry Type</Label>
             <Select 
               value={formData.inquiryType} 
-              onValueChange={(value: "demo" | "quote" | "consultation" | "general" | "partnership" | "support") => 
+              onValueChange={(value: typeof formData.inquiryType) => 
                 setFormData(prev => ({ ...prev, inquiryType: value }))
               }
             >
