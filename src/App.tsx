@@ -12,6 +12,7 @@ import { DemoProvider } from "@/hooks/useDemo";
 import { CoachMarks } from "@/components/CoachMarks";
 import { RouteProgress } from "@/components/RouteProgress";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { AppShell } from "@/components/layouts/AppShell";
 
 // Lazy load page components to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
@@ -47,23 +48,23 @@ const App = () => (
                 <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="pulse h-8 w-8 rounded-full bg-primary/20"></div></div>}>
                   <Routes>
                     <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/demo" element={<Demo />} />
-                    <Route path="/confirm" element={<EmailConfirmation />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/chat" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
-                    <Route path="/chat/:threadId" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
-                    <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
-                    <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-                    <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
-                    <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
-                    <Route path="/share/budget/:token" element={<SharedBudget />} />
-                    <Route path="/for-institutions" element={<ForInstitutions />} />
-                    <Route path="/for-nonprofits" element={<ForNonProfits />} />
-                    <Route path="/privacy" element={<Privacy />} />
-<Route path="/terms" element={<Terms />} />
+                    <Route path="/auth" element={<AppShell><Auth /></AppShell>} />
+                    <Route path="/demo" element={<AppShell><Demo /></AppShell>} />
+                    <Route path="/confirm" element={<AppShell><EmailConfirmation /></AppShell>} />
+                    <Route path="/reset-password" element={<AppShell><ResetPassword /></AppShell>} />
+                    <Route path="/chat" element={<AppShell><ProtectedRoute><ConversationalAI /></ProtectedRoute></AppShell>} />
+                    <Route path="/chat/:threadId" element={<AppShell><ProtectedRoute><ConversationalAI /></ProtectedRoute></AppShell>} />
+                    <Route path="/goals" element={<AppShell><ProtectedRoute><Goals /></ProtectedRoute></AppShell>} />
+                    <Route path="/transactions" element={<AppShell><ProtectedRoute><Transactions /></ProtectedRoute></AppShell>} />
+                    <Route path="/budget" element={<AppShell><ProtectedRoute><Budget /></ProtectedRoute></AppShell>} />
+                    <Route path="/account" element={<AppShell><ProtectedRoute><Account /></ProtectedRoute></AppShell>} />
+                    <Route path="/share/budget/:token" element={<AppShell><SharedBudget /></AppShell>} />
+                    <Route path="/for-institutions" element={<AppShell><ForInstitutions /></AppShell>} />
+                    <Route path="/for-nonprofits" element={<AppShell><ForNonProfits /></AppShell>} />
+                    <Route path="/privacy" element={<AppShell><Privacy /></AppShell>} />
+                    <Route path="/terms" element={<AppShell><Terms /></AppShell>} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
+                    <Route path="*" element={<AppShell><NotFound /></AppShell>} />
                   </Routes>
                 </Suspense>
                 <CoachMarks />
