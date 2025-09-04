@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -13,6 +14,7 @@ import { MobileCTA } from "./MobileCTA";
 import PublicFooter from "@/components/PublicFooter";
 
 export const MobileLanding: React.FC = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
