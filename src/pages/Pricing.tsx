@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Shield, Star, Users, TrendingUp } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
+import PublicHeader from '@/components/PublicHeader';
 import { PlanCard } from '@/components/payments/PlanCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,8 +66,9 @@ export default function Pricing() {
       />
       
       <div className="min-h-screen bg-background">
+        <PublicHeader />
         {/* Hero Section */}
-        <section className="px-4 py-16 sm:px-6 lg:px-8">
+        <section className="px-4 pt-32 pb-16 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto text-center">
             <Badge className="mb-4">30-Day Money Back Guarantee</Badge>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
