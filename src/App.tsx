@@ -40,9 +40,9 @@ const App = () => (
         <ThemeProvider defaultTheme="system" storageKey="budget-ai-theme">
           <LayoutPreferenceProvider>
             <DemoProvider>
-              <AccentProvider>
-                <AuthProvider>
-            <TooltipProvider>
+              <AuthProvider>
+                <AccentProvider>
+                  <TooltipProvider>
               <Toaster />
               <BrowserRouter>
                 <RouteProgress />
@@ -71,9 +71,9 @@ const App = () => (
                 </Suspense>
                 <CoachMarks />
               </BrowserRouter>
-            </TooltipProvider>
+              </TooltipProvider>
+            </AccentProvider>
           </AuthProvider>
-        </AccentProvider>
       </DemoProvider>
     </LayoutPreferenceProvider>
   </ThemeProvider>
