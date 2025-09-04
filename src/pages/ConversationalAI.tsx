@@ -176,32 +176,36 @@ const ConversationalAI = () => {
               </Card>}
 
             {/* Prompt Suggestions */}
-            {showPromptSuggestions && messages.length === 0 && <Reveal delay={300} className="relative isolate z-40">
-                <Card className="mx-auto max-w-2xl card-hover-lift relative z-30 pointer-events-auto">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Get started with these questions:</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 gap-4">
-                      {promptSuggestions.slice(0, 2).map((suggestion, index) => (
-                        <Button 
-                          key={index} 
-                          variant="outline" 
-                          className="w-full flex items-start justify-start h-auto p-6 text-sm whitespace-normal leading-relaxed min-h-[96px] hover:bg-muted/50 active:bg-muted cursor-pointer touch-manipulation pointer-events-auto rounded-lg border-2 hover:border-primary/20 transition-all duration-200 relative z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
-                          onClick={(e) => {
-                            console.log('Button clicked:', suggestion, e.target);
-                            handlePromptSuggestionClick(suggestion);
-                          }} 
-                          disabled={isLoading}
-                          aria-label={`Ask: ${suggestion}`}
-                        >
-                          <span className="break-words text-left w-full">{suggestion}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Reveal>}
+            {showPromptSuggestions && messages.length === 0 && (
+              <div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center p-4">
+                <Reveal delay={300} className="pointer-events-auto">
+                  <Card className="max-w-2xl card-hover-lift relative bg-background shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Get started with these questions:</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 gap-4">
+                        {promptSuggestions.slice(0, 2).map((suggestion, index) => (
+                          <Button 
+                            key={index} 
+                            variant="outline" 
+                            className="w-full flex items-start justify-start h-auto p-6 text-sm whitespace-normal leading-relaxed min-h-[96px] hover:bg-muted/50 active:bg-muted cursor-pointer transition-all duration-200" 
+                            onClick={() => {
+                              console.log('Button clicked:', suggestion);
+                              handlePromptSuggestionClick(suggestion);
+                            }} 
+                            disabled={isLoading}
+                            aria-label={`Ask: ${suggestion}`}
+                          >
+                            <span className="break-words text-left w-full">{suggestion}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Reveal>
+              </div>
+            )}
 
             <div ref={messagesEndRef} />
             {/* Bottom spacer to ensure content is not overlapped */}
