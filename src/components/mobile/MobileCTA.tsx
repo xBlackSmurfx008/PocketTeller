@@ -6,11 +6,13 @@ import { ArrowRight, Clock, Shield, TrendingUp } from "lucide-react";
 interface MobileCTAProps {
   onGetStarted: () => void;
   onTryDemo: () => void;
+  onGoPro?: () => void;
 }
 
 export const MobileCTA: React.FC<MobileCTAProps> = ({
   onGetStarted,
   onTryDemo,
+  onGoPro,
 }) => {
   return (
     <section className="py-16 px-4 bg-gradient-to-t from-muted/50 to-background">
@@ -64,6 +66,17 @@ export const MobileCTA: React.FC<MobileCTAProps> = ({
             Start Your Journey
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
+          {onGoPro && (
+            <Button 
+              onClick={onGoPro}
+              variant="secondary"
+              size="lg"
+              className="w-full h-12 text-base"
+            >
+              Go Pro
+              <TrendingUp className="w-5 h-5 ml-2" />
+            </Button>
+          )}
           <Button 
             onClick={onTryDemo}
             variant="outline" 

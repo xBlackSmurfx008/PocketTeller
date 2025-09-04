@@ -15,6 +15,7 @@ import { RouteProgress } from "@/components/RouteProgress";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AppShell } from "@/components/layouts/AppShell";
 import { ErrorBoundaryProvider } from "@/components/ErrorBoundary";
+import { CheckoutProvider } from "@/hooks/useCheckout";
 
 // Lazy load page components to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
@@ -33,6 +34,10 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 const ForInstitutions = lazy(() => import("./pages/ForInstitutions"));
 const ForNonProfits = lazy(() => import("./pages/ForNonProfits"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentCanceled = lazy(() => import("./pages/PaymentCanceled"));
 
 const queryClient = new QueryClient();
 
@@ -44,7 +49,8 @@ const App = () => (
           <AuthProvider>
             <AccentProvider>
               <TooltipProvider>
-                <ErrorBoundaryProvider>
+                <CheckoutProvider>
+                  <ErrorBoundaryProvider>
                   <BrowserRouter>
                     <RouteProgress />
                     <ScrollToTop />
@@ -66,12 +72,17 @@ const App = () => (
                         <Route path="/for-nonprofits" element={<AppShell><ForNonProfits /></AppShell>} />
                         <Route path="/privacy" element={<AppShell><Privacy /></AppShell>} />
                         <Route path="/terms" element={<AppShell><Terms /></AppShell>} />
+                        <Route path="/pricing" element={<AppShell><Pricing /></AppShell>} />
+                        <Route path="/checkout" element={<AppShell><Checkout /></AppShell>} />
+                        <Route path="/payment-success" element={<AppShell><PaymentSuccess /></AppShell>} />
+                        <Route path="/payment-canceled" element={<AppShell><PaymentCanceled /></AppShell>} />
                         <Route path="*" element={<AppShell><NotFound /></AppShell>} />
                       </Routes>
                     </Suspense>
                     <CoachMarks />
                   </BrowserRouter>
-                </ErrorBoundaryProvider>
+                  </ErrorBoundaryProvider>
+                </CheckoutProvider>
               </TooltipProvider>
             </AccentProvider>
           </AuthProvider>
