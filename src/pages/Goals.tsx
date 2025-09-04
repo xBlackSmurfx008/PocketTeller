@@ -380,7 +380,7 @@ export default function Goals() {
             </Card>
           </Reveal>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" data-tour-id="goals-list">{/* Fixed tour ID attribute */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" data-tour-id="goals-list">
             {goals.map((goal, index) => {
               const financialProgress = getGoalProgress(goal);
               const taskProgress = getTaskProgress(goal.id);

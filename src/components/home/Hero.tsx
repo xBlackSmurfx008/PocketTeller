@@ -1,5 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Sparkles, TrendingUp, Shield, Users, DollarSign, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,7 +10,6 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ onGetStarted, onTryDemo }) => {
-  const navigate = useNavigate();
   return (
     <section className="relative min-h-[95vh] flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
       {/* Enhanced Background Elements */}
@@ -88,9 +86,9 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted, onTryDemo }) => {
                 intent="secondary"
                 size="lg" 
                 className="px-14 py-6 text-xl font-semibold rounded-2xl glass-container border-2"
-                onClick={() => navigate('/pricing')}
+                onClick={onTryDemo}
               >
-                View Pricing
+                Try Live Demo
               </ShadeButton>
             </div>
 

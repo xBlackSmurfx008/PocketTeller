@@ -30,107 +30,104 @@ export function CoachMarks() {
   const isLastStep = tourStep >= tourSteps.length - 1;
 
   // Enhanced element finding with robust retry and fallback
-  const findElement = useCallback((retries = 3) => {
+  const findElement = useCallback((retries = 5) => {
     if (!currentStep) return;
     
-    // Add a small delay to allow components to render
-    setTimeout(() => {
-      const element = document.querySelector(currentStep.selector) as HTMLElement;
-      if (element) {
-        setHasElementNotFound(false);
-        setRetryCount(0);
-        setHighlightedElement(element);
+    const element = document.querySelector(currentStep.selector) as HTMLElement;
+    if (element) {
+      setHighlightedElement(element);
+      setHasElementNotFound(false);
+      setRetryCount(0);
+      
+      // Enhanced positioning with viewport awareness
+      requestAnimationFrame(() => {
+        const rect = element.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         
-        // Enhanced positioning with viewport awareness
-        requestAnimationFrame(() => {
-          const rect = element.getBoundingClientRect();
-          const viewportWidth = window.innerWidth;
-          const viewportHeight = window.innerHeight;
-          
-          let x = rect.left + rect.width / 2;
-          let y = rect.top;
-          
-          // Smart positioning based on element location and viewport
-          const elementCenter = {
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2
-          };
-          
-          // Determine best position based on available space
-          const spaceTop = rect.top;
-          const spaceBottom = viewportHeight - rect.bottom;
-          const spaceLeft = rect.left;
-          const spaceRight = viewportWidth - rect.right;
-          
-          let bestPosition = currentStep.position;
-          
-          // Auto-adjust position if not enough space
-          if (currentStep.position === 'top' && spaceTop < 200) {
-            bestPosition = spaceBottom > 200 ? 'bottom' : 'right';
-          } else if (currentStep.position === 'bottom' && spaceBottom < 200) {
-            bestPosition = spaceTop > 200 ? 'top' : 'left';
-          } else if (currentStep.position === 'left' && spaceLeft < 350) {
-            bestPosition = spaceRight > 350 ? 'right' : 'bottom';
-          } else if (currentStep.position === 'right' && spaceRight < 350) {
-            bestPosition = spaceLeft > 350 ? 'left' : 'top';
+        let x = rect.left + rect.width / 2;
+        let y = rect.top;
+        
+        // Smart positioning based on element location and viewport
+        const elementCenter = {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2
+        };
+        
+        // Determine best position based on available space
+        const spaceTop = rect.top;
+        const spaceBottom = viewportHeight - rect.bottom;
+        const spaceLeft = rect.left;
+        const spaceRight = viewportWidth - rect.right;
+        
+        let bestPosition = currentStep.position;
+        
+        // Auto-adjust position if not enough space
+        if (currentStep.position === 'top' && spaceTop < 200) {
+          bestPosition = spaceBottom > 200 ? 'bottom' : 'right';
+        } else if (currentStep.position === 'bottom' && spaceBottom < 200) {
+          bestPosition = spaceTop > 200 ? 'top' : 'left';
+        } else if (currentStep.position === 'left' && spaceLeft < 350) {
+          bestPosition = spaceRight > 350 ? 'right' : 'bottom';
+        } else if (currentStep.position === 'right' && spaceRight < 350) {
+          bestPosition = spaceLeft > 350 ? 'left' : 'top';
+        }
+        
+        switch (bestPosition) {
+          case 'top':
+            y = rect.top - 20;
+            break;
+          case 'bottom':
+            y = rect.bottom + 20;
+            break;
+          case 'left':
+            x = rect.left - 20;
+            y = elementCenter.y;
+            break;
+          case 'right':
+            x = rect.right + 20;
+            y = elementCenter.y;
+            break;
+        }
+        
+        // Ensure tooltip stays within viewport
+        x = Math.max(20, Math.min(x, viewportWidth - 340));
+        y = Math.max(20, Math.min(y, viewportHeight - 220));
+        
+        setTooltipPosition({ x, y });
+      });
+      
+      // Enhanced scroll behavior
+      element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center',
+        inline: 'center'
+      });
+      
+      // Add focus management for accessibility
+      element.setAttribute('aria-describedby', 'tour-tooltip');
+      
+    } else if (retries > 0) {
+      setRetryCount(prev => prev + 1);
+      // Progressive retry delays for better UX
+      const delay = Math.min(500 * (6 - retries), 2000);
+      setTimeout(() => findElement(retries - 1), delay);
+    } else {
+      // Element not found after all retries
+      setHasElementNotFound(true);
+      console.warn(`Tour element not found: ${currentStep.selector}`);
+      
+      // Auto-skip after showing warning
+      setTimeout(() => {
+        if (tourActive && currentStep) {
+          if (tourStep >= tourSteps.length - 1) {
+            skipTour();
+          } else {
+            nextTourStep();
           }
-          
-          switch (bestPosition) {
-            case 'top':
-              y = rect.top - 20;
-              break;
-            case 'bottom':
-              y = rect.bottom + 20;
-              break;
-            case 'left':
-              x = rect.left - 20;
-              y = elementCenter.y;
-              break;
-            case 'right':
-              x = rect.right + 20;
-              y = elementCenter.y;
-              break;
-          }
-          
-          // Ensure tooltip stays within viewport
-          x = Math.max(20, Math.min(x, viewportWidth - 340));
-          y = Math.max(20, Math.min(y, viewportHeight - 220));
-          
-          setTooltipPosition({ x, y });
-        });
-        
-        // Enhanced scroll behavior
-        element.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center',
-          inline: 'center'
-        });
-        
-        // Add focus management for accessibility
-        element.setAttribute('aria-describedby', 'tour-tooltip');
-        
-      } else if (retries > 0) {
-        setRetryCount(prev => prev + 1);
-        // Progressive retry delays with reasonable timeouts
-        const delay = Math.min(1000 * (4 - retries), 2000);
-        setTimeout(() => findElement(retries - 1), delay);
-      } else {
-        // Element not found after all retries - skip this step
-        console.warn(`Tour element not found: ${currentStep.selector}`);
-        setHasElementNotFound(true);
-        
-        // Auto-skip problematic steps after a short delay
-        setTimeout(() => {
-          if (tourActive && currentStep) {
-            if (tourStep >= tourSteps.length - 1) {
-              skipTour();
-            } else {
-              nextTourStep();
-            }
-          }
-        }, 1500); // Reduced auto-skip delay
-      }
-    }, 100); // Small delay to allow DOM updates
+        }
+      }, 3000);
+    }
   }, [currentStep, tourActive, tourStep, tourSteps.length, skipTour, nextTourStep]);
 
   useEffect(() => {
@@ -147,7 +144,7 @@ export function CoachMarks() {
       return;
     }
 
-    const timer = setTimeout(() => findElement(), 500); // Increased delay for better element detection
+    const timer = setTimeout(() => findElement(), 300);
 
     return () => {
       clearTimeout(timer);

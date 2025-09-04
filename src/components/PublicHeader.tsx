@@ -10,33 +10,18 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useDemo } from "@/hooks/useDemo";
-import { useToast } from "@/hooks/use-toast";
 
 const PublicHeader = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { isDemo } = useDemo();
-  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
 
   const navigationItems = [
-    { label: "Pricing", path: "/pricing" },
-    { label: "Pro Features", path: "/pro-preview" },
     { label: "For Institutions", path: "/for-institutions" },
     { label: "For Non-Profits", path: "/for-nonprofits" },
   ];
 
   const handleNavigation = (path: string) => {
-    if (isDemo && path === '/auth') {
-      toast({
-        title: "Demo Mode", 
-        description: "You're already in demo mode! No need to sign in.",
-        duration: 3000,
-      });
-      setIsOpen(false);
-      return;
-    }
     navigate(path);
     setIsOpen(false);
   };
@@ -79,7 +64,7 @@ const PublicHeader = () => {
                   onClick={() => handleNavigation('/auth')}
                   className="mt-4"
                 >
-                  {isDemo ? "Continue Demo" : "Sign In"}
+                  Sign In
                 </Button>
               </nav>
             </SheetContent>
@@ -112,10 +97,10 @@ const PublicHeader = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleNavigation('/auth')}
-            aria-label={isDemo ? "Continue demo" : "Sign in"}
+            onClick={() => navigate('/auth')}
+            aria-label="Sign in"
           >
-            {isDemo ? "Continue Demo" : "Sign In"}
+            Sign In
           </Button>
         </nav>
       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,15 +30,13 @@ export default function Auth() {
   const { signUp, signIn, user, resendConfirmation, resetPassword, sendMagicLink } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   // Redirect authenticated users
   useEffect(() => {
     if (user) {
-      const nextPath = searchParams.get('next') || '/';
-      navigate(nextPath);
+      navigate('/');
     }
-  }, [user, navigate, searchParams]);
+  }, [user, navigate]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -162,8 +160,7 @@ export default function Auth() {
         });
       }
     } else {
-      const nextPath = searchParams.get('next') || '/';
-      navigate(nextPath);
+      navigate('/');
     }
     setLoading(false);
   };
