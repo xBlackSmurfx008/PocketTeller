@@ -49,7 +49,9 @@ const ConversationalAI = () => {
     loadThread,
     typingMessageId
   } = useConversation(threadId);
-  const promptSuggestions = ["Analyze my spending patterns from the last month", "Help me create a budget for next month", "What are some strategies to reduce my expenses?", "How can I improve my credit score?", "Explain the difference between needs and wants", "Help me set realistic financial goals", "What should I know about emergency funds?", "How do I start investing with a small budget?"];
+  const promptSuggestions = isDemo 
+    ? ["What's my account balance and spending this month?", "How am I progressing on my financial goals?"]
+    : ["Analyze my spending patterns from the last month", "Help me create a budget for next month", "What are some strategies to reduce my expenses?", "How can I improve my credit score?", "Explain the difference between needs and wants", "Help me set realistic financial goals", "What should I know about emergency funds?", "How do I start investing with a small budget?"];
 
   // Load conversation history on component mount
   useEffect(() => {
