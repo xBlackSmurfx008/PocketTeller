@@ -210,11 +210,15 @@ serve(async (req) => {
       throw new Error('Too many token access attempts. Please try again later.');
     }
 
-    // Set user context for audit logging
-    await supabase.rpc('set_config', {
+    // Set user context for audit logging (simplified)
+    const setConfigResult = await supabase.rpc('set_config', {
       parameter: 'app.current_user_id',
       value: user.id
     });
+    
+    if (setConfigResult.error) {
+      console.warn('Failed to set user context, continuing without it');
+    }
 
     // Get client IP and User-Agent for audit logging
     const clientIP = getClientIP(req);
@@ -491,7 +495,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in plaid-sync:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: 'Sync failed. Please try again or contact support if the issue persists.' 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

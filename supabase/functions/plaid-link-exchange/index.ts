@@ -492,8 +492,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in plaid-link-exchange:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
-      stack: error.stack 
+      error: 'Failed to connect bank account. Please try again or contact support.' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
