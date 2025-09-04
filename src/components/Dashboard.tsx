@@ -17,7 +17,8 @@ import { ShareBudgetDialog } from '@/components/ShareBudgetDialog';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Settings, Target, MessageSquare, Share2, Receipt } from 'lucide-react';
-import { TourLauncher } from '@/components/TourLauncher';
+import { DemoModeIndicator } from '@/components/DemoModeIndicator';
+import { DemoWelcome } from '@/components/DemoWelcome';
 import NotificationBell from '@/components/NotificationBell';
 
 export default function Dashboard() {
@@ -117,15 +118,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" data-tour-id="dashboard">
+      <DemoModeIndicator />
       <header className="border-b border-border p-3 sm:p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className={`font-bold text-foreground ${showMobileLayout ? 'text-xl' : 'text-2xl'}`}>
-            Pocket Banker {isDemo && <span className="text-sm font-normal text-muted-foreground">(Demo)</span>}
+            Pocket Banker {isDemo && <span className="text-sm font-normal text-muted-foreground">(Demo Mode)</span>}
           </h1>
           <div className="flex items-center gap-2 sm:gap-4">
             {showMobileLayout ? (
               <>
-                <TourLauncher />
                 <Button variant="ghost" size="icon" onClick={() => navigate('/chat')} aria-label="AI Chat" data-tour-id="ai-chat-button">
                   <MessageSquare className="h-4 w-4" />
                 </Button>
@@ -149,7 +150,6 @@ export default function Dashboard() {
               </>
             ) : (
               <>
-                <TourLauncher />
                 <Button variant="outline" onClick={() => navigate('/chat')} data-tour-id="ai-chat-button">
                   Budgeting Assistant
                 </Button>
@@ -183,6 +183,8 @@ export default function Dashboard() {
       </header>
 
       <main className={`max-w-7xl mx-auto space-y-4 sm:space-y-6 ${showMobileLayout ? 'p-3' : 'p-4'}`}>
+        <DemoWelcome />
+        
         {/* Bank Connection Card - Only show when not connected and not in demo */}
         {!hasPlaidToken && !isDemo && (
           <Card>

@@ -31,6 +31,7 @@ const Index = () => {
 
   const handleTryDemo = () => {
     startDemo();
+    // Demo state will trigger re-render and show dashboard
   };
 
   const handleWaitlistSubmit = async (e: React.FormEvent) => {

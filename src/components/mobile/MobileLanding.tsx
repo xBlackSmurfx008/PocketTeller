@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDemo } from "@/hooks/useDemo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -14,6 +15,7 @@ import PublicFooter from "@/components/PublicFooter";
 
 export const MobileLanding: React.FC = () => {
   const { toast } = useToast();
+  const { startDemo } = useDemo();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWaitlistForm, setShowWaitlistForm] = useState(false);
@@ -23,8 +25,7 @@ export const MobileLanding: React.FC = () => {
   };
 
   const handleTryDemo = () => {
-    // For now, just show the waitlist form
-    setShowWaitlistForm(true);
+    startDemo();
   };
 
   const handleWaitlistSubmit = async (e: React.FormEvent) => {

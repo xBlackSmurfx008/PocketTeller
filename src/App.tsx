@@ -10,7 +10,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { LayoutPreferenceProvider } from "@/hooks/useLayoutPreference";
 import { DemoProvider } from "@/hooks/useDemo";
 import { AccentProvider } from "@/contexts/AccentProvider";
-import { CoachMarks } from "@/components/CoachMarks";
+
 import { RouteProgress } from "@/components/RouteProgress";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AppShell } from "@/components/layouts/AppShell";
@@ -25,7 +25,7 @@ const Account = lazy(() => import("./pages/Account"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const Budget = lazy(() => import("./pages/Budget"));
 const SharedBudget = lazy(() => import("./pages/SharedBudget"));
-const Demo = lazy(() => import("./pages/Demo"));
+
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -52,7 +52,7 @@ const App = () => (
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<AppShell><Auth /></AppShell>} />
-                        <Route path="/demo" element={<AppShell><Demo /></AppShell>} />
+                        
                         <Route path="/confirm" element={<AppShell><EmailConfirmation /></AppShell>} />
                         <Route path="/reset-password" element={<AppShell><ResetPassword /></AppShell>} />
                         <Route path="/chat" element={<AppShell><ProtectedRoute><ConversationalAI /></ProtectedRoute></AppShell>} />
@@ -69,7 +69,7 @@ const App = () => (
                         <Route path="*" element={<AppShell><NotFound /></AppShell>} />
                       </Routes>
                     </Suspense>
-                    <CoachMarks />
+                    
                   </BrowserRouter>
                 </ErrorBoundaryProvider>
               </TooltipProvider>

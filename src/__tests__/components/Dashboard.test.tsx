@@ -34,9 +34,6 @@ vi.mock('@/components/UpcomingBills', () => ({
 vi.mock('@/components/PlaidLink', () => ({
   PlaidLink: () => <div data-testid="plaid-link">Connect Bank</div>
 }));
-vi.mock('@/components/TourLauncher', () => ({
-  TourLauncher: () => <div data-testid="tour-launcher">Tour</div>
-}));
 vi.mock('@/components/NotificationBell', () => ({
   default: () => <div data-testid="notification-bell">Notifications</div>
 }));
