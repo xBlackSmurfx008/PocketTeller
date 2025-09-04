@@ -999,6 +999,10 @@ export type Database = {
         Args: { ip_address: string; share_id: string }
         Returns: boolean
       }
+      check_budget_share_rate_limit_enhanced: {
+        Args: { ip_address: string; share_id: string; user_email?: string }
+        Returns: boolean
+      }
       check_link_token_rate: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1020,6 +1024,10 @@ export type Database = {
         Returns: boolean
       }
       check_waitlist_rate_limit: {
+        Args: { email_input: string; ip_input: unknown }
+        Returns: boolean
+      }
+      check_waitlist_rate_limit_enhanced: {
         Args: { email_input: string; ip_input: unknown }
         Returns: boolean
       }
