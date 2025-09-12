@@ -238,27 +238,27 @@ export function ProductionRunbook() {
       {/* Quick Links */}
       <div className="flex flex-wrap gap-4 justify-center">
         <Button variant="outline" asChild>
-          <a href="https://supabase.com/dashboard/project/dscndbpqvhvylukvcgpq/functions" target="_blank" rel="noopener noreferrer">
+          <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Supabase Dashboard
+          </a>
+        </Button>
+        <Button variant="outline" asChild>
+          <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-4 w-4 mr-2" />
             Edge Functions
           </a>
         </Button>
         <Button variant="outline" asChild>
-          <a href="https://supabase.com/dashboard/project/dscndbpqvhvylukvcgpq/settings/functions" target="_blank" rel="noopener noreferrer">
+          <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-4 w-4 mr-2" />
-            Secrets
+            Secrets Management
           </a>
         </Button>
         <Button variant="outline" asChild>
-          <a href="https://supabase.com/dashboard/project/dscndbpqvhvylukvcgpq/auth/users" target="_blank" rel="noopener noreferrer">
+          <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-4 w-4 mr-2" />
-            Users
-          </a>
-        </Button>
-        <Button variant="outline" asChild>
-          <a href="https://supabase.com/dashboard/project/dscndbpqvhvylukvcgpq/auth/providers" target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Auth Settings
+            User Management
           </a>
         </Button>
       </div>

@@ -182,7 +182,7 @@ export default function Auth() {
     setResendLoading(true);
     
     if (import.meta.env.DEV) {
-      console.log('Auth - Attempting resend for:', emailToResend);
+      // Attempting resend for email confirmation
     }
     
     const { error, errorType } = await resendConfirmation(emailToResend);
@@ -218,7 +218,7 @@ export default function Auth() {
       }
       
       if (import.meta.env.DEV) {
-        console.log('Auth - Resend error:', error, 'Type:', errorType);
+        // Resend error occurred
       }
     } else {
       toast({
@@ -239,7 +239,7 @@ export default function Auth() {
       }, 1000);
       
       if (import.meta.env.DEV) {
-        console.log('Auth - Resend successful for:', emailToResend);
+        // Resend successful
       }
     }
     setResendLoading(false);
