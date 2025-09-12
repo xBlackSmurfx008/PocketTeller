@@ -51,7 +51,7 @@ export default function Account() {
     
     try {
       const { data, error } = await supabase
-        .from('budgets')
+        .from('budget')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })

@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+export type TourType = 'full' | 'chat' | 'budget' | 'goals';
+
+export interface TourStep {
+  id: string;
+  title: string;
+  description: string;
+  selector: string;
+  route?: string;
+  position: 'top' | 'bottom' | 'left' | 'right';
+}
+
 export interface DemoState {
   isDemo: boolean;
   promptsUsed: number;
@@ -20,6 +31,15 @@ interface DemoContextType extends DemoState {
   exitDemo: () => void;
   usePrompt: () => boolean;
   useConversation: () => boolean;
+  // Tour API
+  tourActive: boolean;
+  tourStep: number;
+  currentTour: TourType | null;
+  startTour: (tour: TourType) => void;
+  nextTourStep: () => void;
+  prevTourStep: () => void;
+  skipTour: () => void;
+  getTourSteps: () => TourStep[];
 }
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
@@ -188,6 +208,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     };
   });
 
+  // Tour state
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [currentTour, setCurrentTour] = useState<TourType | null>(null);
+
   useEffect(() => {
     sessionStorage.setItem('demo-state', JSON.stringify(demoState));
   }, [demoState]);
@@ -233,13 +258,85 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
+  // Tour functions
+  const getTourSteps = (): TourStep[] => {
+    const common = (route: string, selector: string, title: string, description: string, position: TourStep['position']): TourStep => ({
+      id: `${route}-${selector}`,
+      title,
+      description,
+      selector,
+      route,
+      position
+    });
+
+    switch (currentTour) {
+      case 'chat':
+        return [
+          common('/chat', 'textarea', 'Chat with your AI', 'Type a question and press Enter to send.', 'bottom'),
+          common('/chat', '[data-file-upload]', 'Upload files', 'Attach files to add context to your questions.', 'top'),
+        ];
+      case 'budget':
+        return [
+          common('/budget', '.content-container', 'Budget Overview', 'Review spending vs. plan by category.', 'top'),
+          common('/budget', '[data-budget-chart]', 'Budget Chart', 'Visual breakdown of your spending categories.', 'bottom'),
+        ];
+      case 'goals':
+        return [
+          common('/goals', '.content-container', 'Goals', 'Track your savings goals and progress.', 'top'),
+          common('/goals', '[data-add-goal]', 'Add Goal', 'Create new financial goals to work towards.', 'bottom'),
+        ];
+      case 'full':
+        return [
+          common('/home', '.content-container', 'Welcome', 'Quick tour of the main areas.', 'bottom'),
+          common('/budget', '.content-container', 'Budget', 'Manage your budget and spending.', 'top'),
+          common('/goals', '.content-container', 'Goals', 'Set and track financial goals.', 'top'),
+          common('/chat', 'textarea', 'AI Assistant', 'Ask questions and get insights.', 'bottom'),
+          common('/account', '.content-container', 'Account', 'Manage your settings and connections.', 'top'),
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const startTour = (tour: TourType) => {
+    setCurrentTour(tour);
+    setTourStep(0);
+    setTourActive(true);
+  };
+
+  const nextTourStep = () => {
+    const steps = getTourSteps();
+    if (tourStep < steps.length - 1) {
+      setTourStep(s => s + 1);
+    } else {
+      skipTour();
+    }
+  };
+
+  const prevTourStep = () => setTourStep(s => Math.max(0, s - 1));
+  
+  const skipTour = () => {
+    setTourActive(false);
+    setTourStep(0);
+    setCurrentTour(null);
+  };
+
   const value = {
     ...demoState,
     sampleData: SAMPLE_DATA,
     startDemo,
     exitDemo,
     usePrompt,
-    useConversation
+    useConversation,
+    // Tour API
+    tourActive,
+    tourStep,
+    currentTour,
+    startTour,
+    nextTourStep,
+    prevTourStep,
+    skipTour,
+    getTourSteps
   };
 
   return (
