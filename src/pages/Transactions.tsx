@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import RecentTransactions from '@/components/RecentTransactions';
 import SpendingPieChart from '@/components/SpendingPieChart';
 import SpendingInsights from '@/components/SpendingInsights';
-import { ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -53,16 +52,7 @@ export default function Transactions() {
 
   return (
     <div className="min-h-screen bg-background content-visible">
-      <header className="border-b border-border p-3 sm:p-4">
-        <div className="max-w-7xl mx-auto flex items-center gap-3 sm:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="ripple-effect shrink-0" aria-label="Back to dashboard">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground text-gradient">Transactions</h1>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 content-visible">
+      <main className="max-w-7xl mx-auto pt-perfect px-3 pb-3 sm:pt-perfect sm:px-4 sm:pb-4 space-y-4 sm:space-y-6 content-visible content-container">
         {/* Analytics Section */}
         <Reveal>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

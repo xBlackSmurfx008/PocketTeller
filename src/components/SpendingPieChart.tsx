@@ -12,18 +12,20 @@ interface SpendingPieChartProps {
   transactions: Transaction[];
 }
 
-// Vibrant category colors for better visual appeal
+// High contrast, distinct category colors for better visibility
 const CATEGORY_COLORS: Record<string, string> = {
-  'Food & Dining': '#FF6B6B',      // Coral red
-  'Transportation': '#4ECDC4',     // Teal
-  'Shopping': '#45B7D1',           // Sky blue
-  'Entertainment': '#96CEB4',      // Mint green
-  'Bills & Utilities': '#FECA57',  // Golden yellow
-  'Healthcare': '#FF9FF3',         // Pink
-  'Travel': '#54A0FF',             // Bright blue
-  'Education': '#5F27CD',          // Purple
-  'Income': '#00D2D3',             // Cyan
-  'Other': '#C8C8C8'               // Light gray
+  'Food & Dining': '#E74C3C',      // Bright red
+  'Transportation': '#3498DB',     // Electric blue
+  'Shopping': '#9B59B6',           // Purple
+  'Entertainment': '#E67E22',      // Orange
+  'Bills & Utilities': '#F39C12',  // Golden orange
+  'Healthcare': '#E91E63',         // Pink
+  'Travel': '#1ABC9C',             // Turquoise
+  'Education': '#8E44AD',          // Dark purple
+  'Income': '#27AE60',             // Green
+  'Savings': '#2ECC71',            // Emerald green
+  'Investments': '#34495E',        // Dark blue-gray
+  'Other': '#95A5A6'               // Gray
 };
 
 export default function SpendingPieChart({ transactions }: SpendingPieChartProps) {
@@ -65,10 +67,13 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-md">
-          <p className="font-medium">{data.category}</p>
-          <p className="text-sm text-muted-foreground">
-            ${data.value.toFixed(2)} ({data.percentage}%)
+        <div className="bg-card border-2 border-border rounded-lg p-4 shadow-xl backdrop-blur-sm">
+          <p className="font-bold text-lg text-foreground mb-1">{data.category}</p>
+          <p className="font-semibold text-primary text-base">
+            ${data.value.toFixed(2)}
+          </p>
+          <p className="text-sm text-muted-foreground font-medium">
+            {data.percentage}% of total spending
           </p>
         </div>
       );
@@ -76,28 +81,49 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
     return null;
   };
 
-  const renderCustomizedLabel = ({ percentage }: any) => {
-    return percentage >= 8 ? `${percentage}%` : '';
+  const renderCustomizedLabel = ({ percentage, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+    if (percentage < 5) return ''; // Only show labels for slices >= 5%
+    
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize="12"
+        fontWeight="bold"
+        stroke="rgba(0,0,0,0.3)"
+        strokeWidth="1"
+      >
+        {`${percentage}%`}
+      </text>
+    );
   };
 
   const CustomLegend = () => {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-6">
         {chartData.map((entry, index) => (
-          <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+          <div key={index} className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors shadow-sm">
             <div 
-              className="w-4 h-4 rounded-sm flex-shrink-0 shadow-sm border border-border/20"
+              className="w-5 h-5 rounded-full flex-shrink-0 shadow-md border-2 border-white"
               style={{ backgroundColor: CATEGORY_COLORS[entry.category] || CATEGORY_COLORS['Other'] }}
             />
-            <div className="flex-1 text-right">
-              <div className="font-semibold text-foreground text-sm">
+            <div className="flex-1">
+              <div className="font-bold text-foreground text-base">
+                {entry.category || 'Uncategorized'}
+              </div>
+              <div className="font-semibold text-primary text-lg">
                 ${entry.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </div>
-              <div className="text-xs text-muted-foreground">
-                {entry.percentage}%
-              </div>
-              <div className="font-medium text-foreground truncate text-sm mt-1">
-                {entry.category || 'Uncategorized'}
+              <div className="text-sm text-muted-foreground font-medium">
+                {entry.percentage}% of total
               </div>
             </div>
           </div>
@@ -126,8 +152,9 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
                   innerRadius={50}
                   labelLine={false}
                   label={renderCustomizedLabel}
-                  stroke="rgba(255,255,255,0.2)"
-                  strokeWidth={2}
+                  stroke="rgba(255,255,255,0.8)"
+                  strokeWidth={3}
+                  paddingAngle={2}
                 >
                   {chartData.map((entry, index) => (
                     <Cell 

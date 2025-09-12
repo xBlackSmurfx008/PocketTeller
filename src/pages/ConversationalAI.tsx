@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDemo } from "@/hooks/useDemo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Menu } from "lucide-react";
 import { useConversation, EducationSuggestion } from "@/hooks/useConversation";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { MessageInput } from "@/components/chat/MessageInput";
@@ -102,38 +101,11 @@ const ConversationalAI = () => {
   const handlePromptSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion, [], false);
   };
-  return <div className="min-h-screen bg-background flex flex-col content-visible">
-      {/* Header */}
-      <header className="border-b border-border p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="md:hidden" aria-label="Go back to dashboard">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-semibold">AI Financial Assistant</h1>
-              {isDemo && <p className="text-sm text-muted-foreground">
-                  Demo Mode: {promptsUsed}/{maxPrompts} messages used
-                </p>}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {isMobile && <Button variant="ghost" size="icon" onClick={() => setShowSidebar(!showSidebar)} aria-label="Toggle sidebar menu">
-                <Menu className="h-4 w-4" />
-              </Button>}
-            
-            {!isMobile && <Button variant="outline" onClick={() => navigate('/')}>
-                Back to Dashboard
-              </Button>}
-          </div>
-        </div>
-      </header>
-
+  return <div className="min-h-screen bg-background flex flex-col content-visible content-container">
       {/* Main Content */}
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 pt-perfect px-4 pb-4">
           <div className="space-y-4">
             {/* Welcome Message */}
             {messages.length === 0 && <Reveal>
@@ -188,7 +160,7 @@ const ConversationalAI = () => {
         </ScrollArea>
 
         {/* Message Input */}
-        <div className="p-4 border-t" data-tour-id="chat-input">
+        <div className="pt-perfect px-4 pb-4 border-t" data-tour-id="chat-input">
           <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} disabled={isDemo && promptsUsed >= maxPrompts} />
           
           {isDemo && promptsUsed >= maxPrompts && <Card className="mt-4 border-orange-200 bg-orange-50">
@@ -214,6 +186,15 @@ const ConversationalAI = () => {
       {/* Education Panel */}
       <div data-tour-id="education-panel">
         <EducationPanel suggestions={educationSuggestions} coachQuestions={coachQuestions} coachStage={coachStage} onQuestionClick={handleQuestionClick} onToggle={() => setShowSuggestions(!showSuggestions)} isVisible={showSuggestions} />
+      </div>
+
+      {/* Essential actions at bottom for iOS thumb accessibility */}
+      <div className="sticky bottom-20 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 pt-perfect px-4 pb-4">
+        <div className="max-w-4xl mx-auto flex justify-center items-center gap-4">
+          {isDemo && <div className="text-sm text-muted-foreground">
+            Demo: {promptsUsed}/{maxPrompts} messages
+          </div>}
+        </div>
       </div>
     </div>;
 };

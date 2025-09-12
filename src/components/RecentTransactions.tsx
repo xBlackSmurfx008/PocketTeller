@@ -384,9 +384,9 @@ export default function RecentTransactions() {
   return (
     <Card data-tour-id="recent-transactions">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex flex-col gap-3">
           <CardTitle>Recent Transactions</CardTitle>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
             {user && !isDemo && (
               <>
                 <TransactionSyncButton onSyncComplete={fetchTransactions} />
@@ -399,10 +399,15 @@ export default function RecentTransactions() {
                   size="sm"
                   variant="outline"
                   disabled={isLoading}
-                  className="gap-2"
+                  className="gap-2 flex-1 sm:flex-none"
                 >
                   <Sparkles className="h-4 w-4" />
-                  {isLoading ? 'Categorizing with AI...' : `AI Auto-Categorize ${uncategorizedCount > 0 ? `(${uncategorizedCount})` : ''}`}
+                  <span className="hidden sm:inline">
+                    {isLoading ? 'Categorizing with AI...' : `AI Auto-Categorize ${uncategorizedCount > 0 ? `(${uncategorizedCount})` : ''}`}
+                  </span>
+                  <span className="sm:hidden">
+                    {isLoading ? 'AI...' : `AI (${uncategorizedCount})`}
+                  </span>
                 </Button>
               </>
             )}
@@ -462,7 +467,7 @@ export default function RecentTransactions() {
           </div>
         </div>
 
-        <div className="space-y-2 max-h-[50vh] sm:max-h-[400px] overflow-y-auto">
+        <div className="space-y-2 max-h-[40vh] sm:max-h-[350px] overflow-y-auto">
           {!filteredTransactions || filteredTransactions.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <p>No transactions found</p>

@@ -79,7 +79,7 @@ export default function Budget() {
 
   if (showSetup) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center pt-perfect px-4 pb-4 content-container">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle>Create Your Budget</CardTitle>
@@ -114,16 +114,13 @@ export default function Budget() {
 
   return (
     <div className="min-h-screen bg-background content-visible">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto pt-perfect px-6 pb-6 space-y-6 content-container">
         <Reveal>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-foreground text-gradient">Budget</h1>
               <p className="text-muted-foreground">Manage your monthly budget</p>
             </div>
-            <Button onClick={() => navigate('/')} variant="outline" className="ripple-effect">
-              Back to Dashboard
-            </Button>
           </div>
         </Reveal>
 

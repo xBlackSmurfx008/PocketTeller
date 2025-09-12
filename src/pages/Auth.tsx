@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,8 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/utils/authConfig';
-import { Play, Eye, EyeOff, ArrowLeft, Mail, RotateCcw, AlertCircle } from 'lucide-react';
-import PublicFooter from '@/components/PublicFooter';
+import { Eye, EyeOff, Mail, RotateCcw, AlertCircle } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
 
 export default function Auth() {
@@ -28,13 +28,14 @@ export default function Auth() {
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const { signUp, signIn, user, resendConfirmation, resetPassword, sendMagicLink } = useAuth();
+  const { startDemo } = useDemo();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect authenticated users
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/home');
     }
   }, [user, navigate]);
 
@@ -160,7 +161,7 @@ export default function Auth() {
         });
       }
     } else {
-      navigate('/');
+      navigate('/home');
     }
     setLoading(false);
   };
@@ -306,60 +307,38 @@ export default function Auth() {
   };
 
   const handleDemoAccess = () => {
-    navigate('/demo');
-    toast({
-      title: "Demo Mode",
-      description: "Starting local demo with sample data - your session won't be saved.",
-    });
+    startDemo();
+    navigate('/home');
   };
+
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex items-center justify-center bg-background p-4">
+      <div className="flex-1 flex items-center justify-center bg-background pt-perfect px-4 pb-4 content-container">
         <div className="w-full max-w-md">
-          {/* Back to Home Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/')}
-            className="mb-4 flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-          
-          {/* Test Environment Alert */}
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              This is a test environment. Bank connections are currently disabled. You can explore features using the Demo. Real bank linking will be available at launch.
-            </AlertDescription>
-          </Alert>
+          {/* Welcome Header */}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-foreground mb-2">Welcome to PocketTeller</h1>
+            <p className="text-muted-foreground">Sign in to your account or create a new one</p>
+          </div>
           
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>Welcome to Pocket Banker</CardTitle>
+              <CardTitle>Get Started</CardTitle>
               <CardDescription>
-                Sign in to your account or create a new one to get started.
+                Choose how you'd like to sign in
               </CardDescription>
             </CardHeader>
-          <CardContent>
+            <CardContent>
             <div className="space-y-4">
-              {/* Demo Button - Prominent placement */}
-              <div className="text-center space-y-2">
-                <Button 
-                  onClick={handleDemoAccess}
-                  variant="outline" 
-                  className="w-full border-primary/20 hover:border-primary/40 hover:bg-primary/5"
-                  size="lg"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Try Demo - No Signup Required
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Explore Pocket Banker with sample data
-                </p>
-              </div>
+              {/* Demo Button */}
+              <Button 
+                onClick={handleDemoAccess}
+                variant="outline"
+                className="w-full"
+              >
+                Try Demo
+              </Button>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -632,7 +611,6 @@ export default function Auth() {
           </Card>
         </div>
       </div>
-      <PublicFooter />
     </div>
   );
 }

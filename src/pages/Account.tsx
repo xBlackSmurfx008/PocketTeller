@@ -8,8 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, AlertTriangle, Monitor, Smartphone } from 'lucide-react';
+import { Trash2, AlertTriangle, Monitor, Smartphone, Share2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { TourLauncher } from '@/components/TourLauncher';
+import { ShareBudgetDialog } from '@/components/ShareBudgetDialog';
+import NotificationBell from '@/components/NotificationBell';
 import { PlaidLink } from '@/components/PlaidLink';
 import { PlaidSecuritySettings } from '@/components/PlaidSecuritySettings';
 import { Reveal } from '@/components/Reveal';
@@ -35,10 +38,32 @@ export default function Account() {
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasPlaidToken, setHasPlaidToken] = useState(false);
+  const [budgetData, setBudgetData] = useState<any>(null);
 
   useEffect(() => {
     checkPlaidConnection();
+    fetchBudgetData();
   }, [user]);
+
+  const fetchBudgetData = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        setBudgetData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching budget data:', error);
+    }
+  };
 
   const checkPlaidConnection = async () => {
     if (!user) return;
@@ -110,7 +135,7 @@ export default function Account() {
       });
 
       // Navigate back to dashboard
-      navigate('/');
+      navigate('/home');
     } catch (error) {
       console.error('Error deleting data:', error);
       toast({
@@ -125,19 +150,7 @@ export default function Account() {
 
   return (
     <div className="min-h-screen bg-background content-visible">
-      <header className="border-b border-border p-3 sm:p-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0 ripple-effect" aria-label="Go back to dashboard">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground text-gradient">Account Settings</h1>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 content-visible">
+      <main className="max-w-4xl mx-auto pt-perfect px-3 pb-3 sm:pt-perfect sm:px-4 sm:pb-4 space-y-4 sm:space-y-6 content-visible content-container">
         <Reveal>
           <Card className="card-hover-lift">
             <CardHeader>
@@ -152,6 +165,29 @@ export default function Account() {
               <div>
                 <label className="text-sm font-medium text-muted-foreground">User ID</label>
                 <p className="text-xs font-mono text-muted-foreground">{user?.id}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Reveal>
+
+        <Reveal delay={50}>
+          <Card className="card-hover-lift">
+            <CardHeader>
+              <CardTitle>App Actions</CardTitle>
+              <CardDescription>Quick access to app features</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <TourLauncher />
+                {budgetData && (
+                  <ShareBudgetDialog budgetData={budgetData}>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Share2 className="h-4 w-4" />
+                      Share Budget
+                    </Button>
+                  </ShareBudgetDialog>
+                )}
+                <NotificationBell />
               </div>
             </CardContent>
           </Card>

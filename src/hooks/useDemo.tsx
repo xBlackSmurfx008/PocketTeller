@@ -44,7 +44,7 @@ const SAMPLE_DATA = {
       amount: -85.50,
       name: 'Grocery Store',
       merchant_name: 'Fresh Market',
-      category: ['Food and Drink', 'Groceries'],
+      category: 'Food & Dining',
       date: new Date().toISOString().split('T')[0],
       account_name: 'Checking Account'
     },
@@ -54,7 +54,7 @@ const SAMPLE_DATA = {
       amount: -45.00,
       name: 'Gas Station',
       merchant_name: 'Shell',
-      category: ['Transportation', 'Gas Stations'],
+      category: 'Transportation',
       date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
       account_name: 'Checking Account'
     },
@@ -64,8 +64,38 @@ const SAMPLE_DATA = {
       amount: 2500.00,
       name: 'Direct Deposit',
       merchant_name: 'Employer Inc',
-      category: ['Deposit', 'Payroll'],
+      category: 'Income',
       date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
+      account_name: 'Checking Account'
+    },
+    {
+      id: '4',
+      account_id: 'demo-account-1',
+      amount: -25.99,
+      name: 'Netflix Subscription',
+      merchant_name: 'Netflix',
+      category: 'Entertainment',
+      date: new Date(Date.now() - 259200000).toISOString().split('T')[0],
+      account_name: 'Checking Account'
+    },
+    {
+      id: '5',
+      account_id: 'demo-account-1',
+      amount: -120.00,
+      name: 'Electric Bill',
+      merchant_name: 'Power Company',
+      category: 'Bills & Utilities',
+      date: new Date(Date.now() - 345600000).toISOString().split('T')[0],
+      account_name: 'Checking Account'
+    },
+    {
+      id: '6',
+      account_id: 'demo-account-1',
+      amount: -75.50,
+      name: 'Restaurant',
+      merchant_name: 'Local Bistro',
+      category: 'Food & Dining',
+      date: new Date(Date.now() - 432000000).toISOString().split('T')[0],
       account_name: 'Checking Account'
     }
   ],

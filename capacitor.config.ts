@@ -1,13 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.pocketbanker',
-  appName: 'pocketbankerai',
+  appId: 'com.pocketteller.app',
+  appName: 'PocketTeller',
   webDir: 'dist',
-  server: {
-    url: 'https://10b94a65-1aec-426e-9605-30f91b3cf1ac.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Target, CheckCircle, Clock, AlertCircle, Settings, ArrowLeft, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Target, CheckCircle, Clock, AlertCircle, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { AddGoalDialog } from '@/components/AddGoalDialog';
 import { EditGoalDialog } from '@/components/EditGoalDialog';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
@@ -339,31 +339,7 @@ export default function Goals() {
 
   return (
     <div className="min-h-screen bg-background content-visible">
-      <header className="border-b border-border p-3 sm:p-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0 ripple-effect" aria-label="Go back to dashboard">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground text-gradient">Financial Goals</h1>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <Button 
-              onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}
-              className="flex-1 sm:flex-none btn-magnetic ripple-effect"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="sm:inline">Add Goal</span>
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="shrink-0 ripple-effect" aria-label="Go to account settings">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative content-visible">
+      <main className="max-w-7xl mx-auto pt-perfect px-3 pb-3 sm:pt-perfect sm:px-4 sm:pb-4 space-y-4 sm:space-y-6 relative content-visible content-container">
         {goals.length === 0 ? (
           <Reveal>
             <Card className="text-center py-12 card-hover-lift">
@@ -697,6 +673,20 @@ export default function Goals() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Essential actions at bottom for iOS thumb accessibility */}
+      <div className="sticky bottom-20 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 pt-perfect px-4 pb-4">
+        <div className="max-w-7xl mx-auto flex justify-center items-center">
+          <Button 
+            onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding goals disabled in demo" }) : setIsAddGoalOpen(true)}
+            className="btn-magnetic ripple-effect"
+            size="lg"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Goal
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

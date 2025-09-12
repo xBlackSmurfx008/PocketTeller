@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PocketTeller</string>
+    <string name="title_activity_main">PocketTeller</string>
+    <string name="package_name">com.pocketteller.app</string>
+    <string name="custom_url_scheme">com.pocketteller.app</string>
+</resources>

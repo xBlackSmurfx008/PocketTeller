@@ -192,25 +192,33 @@ const Index = () => {
       <PublicHeader />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-4 aurora-bg content-visible">
+      <section className="relative overflow-hidden pt-20 pb-16 px-4 aurora-bg content-visible min-h-screen flex items-center">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none -z-10" />
         
         <div 
           className="relative z-10 max-w-6xl mx-auto text-center parallax-subtle"
           style={{ '--scroll-y': `${scrollY * 0.1}px` } as React.CSSProperties}
         >
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-gradient">
+          {/* Feature Badge */}
+          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6 sm:mb-8">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-sm sm:text-base font-medium text-primary">
+              New: AI-Powered Financial Insights
+            </span>
+          </div>
+          
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 sm:mb-6 text-gradient">
             Smart AI-Powered Finance Management
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto scroll-reveal in-view">
+          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-6 sm:mb-8 max-w-3xl mx-auto scroll-reveal in-view">
             Take control of your finances with intelligent budgeting, expense tracking, and personalized AI insights. 
             Connect your bank accounts and let AI help you make smarter financial decisions.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-6 sm:mb-8">
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
+              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
             >
               Get Started Free
             </Button>
@@ -218,14 +226,14 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-3 h-auto btn-magnetic"
+              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-magnetic"
             >
               Try Demo
             </Button>
           </div>
 
           {/* Waitlist Signup */}
-          <div className="max-w-md mx-auto mt-8">
+          <div className="max-w-md mx-auto mt-4 sm:mt-8">
             {!joined ? (
               <form onSubmit={handleWaitlistSubmit} className="flex gap-3 items-center justify-center">
                 <Input
