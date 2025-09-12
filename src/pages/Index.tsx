@@ -95,62 +95,57 @@ const Index = () => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('waitlist_signups')
-        .insert({
-          email: email.trim().toLowerCase(), // Normalize email
+      // Use the secure waitlist signup function (single API call)
+      const { data, error } = await supabase.functions.invoke('secure-waitlist-signup', {
+        body: {
+          email: email.trim().toLowerCase(),
           source: 'home_hero',
           user_agent: navigator.userAgent
-        });
+        }
+      });
 
       if (error) {
-        if (error.code === '23505') { // Unique violation
+        console.error('Waitlist signup error:', error);
+        toast({
+          title: "Error",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check the response from the function
+      if (data && data.success) {
+        setJoined(true);
+        toast({
+          title: "Welcome to the waitlist!",
+          description: "Check your email for confirmation. We'll be in touch before Oct 16!",
+        });
+      } else {
+        // Handle specific error cases
+        const errorMessage = data?.error || "Failed to join waitlist";
+        
+        if (errorMessage.includes("already") || errorMessage.includes("duplicate")) {
           toast({
             title: "Already signed up!",
             description: "You're already on the list with that email.",
           });
+        } else if (errorMessage.includes("rate limit") || errorMessage.includes("too many")) {
+          toast({
+            title: "Please wait",
+            description: "Too many attempts. Please try again later.",
+            variant: "destructive",
+          });
         } else {
           toast({
             title: "Error",
-            description: "Something went wrong. Please try again.",
+            description: errorMessage,
             variant: "destructive",
-          });
-        }
-      } else {
-        // Database insertion successful, now send confirmation email
-        setJoined(true);
-        
-        try {
-          // Send confirmation email
-          const { error: emailError } = await supabase.functions.invoke('send-waitlist-confirmation', {
-            body: {
-              email: email.trim(),
-              source: 'home_hero',
-              user_agent: navigator.userAgent
-            }
-          });
-
-          if (emailError) {
-            console.error('Email confirmation failed:', emailError);
-            toast({
-              title: "You're on the waitlist!",
-              description: "Confirmation email failed to send, but you're registered for Oct 16.",
-            });
-          } else {
-            toast({
-              title: "Welcome to the waitlist!",
-              description: "Check your email for confirmation. We'll be in touch before Oct 16!",
-            });
-          }
-        } catch (emailError) {
-          console.error('Email confirmation error:', emailError);
-          toast({
-            title: "You're on the waitlist!",
-            description: "Confirmation email failed to send, but you're registered for Oct 16.",
           });
         }
       }
     } catch (error) {
+      console.error('Waitlist signup error:', error);
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
