@@ -56,7 +56,7 @@ export const metaConfig = {
 export const apiConfig = {
   supabase: {
     url: import.meta.env.VITE_SUPABASE_URL || '',
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '',
   },
   timeout: 30000, // 30 seconds
   retryAttempts: 3,
@@ -92,7 +92,7 @@ export const validateConfig = () => {
   }
   
   if (!apiConfig.supabase.anonKey) {
-    errors.push('VITE_SUPABASE_ANON_KEY is required');
+    errors.push('VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY is required');
   }
   
   if (errors.length > 0) {

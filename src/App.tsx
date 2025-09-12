@@ -56,7 +56,7 @@ const App = () => (
                     <AppLayout>
                       <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="pulse h-8 w-8 rounded-full bg-primary/20"></div></div>}>
                         <Routes>
-                          <Route path="/" element={<Auth />} />
+                          <Route path="/" element={<Index />} />
                           <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                           <Route path="/auth" element={<Auth />} />
                           <Route path="/confirm" element={<EmailConfirmation />} />
