@@ -10,7 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, AlertTriangle, Monitor, Smartphone, Share2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { TourLauncher } from '@/components/TourLauncher';
 import { ShareBudgetDialog } from '@/components/ShareBudgetDialog';
 import NotificationBell from '@/components/NotificationBell';
 import { PlaidLink } from '@/components/PlaidLink';
@@ -180,7 +179,6 @@ export default function Account() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-3">
-                <TourLauncher />
                 {budgetData && (
                   <ShareBudgetDialog budgetData={budgetData}>
                     <Button variant="outline" className="flex items-center gap-2">
