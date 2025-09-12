@@ -52,7 +52,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted, onTryDemo }) => {
                 <Users className="w-7 h-7 mr-4 text-primary group-hover:scale-110 transition-transform duration-300" />
                 <div className="text-left">
                   <div className="typography-body-lg font-semibold text-foreground stat-counter">50K+</div>
-                  <div className="text-sm">Active Users</div>
+                  <div className="text-sm">Users Waitlisted</div>
                 </div>
               </div>
               <div className="flex items-center text-muted-foreground group">
