@@ -1235,6 +1235,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_suspicious_auth_activity: {
+        Args: { client_ip: unknown; user_email: string }
+        Returns: boolean
+      }
       check_token_access_rate: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1354,6 +1358,15 @@ export type Database = {
             }
         Returns: undefined
       }
+      log_security_event: {
+        Args: {
+          event_data?: Json
+          event_type: string
+          severity?: string
+          user_id_param?: string
+        }
+        Returns: undefined
+      }
       rotate_plaid_token: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1365,6 +1378,10 @@ export type Database = {
       validate_email_content: {
         Args: { content: string }
         Returns: boolean
+      }
+      validate_password_strength: {
+        Args: { password: string }
+        Returns: Json
       }
       validate_share_access: {
         Args: { request_ip?: string; share_token: string; user_email?: string }

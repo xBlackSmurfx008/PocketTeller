@@ -28,7 +28,8 @@ export default function Auth() {
   const [lastSignUpEmail, setLastSignUpEmail] = useState('');
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
-  const { signUp, signIn, user, resendConfirmation, resetPassword, sendMagicLink } = useAuth();
+  const [passwordValidation, setPasswordValidation] = useState<any>(null);
+  const { signUp, signIn, user, resendConfirmation, resetPassword, sendMagicLink, validatePasswordStrength } = useAuth();
   const { startDemo } = useDemo();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -46,7 +47,17 @@ export default function Auth() {
   };
 
   const validatePassword = (password: string) => {
-    return password.length >= 8;
+    return password.length >= 12;
+  };
+
+  const handlePasswordChange = async (password: string) => {
+    setPassword(password);
+    if (password.length >= 8) {
+      const validation = await validatePasswordStrength(password);
+      setPasswordValidation(validation);
+    } else {
+      setPasswordValidation(null);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -83,7 +94,17 @@ export default function Auth() {
     if (!validatePassword(password)) {
       toast({
         title: "Weak password",
-        description: "Password must be at least 8 characters long.",
+        description: "Password must be at least 12 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check real-time password validation
+    if (passwordValidation && !passwordValidation.valid) {
+      toast({
+        title: "Password requirements not met",
+        description: passwordValidation.errors[0] || "Please strengthen your password.",
         variant: "destructive",
       });
       return;
@@ -100,14 +121,23 @@ export default function Auth() {
 
     setLoading(true);
     
-    const { error } = await signUp(email.trim(), password);
+    const { error, passwordValidation: signupValidation } = await signUp(email.trim(), password);
     
     if (error) {
-      toast({
-        title: "Sign up failed",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
+      // Check if it's a password validation error
+      if (signupValidation && !signupValidation.valid) {
+        toast({
+          title: "Password requirements not met",
+          description: signupValidation.errors.join(', '),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Sign up failed",
+          description: getErrorMessage(error),
+          variant: "destructive",
+        });
+      }
     } else {
       setLastSignUpEmail(email);
       toast({
@@ -565,11 +595,11 @@ export default function Auth() {
                             id="signup-password"
                             type={showPassword ? "text" : "password"}
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="pr-10"
+                            onChange={(e) => handlePasswordChange(e.target.value)}
+                            className={`pr-10 ${passwordValidation && !passwordValidation.valid ? 'border-destructive' : ''}`}
                             required
-                            minLength={8}
-                            placeholder="At least 8 characters"
+                            minLength={12}
+                            placeholder="At least 12 characters with uppercase, lowercase, numbers & symbols"
                           />
                           <Button
                             type="button"
@@ -586,9 +616,52 @@ export default function Auth() {
                             )}
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Password strength: {password.length >= 8 ? "Good" : "Too short"}
-                        </p>
+                        {passwordValidation && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium">Password strength:</span>
+                              <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((level) => (
+                                  <div
+                                    key={level}
+                                    className={`h-1 w-4 rounded-full ${
+                                      level <= (passwordValidation.strength_score || 0)
+                                        ? level <= 2
+                                          ? 'bg-destructive'
+                                          : level <= 3
+                                          ? 'bg-yellow-500'
+                                          : 'bg-green-500'
+                                        : 'bg-muted'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {passwordValidation.strength_score === 5
+                                  ? 'Very Strong'
+                                  : passwordValidation.strength_score === 4
+                                  ? 'Strong'
+                                  : passwordValidation.strength_score === 3
+                                  ? 'Fair'
+                                  : passwordValidation.strength_score === 2
+                                  ? 'Weak'
+                                  : 'Very Weak'}
+                              </span>
+                            </div>
+                            {passwordValidation.errors.length > 0 && (
+                              <ul className="text-xs text-destructive space-y-1">
+                                {passwordValidation.errors.map((error, index) => (
+                                  <li key={index}>• {error}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                        {!passwordValidation && password.length > 0 && password.length < 12 && (
+                          <p className="text-xs text-muted-foreground">
+                            Password must be at least 12 characters long
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="confirm-password">Confirm Password</Label>
