@@ -95,64 +95,48 @@ const Index = () => {
 
     setSubmitting(true);
     try {
-      // Use the secure waitlist signup function (single API call)
-      const { data, error } = await supabase.functions.invoke('secure-waitlist-signup', {
-        body: {
+      // Simple direct database insert - much more reliable
+      const { error } = await supabase
+        .from('waitlist_signups')
+        .insert({
           email: email.trim().toLowerCase(),
           source: 'home_hero',
           user_agent: navigator.userAgent
-        }
-      });
+        });
 
       if (error) {
         if (import.meta.env.DEV) {
           console.error('Waitlist signup error:', error);
         }
-        toast({
-          title: "Error",
-          description: "Something went wrong. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check the response from the function
-      if (data && data.success) {
-        setJoined(true);
-        toast({
-          title: "Welcome to the waitlist!",
-          description: "Check your email for confirmation. We'll be in touch before Oct 16!",
-        });
-      } else {
-        // Handle specific error cases
-        const errorMessage = data?.error || "Failed to join waitlist";
         
-        if (errorMessage.includes("already") || errorMessage.includes("duplicate")) {
+        // Handle specific database errors with clear messages
+        if (error.code === '23505') { // Unique violation - email already exists
           toast({
             title: "Already signed up!",
-            description: "You're already on the list with that email.",
-          });
-        } else if (errorMessage.includes("rate limit") || errorMessage.includes("too many")) {
-          toast({
-            title: "Please wait",
-            description: "Too many attempts. Please try again later.",
-            variant: "destructive",
+            description: "You're already on the waitlist with that email address.",
           });
         } else {
           toast({
-            title: "Error",
-            description: errorMessage,
+            title: "Signup Failed",
+            description: "Unable to join waitlist. Please try again or contact support.",
             variant: "destructive",
           });
         }
+      } else {
+        // Success!
+        setJoined(true);
+        toast({
+          title: "Welcome to the waitlist!",
+          description: "You're all set! We'll be in touch before Oct 16.",
+        });
       }
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Waitlist signup error:', error);
       }
       toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "Network Error",
+        description: "Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
