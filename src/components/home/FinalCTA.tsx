@@ -2,15 +2,15 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, CheckCircle, Sparkles, Timer } from "lucide-react";
-
 interface FinalCTAProps {
   onGetStarted: () => void;
   onTryDemo: () => void;
 }
-
-export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) => {
-  return (
-    <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
+export const FinalCTA: React.FC<FinalCTAProps> = ({
+  onGetStarted,
+  onTryDemo
+}) => {
+  return <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0">
         <div className="absolute top-10 left-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl" />
@@ -55,21 +55,12 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
-            <Button 
-              size="lg" 
-              className="px-12 py-5 text-lg font-semibold btn-shimmer btn-magnetic bg-primary hover:bg-primary/90 text-primary-foreground group rounded-xl"
-              onClick={onGetStarted}
-            >
+            <Button size="lg" className="px-12 py-5 text-lg font-semibold btn-shimmer btn-magnetic bg-primary hover:bg-primary/90 text-primary-foreground group rounded-xl" onClick={onGetStarted}>
               <Sparkles className="mr-2 h-5 w-5 group-hover:animate-spin" />
               Start Your Journey
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="px-12 py-5 text-lg font-semibold border-2 hover:bg-muted/50 hover:scale-105 transition-all duration-300 rounded-xl"
-              onClick={onTryDemo}
-            >
+            <Button variant="outline" size="lg" className="px-12 py-5 text-lg font-semibold border-2 hover:bg-muted/50 hover:scale-105 transition-all duration-300 rounded-xl" onClick={onTryDemo}>
               Watch 2-Min Demo
             </Button>
           </div>
@@ -84,7 +75,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
           <div className="mt-16 pt-8 border-t border-border/50">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
               <div className="p-6 rounded-xl bg-card/50 border border-border/50 hover:bg-card transition-all duration-300 hover:scale-105">
-                <div className="text-3xl lg:text-4xl font-display font-bold text-primary mb-2">15,000+</div>
+                <div className="text-3xl lg:text-4xl font-display font-bold text-primary mb-2">5,000+</div>
                 <div className="typography-body text-muted-foreground">Active Users</div>
               </div>
               <div className="p-6 rounded-xl bg-card/50 border border-border/50 hover:bg-card transition-all duration-300 hover:scale-105">
@@ -99,6 +90,5 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onGetStarted, onTryDemo }) =
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
