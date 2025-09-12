@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemo } from '@/hooks/useDemo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ export default function Auth() {
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const { signUp, signIn, user, resendConfirmation, resetPassword, sendMagicLink } = useAuth();
+  const { startDemo } = useDemo();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -306,7 +308,8 @@ export default function Auth() {
   };
 
   const handleDemoAccess = () => {
-    navigate('/demo');
+    startDemo();
+    navigate('/');
     toast({
       title: "Demo Mode",
       description: "Starting local demo with sample data - your session won't be saved.",
