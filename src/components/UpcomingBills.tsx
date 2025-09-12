@@ -17,7 +17,7 @@ export default function UpcomingBills() {
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
   const { toast } = useToast();
-  const { bills, loading, updateBill } = useBills();
+  const { bills, loading, updateBill, refetch } = useBills();
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   const updateBillStatus = async (billId: string, isPaid: boolean) => {
@@ -125,7 +125,7 @@ export default function UpcomingBills() {
       <AddBillDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
-        onBillAdded={() => {}} // Bills are automatically refreshed via hook
+        onBillAdded={() => refetch()}
       />
     </Card>
   );

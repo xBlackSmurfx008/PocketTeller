@@ -57,13 +57,14 @@ export const useBills = () => {
     }
   }, [user, isDemo, sampleData, toast]);
 
-  const createBill = useCallback(async (billData: Omit<Bill, 'id' | 'created_at' | 'updated_at'>) => {
+  const createBill = useCallback(async (billData: Omit<Bill, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     if (isDemo) {
       const newBill: Bill = {
         ...billData,
         id: Date.now().toString(),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        user_id: 'demo-user'
       };
       setBills(prev => [...prev, newBill].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()));
       return { success: true, data: newBill };
