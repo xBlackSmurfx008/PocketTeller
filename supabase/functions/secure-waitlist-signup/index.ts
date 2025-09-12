@@ -48,18 +48,12 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Set client IP for the RPC function
-    await supabase.rpc('set_config', {
-      setting_name: 'app.client_ip',
-      new_value: clientIP,
-      is_local: true
-    });
-
-    // Call secure waitlist signup RPC
+    // Call secure waitlist signup RPC with client IP
     const { data, error } = await supabase.rpc('waitlist_signup', {
       email_param: email,
       user_agent_param: user_agent,
-      source_param: source
+      source_param: source,
+      client_ip_param: clientIP
     });
 
     if (error) {
@@ -73,11 +67,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Always return 200 OK with success/error in body for better frontend handling
     if (!data.success) {
       return new Response(
-        JSON.stringify({ error: data.error }),
+        JSON.stringify({ 
+          success: false,
+          error: data.error 
+        }),
         { 
-          status: 400, 
+          status: 200, 
           headers: { "Content-Type": "application/json", ...corsHeaders } 
         }
       );

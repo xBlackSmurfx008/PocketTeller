@@ -63,26 +63,40 @@ export const MobileLanding: React.FC = () => {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to process signup');
+        console.error('Edge function error:', error);
+        toast({
+          title: "Connection Error",
+          description: "Please check your connection and try again.",
+          variant: "destructive"
+        });
+        return;
       }
 
-      if (!data.success) {
-        if (data.error === 'Email already on waitlist') {
+      if (!data || !data.success) {
+        const errorMessage = data?.error || "Unknown error occurred";
+        
+        if (errorMessage === 'Email already on waitlist') {
           toast({
             title: "Already Signed Up",
             description: "You're already on our waitlist! We'll notify you when ready.",
             variant: "default"
           });
-        } else if (data.error === 'Rate limit exceeded') {
+        } else if (errorMessage === 'Rate limit exceeded') {
           toast({
             title: "Too Many Attempts",
             description: "Please wait before trying again.",
             variant: "destructive"
           });
+        } else if (errorMessage === 'Invalid email format') {
+          toast({
+            title: "Invalid Email",
+            description: "Please enter a valid email address.",
+            variant: "destructive"
+          });
         } else {
           toast({
             title: "Signup Failed",
-            description: data.error || "Please try again.",
+            description: errorMessage,
             variant: "destructive"
           });
         }

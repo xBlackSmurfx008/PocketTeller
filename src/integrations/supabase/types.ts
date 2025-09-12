@@ -1400,11 +1400,18 @@ export type Database = {
         Returns: boolean
       }
       waitlist_signup: {
-        Args: {
-          email_param: string
-          source_param?: string
-          user_agent_param?: string
-        }
+        Args:
+          | {
+              client_ip_param?: string
+              email_param: string
+              source_param?: string
+              user_agent_param?: string
+            }
+          | {
+              email_param: string
+              source_param?: string
+              user_agent_param?: string
+            }
         Returns: Json
       }
     }
