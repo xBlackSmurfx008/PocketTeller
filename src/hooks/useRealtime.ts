@@ -15,8 +15,14 @@ export function useRealtime(configs: RealtimeSubscriptionConfig[], enabled: bool
   useEffect(() => {
     if (!enabled || configs.length === 0) return
 
-    // Create a single channel for all subscriptions
-    const channel = supabase.channel('realtime-updates')
+    // Create a single channel for all subscriptions with enhanced error handling
+    const channelName = `realtime-updates-${Date.now()}`
+    const channel = supabase.channel(channelName, {
+      config: {
+        broadcast: { self: true },
+        presence: { key: 'user' }
+      }
+    })
 
     // Add all subscriptions to the channel
     configs.forEach(({ table, event = '*', filter, onEvent }) => {
@@ -28,14 +34,28 @@ export function useRealtime(configs: RealtimeSubscriptionConfig[], enabled: bool
       }
 
       channel.on('postgres_changes', subscription, (payload) => {
-        if (event === '*' || payload.eventType === event) {
-          onEvent(payload)
+        try {
+          if (event === '*' || payload.eventType === event) {
+            onEvent(payload)
+          }
+        } catch (error) {
+          console.error(`Error handling realtime event for table ${table}:`, error)
         }
       })
     })
 
-    // Subscribe to the channel
-    channel.subscribe()
+    // Enhanced subscription with error handling
+    channel
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Realtime channel ${channelName} subscribed successfully`)
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`Realtime channel ${channelName} error`)
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`Realtime channel ${channelName} timed out`)
+        }
+      })
+
     channelRef.current = channel
 
     return () => {

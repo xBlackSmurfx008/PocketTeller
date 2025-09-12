@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useBills } from '@/hooks/useBills';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddBillDialogProps {
@@ -18,7 +17,7 @@ export default function AddBillDialog({
   onOpenChange,
   onBillAdded,
 }: AddBillDialogProps) {
-  const { user } = useAuth();
+  const { createBill } = useBills();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
@@ -38,16 +37,6 @@ export default function AddBillDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Critical auth check
-    if (!user?.id) {
-      toast({
-        title: "Authentication Required", 
-        description: "Please sign in to add bills",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Validate form data
     if (!formData.name.trim()) {
       toast({
@@ -79,26 +68,18 @@ export default function AddBillDialog({
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('bills')
-        .insert({
-          user_id: user.id,
-          name: formData.name.trim(),
-          amount: parseFloat(formData.amount),
-          due_date: formData.due_date,
-          is_paid: false,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Bill added successfully",
+      const result = await createBill({
+        name: formData.name.trim(),
+        amount: parseFloat(formData.amount),
+        due_date: formData.due_date,
+        is_paid: false,
       });
 
-      resetForm();
-      onOpenChange(false);
-      onBillAdded();
+      if (result.success) {
+        resetForm();
+        onOpenChange(false);
+        onBillAdded();
+      }
     } catch (error: any) {
       console.error('Error adding bill:', error);
       toast({

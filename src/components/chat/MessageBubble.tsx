@@ -9,9 +9,10 @@ import aiAvatar from '@/assets/ai-avatar.png';
 interface MessageBubbleProps {
   message: Message;
   onRemoveAttachment?: (attachment: FileAttachment) => void;
+  isTyping?: boolean;
 }
 
-export const MessageBubble = ({ message, onRemoveAttachment }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, onRemoveAttachment, isTyping = false }: MessageBubbleProps) => {
   const isUser = message.role === 'user';
 
   return (
@@ -34,7 +35,7 @@ export const MessageBubble = ({ message, onRemoveAttachment }: MessageBubbleProp
               : 'bg-muted text-muted-foreground'
           }`}
         >
-          <MessageContent content={message.content} />
+          <MessageContent content={message.content} isTyping={isTyping} />
         </div>
         
         {/* Attachments */}
@@ -61,59 +62,98 @@ export const MessageBubble = ({ message, onRemoveAttachment }: MessageBubbleProp
 
 interface MessageContentProps {
   content: string;
+  isTyping?: boolean;
 }
 
-const MessageContent = ({ content }: MessageContentProps) => {
-  // Split by lines and process each line
-  const lines = content.split('\n');
-  const processedLines: React.ReactNode[] = [];
-  
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    
-    // Skip empty lines but preserve spacing
-    if (line.trim() === '') {
-      processedLines.push(<br key={i} />);
-      continue;
-    }
-    
-    // Process formatting
-    const parts: React.ReactNode[] = [];
-    let remaining = line;
-    let partKey = 0;
-    
-    // Handle bold text
-    while (remaining.includes('**')) {
-      const boldStart = remaining.indexOf('**');
-      const boldEnd = remaining.indexOf('**', boldStart + 2);
-      
-      if (boldEnd === -1) break;
-      
-      // Add text before bold
-      if (boldStart > 0) {
-        parts.push(<span key={partKey++}>{remaining.substring(0, boldStart)}</span>);
-      }
-      
-      // Add bold text
-      const boldText = remaining.substring(boldStart + 2, boldEnd);
-      parts.push(<strong key={partKey++}>{boldText}</strong>);
-      
-      remaining = remaining.substring(boldEnd + 2);
-    }
-    
-    // Add remaining text
-    if (remaining) {
-      parts.push(<span key={partKey++}>{remaining}</span>);
-    }
-    
-    processedLines.push(
-      <div key={i} className="leading-relaxed">
-        {parts.length > 0 ? parts : line}
-      </div>
+const MessageContent = ({ content, isTyping = false }: MessageContentProps) => {
+  // If typing, show plain text with cursor
+  if (isTyping) {
+    return (
+      <span className="inline-flex items-center">
+        {content}
+        <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+      </span>
     );
   }
   
-  return <>{processedLines}</>;
+  // Auto-structure the content for better readability
+  const structuredContent = structureContent(content);
+  
+  return (
+    <div className="space-y-3">
+      {structuredContent.map((section, index) => (
+        <div key={index} className="leading-relaxed">
+          {section}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Helper function to structure content into readable paragraphs and lists
+const structureContent = (content: string): React.ReactNode[] => {
+  const sections: React.ReactNode[] = [];
+  const lines = content.split('\n').filter(line => line.trim() !== '');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Skip empty lines
+    if (!line) continue;
+    
+    // Check if line looks like a list item (starts with bullet points or numbers)
+    if (line.match(/^[-•*]\s/) || line.match(/^\d+\.\s/)) {
+      // Collect consecutive list items
+      const listItems: string[] = [line];
+      let j = i + 1;
+      
+      while (j < lines.length) {
+        const nextLine = lines[j].trim();
+        if (nextLine.match(/^[-•*]\s/) || nextLine.match(/^\d+\.\s/)) {
+          listItems.push(nextLine);
+          j++;
+        } else {
+          break;
+        }
+      }
+      
+      // Create list element
+      sections.push(
+        <ul className="space-y-1 pl-4">
+          {listItems.map((item, idx) => (
+            <li key={idx} className="text-sm">
+              {item.replace(/^[-•*]\s/, '').replace(/^\d+\.\s/, '')}
+            </li>
+          ))}
+        </ul>
+      );
+      
+      i = j - 1; // Skip processed lines
+    } else {
+      // Regular paragraph - split long sentences for better readability
+      const sentences = line.split(/[.!?]+/).filter(s => s.trim() !== '');
+      
+      if (sentences.length > 2 && line.length > 150) {
+        // Split into multiple paragraphs for very long content
+        const midPoint = Math.ceil(sentences.length / 2);
+        const firstHalf = sentences.slice(0, midPoint).join('. ') + '.';
+        const secondHalf = sentences.slice(midPoint).join('. ') + '.';
+        
+        sections.push(
+          <p className="text-sm">{firstHalf}</p>
+        );
+        sections.push(
+          <p className="text-sm">{secondHalf}</p>
+        );
+      } else {
+        sections.push(
+          <p className="text-sm">{line}</p>
+        );
+      }
+    }
+  }
+  
+  return sections.length > 0 ? sections : [<p className="text-sm">{content}</p>];
 };
 
 interface AttachmentPreviewProps {

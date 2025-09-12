@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-export type TourType = 'full' | 'chat' | 'budget' | 'goals';
+import { useNavigate } from 'react-router-dom';
 
 export interface DemoState {
   isDemo: boolean;
@@ -9,10 +7,6 @@ export interface DemoState {
   maxPrompts: number;
   conversationsUsed: number;
   maxConversations: number;
-  tourStep: number;
-  tourActive: boolean;
-  currentTour: TourType;
-  isAnonymousDemo: boolean;
   sampleData: {
     transactions: any[];
     goals: any[];
@@ -26,12 +20,6 @@ interface DemoContextType extends DemoState {
   exitDemo: () => void;
   usePrompt: () => boolean;
   useConversation: () => boolean;
-  nextTourStep: () => void;
-  prevTourStep: () => void;
-  skipTour: () => void;
-  resetTour: () => void;
-  startTour: (tourType: TourType) => void;
-  getTourSteps: () => any[];
 }
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
@@ -104,19 +92,29 @@ const SAMPLE_DATA = {
       id: '1',
       user_id: 'demo-user',
       title: 'Emergency Fund',
+      description: 'Build up emergency savings for unexpected expenses',
       target_amount: 10000,
       current_amount: 3500,
       target_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      created_at: new Date().toISOString()
+      category: 'savings',
+      priority: 'high',
+      is_completed: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
       id: '2',
       user_id: 'demo-user',
       title: 'Vacation to Europe',
+      description: 'Save for a 2-week European vacation',
       target_amount: 5000,
       current_amount: 1200,
       target_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      created_at: new Date().toISOString()
+      category: 'travel',
+      priority: 'medium',
+      is_completed: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ],
   bills: [
@@ -126,8 +124,13 @@ const SAMPLE_DATA = {
       name: 'Electric Bill',
       amount: 120.50,
       due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      category: 'utilities',
+      description: 'Monthly electricity bill',
       is_recurring: true,
-      created_at: new Date().toISOString()
+      reminder_days: 3,
+      is_paid: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
       id: '2',
@@ -135,8 +138,13 @@ const SAMPLE_DATA = {
       name: 'Internet',
       amount: 79.99,
       due_date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      category: 'utilities',
+      description: 'Monthly internet service',
       is_recurring: true,
-      created_at: new Date().toISOString()
+      reminder_days: 3,
+      is_paid: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ],
   accounts: [
@@ -163,18 +171,19 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const [demoState, setDemoState] = useState<DemoState>(() => {
     const saved = sessionStorage.getItem('demo-state');
     if (saved) {
-      return JSON.parse(saved);
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // Clear invalid data
+        sessionStorage.removeItem('demo-state');
+      }
     }
     return {
       isDemo: false,
       promptsUsed: 0,
       maxPrompts: 5,
       conversationsUsed: 0,
-      maxConversations: 5,
-      tourStep: 0,
-      tourActive: false,
-      currentTour: 'full' as TourType,
-      isAnonymousDemo: false,
+      maxConversations: 3,
       sampleData: SAMPLE_DATA
     };
   });
@@ -183,50 +192,21 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.setItem('demo-state', JSON.stringify(demoState));
   }, [demoState]);
 
-  // Listen for auth-triggered demo exit
-  useEffect(() => {
-    const handleExitDemo = () => {
-      setDemoState(prev => ({
-        ...prev,
-        isDemo: false,
-        promptsUsed: 0,
-        conversationsUsed: 0,
-        tourStep: 0,
-        tourActive: false,
-        currentTour: 'full' as TourType,
-        isAnonymousDemo: false
-      }));
-    };
-
-    window.addEventListener('exit-demo-mode', handleExitDemo);
-    return () => window.removeEventListener('exit-demo-mode', handleExitDemo);
-  }, []);
-
-  const startDemo = async () => {
-    // Demo mode now works locally without authentication
+  const startDemo = () => {
     setDemoState(prev => ({
       ...prev,
       isDemo: true,
       promptsUsed: 0,
-        conversationsUsed: 0,
-        tourStep: 0,
-        tourActive: true,
-        currentTour: 'full' as TourType,
-        isAnonymousDemo: false // No longer using anonymous auth
+      conversationsUsed: 0
     }));
   };
 
-  const exitDemo = async () => {
-    // Demo mode is local-only, no authentication needed
+  const exitDemo = () => {
     setDemoState(prev => ({
       ...prev,
       isDemo: false,
       promptsUsed: 0,
-        conversationsUsed: 0,
-        tourStep: 0,
-        tourActive: false,
-        currentTour: 'full' as TourType,
-        isAnonymousDemo: false
+      conversationsUsed: 0
     }));
     sessionStorage.removeItem('demo-state');
   };
@@ -253,169 +233,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const nextTourStep = () => {
-    setDemoState(prev => ({
-      ...prev,
-      tourStep: prev.tourStep + 1
-    }));
-  };
-
-  const prevTourStep = () => {
-    setDemoState(prev => ({
-      ...prev,
-      tourStep: Math.max(0, prev.tourStep - 1)
-    }));
-  };
-
-  const skipTour = () => {
-    setDemoState(prev => ({
-      ...prev,
-      tourActive: false
-    }));
-  };
-
-  const resetTour = () => {
-    setDemoState(prev => ({
-      ...prev,
-      tourStep: 0,
-      tourActive: true
-    }));
-  };
-
-  const startTour = (tourType: TourType) => {
-    setDemoState(prev => ({
-      ...prev,
-      tourStep: 0,
-      tourActive: true,
-      currentTour: tourType
-    }));
-  };
-
-  const getTourSteps = () => {
-    // Import tour configurations based on current tour type
-    const TOUR_CONFIGS = {
-      full: [
-        {
-          id: 'welcome',
-          title: 'Welcome to Pocket Banker!',
-          description: 'Let\'s take a quick tour of the main features. This demo includes sample data and you can try the AI chat with up to 5 messages.',
-          selector: '[data-tour-id="dashboard"]',
-          route: '/',
-          position: 'bottom'
-        },
-        {
-          id: 'financial-snapshot',
-          title: 'Financial Overview',
-          description: 'See your account balances and spending insights at a glance.',
-          selector: '[data-tour-id="financial-snapshot"]',
-          route: '/',
-          position: 'bottom'
-        },
-        {
-          id: 'budget-overview',
-          title: 'Budget Management',
-          description: 'Create and track budgets by category. See how much you\'ve spent vs. your budget limits.',
-          selector: '[data-tour-id="budget-overview"]',
-          route: '/',
-          position: 'top'
-        },
-        {
-          id: 'goals-overview',
-          title: 'Financial Goals',
-          description: 'Set and track progress toward your financial goals.',
-          selector: '[data-tour-id="goals-overview"]',
-          route: '/',
-          position: 'top'
-        },
-        {
-          id: 'upcoming-bills',
-          title: 'Upcoming Bills',
-          description: 'Never miss a payment with bill tracking and reminders.',
-          selector: '[data-tour-id="upcoming-bills"]',
-          route: '/',
-          position: 'top'
-        },
-        {
-          id: 'ai-chat',
-          title: 'AI Assistant',
-          description: 'Ask questions about your finances and get personalized insights. Try asking "How much did I spend on groceries this month?"',
-          selector: '[data-tour-id="ai-chat-button"]',
-          route: '/',
-          position: 'left'
-        },
-        {
-          id: 'chat-interface',
-          title: 'Chat with AI',
-          description: 'This is where you can have conversations with your AI financial assistant. You have 5 demo messages to try!',
-          selector: '[data-tour-id="chat-input"]',
-          route: '/chat',
-          position: 'top'
-        },
-        {
-          id: 'goals-page',
-          title: 'Goals Management',
-          description: 'Create, edit, and track detailed progress on your financial goals.',
-          selector: '[data-tour-id="goals-list"]',
-          route: '/goals',
-          position: 'top'
-        }
-      ],
-      chat: [
-        {
-          id: 'chat-welcome',
-          title: 'AI Financial Assistant',
-          description: 'Ask questions about your finances, upload documents, or get personalized advice.',
-          selector: '[data-tour-id="chat-input"]',
-          route: '/chat',
-          position: 'top'
-        },
-        {
-          id: 'education-panel',
-          title: 'Learning Center',
-          description: 'Get educational suggestions and follow-up questions based on your conversations.',
-          selector: '[data-tour-id="education-panel"]',
-          route: '/chat',
-          position: 'left'
-        }
-      ],
-      budget: [
-        {
-          id: 'budget-categories',
-          title: 'Budget Categories',
-          description: 'Organize your spending into categories and set limits for each.',
-          selector: '[data-tour-id="budget-categories"]',
-          route: '/budget',
-          position: 'top'
-        }
-      ],
-      goals: [
-        {
-          id: 'goals-list',
-          title: 'Your Goals',
-          description: 'Create and track your financial goals with target amounts and deadlines.',
-          selector: '[data-tour-id="goals-list"]',
-          route: '/goals',
-          position: 'top'
-        }
-      ]
-    };
-    
-    return TOUR_CONFIGS[demoState.currentTour] || TOUR_CONFIGS.full;
-  };
-
   const value = {
     ...demoState,
     sampleData: SAMPLE_DATA,
     startDemo,
     exitDemo,
     usePrompt,
-    useConversation,
-    nextTourStep,
-    prevTourStep,
-    skipTour,
-    resetTour,
-    startTour,
-    getTourSteps
+    useConversation
   };
 
   return (

@@ -49,7 +49,7 @@ export interface Bill {
   is_paid: boolean;
   created_at?: string;
   updated_at?: string;
-  user_id?: string;
+  user_id: string;
 }
 
 export interface CategoryBudget {

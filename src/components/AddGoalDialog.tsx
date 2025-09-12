@@ -30,8 +30,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useGoals } from '@/hooks/useGoals';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -48,7 +47,7 @@ interface AddGoalDialogProps {
 }
 
 export function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGoalDialogProps) {
-  const { user } = useAuth();
+  const { createGoal } = useGoals();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -63,38 +62,20 @@ export function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGoalDialog
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Critical auth check
-    if (!user?.id) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to create goals",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('goals')
-        .insert({
-          user_id: user.id,
-          goal_name: values.goal_name,
-          target_amount: values.target_amount,
-          current_amount: values.current_amount || 0,
-          deadline: values.deadline ? format(values.deadline, 'yyyy-MM-dd') : null,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Goal created",
-        description: "Your financial goal has been created successfully",
+      const result = await createGoal({
+        goal_name: values.goal_name,
+        target_amount: values.target_amount,
+        current_amount: values.current_amount || 0,
+        deadline: values.deadline ? format(values.deadline, 'yyyy-MM-dd') : null,
       });
 
-      form.reset();
-      onOpenChange(false);
-      onGoalAdded();
+      if (result.success) {
+        form.reset();
+        onOpenChange(false);
+        onGoalAdded();
+      }
     } catch (error: any) {
       console.error('Error creating goal:', error);
       toast({

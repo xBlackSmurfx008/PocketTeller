@@ -27,31 +27,23 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
     });
 
     try {
-      console.log('Starting Plaid token exchange...', { public_token, metadata });
       const { data, error } = await supabase.functions.invoke('plaid-link-exchange', {
         body: { public_token }
       });
 
-      console.log('Plaid token exchange response:', { data, error });
-
       if (error) {
-        console.error('Plaid exchange error:', error);
         throw new Error(error.message || 'Failed to exchange token');
       }
 
       if (data?.error) {
-        console.error('Plaid exchange data error:', data.error);
         throw new Error(data.error || 'Failed to exchange token');
       }
-
-      console.log('Bank connection successful', data);
       toast({
         title: "Bank Connected",
         description: `Successfully connected ${metadata.institution.name}`,
       });
       onConnectionChange();
     } catch (error: any) {
-      console.error('Error connecting bank:', error);
       const errorMessage = error?.message || error?.toString() || "Failed to connect your bank account";
       toast({
         title: "Connection Failed",
@@ -65,7 +57,6 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
 
   const onExit = useCallback((err: any, metadata: any) => {
     if (err) {
-      console.error('Plaid Link error:', err);
       toast({
         title: "Connection Error",
         description: "Failed to connect bank account.",
@@ -114,7 +105,6 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       setLinkToken(data.link_token);
       return data.link_token;
     } catch (error: any) {
-      console.error('Error fetching link token:', error);
       const errorMessage = error?.message || "Unknown error occurred";
       toast({
         title: "Connection Error",
@@ -168,7 +158,6 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       });
       onConnectionChange();
     } catch (error) {
-      console.error('Error syncing data:', error);
       toast({
         title: "Sync Failed",
         description: "Failed to sync your financial data. Please try again.",
@@ -185,7 +174,6 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       const { data, error } = await supabase.functions.invoke('plaid-disconnect');
 
       if (error) {
-        console.error('Error disconnecting bank:', error);
         toast({
           title: "Disconnection Failed",
           description: "Failed to disconnect your bank account. Please try again.",
@@ -195,7 +183,6 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       }
 
       if (data?.error) {
-        console.error('Plaid disconnect error:', data.error);
         toast({
           title: "Disconnection Failed",
           description: data.error,
@@ -210,7 +197,6 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       });
       onConnectionChange();
     } catch (error) {
-      console.error('Error disconnecting bank:', error);
       toast({
         title: "Disconnection Failed",
         description: "Failed to disconnect your bank account. Please try again.",

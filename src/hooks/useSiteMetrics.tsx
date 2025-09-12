@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SiteMetrics {
   totalUsers: number;
@@ -10,35 +11,41 @@ interface SiteMetrics {
 }
 
 export const useSiteMetrics = () => {
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState<SiteMetrics>({
-    totalUsers: 0,
-    totalBudgets: 0,
-    totalTransactions: 0
+    totalUsers: 1000, // Fallback defaults
+    totalBudgets: 500,
+    totalTransactions: 10000
   });
   const [loading, setLoading] = useState(true);
 
   // Stable fetchMetrics function using useCallback
   const fetchMetrics = useCallback(async () => {
+    // Only fetch if user is authenticated due to new RLS policy
+    if (!user) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('User not authenticated, using fallback metrics');
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       if (process.env.NODE_ENV === 'development') {
-        console.log('Fetching site metrics...');
+        console.log('Fetching site metrics for authenticated user...');
       }
       
-      // Query the public site_metrics table - this should now work with public access
+      // Query the site_metrics table with new secure policy
       const { data, error } = await supabase
         .from('site_metrics')
-        .select('*')
+        .select('total_users, total_budgets, total_transactions, updated_at')
         .eq('id', 1)
         .maybeSingle();
 
       if (error) {
         console.error('Error fetching site metrics:', error);
-        // Set fallback values on error to prevent landing page from breaking
-        setMetrics({
-          totalUsers: 1000,
-          totalBudgets: 500,
-          totalTransactions: 10000
-        });
+        // Keep existing fallback values on error
+        setLoading(false);
         return;
       }
 
@@ -86,7 +93,7 @@ export const useSiteMetrics = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading]);
+  }, [loading, user]);
 
   useEffect(() => {
     // Fetch initial metrics
@@ -143,7 +150,7 @@ export const useSiteMetrics = () => {
       clearInterval(intervalId);
       supabase.removeChannel(channel);
     };
-  }, [fetchMetrics]);
+  }, [fetchMetrics, user]);
 
   return { metrics, loading };
 };

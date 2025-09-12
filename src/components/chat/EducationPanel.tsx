@@ -39,8 +39,8 @@ export const EducationPanel = ({
   }
 
   return (
-    <div className="fixed bottom-24 right-4 w-80 max-h-96 z-50">
-      <Card className="shadow-lg">
+    <div className="fixed bottom-24 right-4 w-80 max-h-96 z-[60] pointer-events-auto">
+      <Card className="shadow-lg pointer-events-auto">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -70,6 +70,7 @@ export const EducationPanel = ({
                 {coachQuestions.map((question, index) => (
                   <Button
                     key={index}
+                    type="button"
                     variant="outline"
                     size="sm"
                     className="w-full text-left justify-start h-auto p-2 text-xs"

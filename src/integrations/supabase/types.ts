@@ -119,6 +119,81 @@ export type Database = {
         }
         Relationships: []
       }
+      app_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          level: string
+          message: string
+          session_id: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          level: string
+          message: string
+          session_id?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          level?: string
+          message?: string
+          session_id?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      auth_audit_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       bills: {
         Row: {
           amount: number
@@ -236,6 +311,54 @@ export type Database = {
           token?: string
           user_id?: string
           view_count?: number
+        }
+        Relationships: []
+      }
+      contact_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          inquiry_type: string
+          ip_address: unknown | null
+          message: string
+          name: string
+          organization: string | null
+          phone: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          inquiry_type: string
+          ip_address?: unknown | null
+          message: string
+          name: string
+          organization?: string | null
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          inquiry_type?: string
+          ip_address?: unknown | null
+          message?: string
+          name?: string
+          organization?: string | null
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -568,6 +691,42 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          id: string
+          order_type: string | null
+          status: string | null
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          order_type?: string | null
+          status?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          order_type?: string | null
+          status?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       plaid_items: {
         Row: {
           available_products: string[] | null
@@ -660,6 +819,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accent_color: string | null
           app_id: string | null
           created_at: string
           encrypted_plaid_token: string | null
@@ -675,6 +835,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accent_color?: string | null
           app_id?: string | null
           created_at?: string
           encrypted_plaid_token?: string | null
@@ -690,6 +851,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accent_color?: string | null
           app_id?: string | null
           created_at?: string
           encrypted_plaid_token?: string | null
@@ -766,6 +928,42 @@ export type Database = {
           total_transactions?: number
           total_users?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -924,6 +1122,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       waitlist_email_log: {
         Row: {
           created_at: string
@@ -996,6 +1215,14 @@ export type Database = {
         Args: { ip_address: string; share_id: string }
         Returns: boolean
       }
+      check_budget_share_rate_limit_enhanced: {
+        Args: { ip_address: string; share_id: string; user_email?: string }
+        Returns: boolean
+      }
+      check_contact_rate_limit: {
+        Args: { email_param: string; ip_param: unknown }
+        Returns: boolean
+      }
       check_link_token_rate: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1008,6 +1235,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_suspicious_auth_activity: {
+        Args: { client_ip: unknown; user_email: string }
+        Returns: boolean
+      }
       check_token_access_rate: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1017,6 +1248,10 @@ export type Database = {
         Returns: boolean
       }
       check_waitlist_rate_limit: {
+        Args: { email_input: string; ip_input: unknown }
+        Returns: boolean
+      }
+      check_waitlist_rate_limit_enhanced: {
         Args: { email_input: string; ip_input: unknown }
         Returns: boolean
       }
@@ -1097,6 +1332,13 @@ export type Database = {
         Args: { days_param?: number; email_param: string }
         Returns: boolean
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_budget_share_view: {
         Args: { share_id: string }
         Returns: boolean
@@ -1116,13 +1358,30 @@ export type Database = {
             }
         Returns: undefined
       }
+      log_security_event: {
+        Args: {
+          event_data?: Json
+          event_type: string
+          severity?: string
+          user_id_param?: string
+        }
+        Returns: undefined
+      }
       rotate_plaid_token: {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      sanitize_email_content: {
+        Args: { content: string }
+        Returns: string
+      }
       validate_email_content: {
         Args: { content: string }
         Returns: boolean
+      }
+      validate_password_strength: {
+        Args: { password: string }
+        Returns: Json
       }
       validate_share_access: {
         Args: { request_ip?: string; share_token: string; user_email?: string }
@@ -1140,9 +1399,24 @@ export type Database = {
         Args: { email_input: string }
         Returns: boolean
       }
+      waitlist_signup: {
+        Args:
+          | {
+              client_ip_param?: string
+              email_param: string
+              source_param?: string
+              user_agent_param?: string
+            }
+          | {
+              email_param: string
+              source_param?: string
+              user_agent_param?: string
+            }
+        Returns: Json
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1269,6 +1543,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

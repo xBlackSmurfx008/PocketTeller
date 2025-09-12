@@ -7,12 +7,13 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any; passwordValidation?: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   resendConfirmation: (email: string) => Promise<{ error: any; errorType?: string | null }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   sendMagicLink: (email: string) => Promise<{ error: any }>;
+  validatePasswordStrength: (password: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,22 +58,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: AuthConfig.emailConfirmRedirect
+    try {
+      // Validate password strength before attempting signup
+      const passwordValidation = await validatePasswordStrength(password);
+      
+      if (!passwordValidation?.valid) {
+        return { 
+          error: { message: Array.isArray(passwordValidation?.errors) ? passwordValidation.errors.join(', ') : 'Password validation failed' }, 
+          passwordValidation 
+        };
       }
-    });
-    return { error };
+
+      // Check for suspicious activity
+      const { data: suspiciousCheck } = await supabase.rpc('check_suspicious_auth_activity', {
+        user_email: email.toLowerCase(),
+        client_ip: null // Will be handled by the function
+      }).single();
+
+      if (suspiciousCheck) {
+        // Log security event
+        await supabase.rpc('log_security_event', {
+          event_type: 'suspicious_signup_attempt',
+          event_data: { email: email.toLowerCase(), reason: 'suspicious_activity_detected' },
+          severity: 'WARN'
+        });
+      }
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: AuthConfig.emailConfirmRedirect
+        }
+      });
+
+      // Log successful signup attempt
+      if (!error) {
+        await supabase.rpc('log_security_event', {
+          event_type: 'user_signup_success',
+          event_data: { email: email.toLowerCase() },
+          severity: 'INFO'
+        });
+      }
+
+      return { error, passwordValidation };
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      return { error: err };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      // Check for suspicious activity before signin
+      const { data: suspiciousCheck } = await supabase.rpc('check_suspicious_auth_activity', {
+        user_email: email.toLowerCase(),
+        client_ip: null // Will be handled by the function
+      }).single();
+
+      if (suspiciousCheck) {
+        // Log security event
+        await supabase.rpc('log_security_event', {
+          event_type: 'suspicious_signin_attempt',
+          event_data: { email: email.toLowerCase(), reason: 'suspicious_activity_detected' },
+          severity: 'WARN'
+        });
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      // Log auth attempt
+      if (error) {
+        await supabase.rpc('log_security_event', {
+          event_type: 'signin_failed',
+          event_data: { 
+            email: email.toLowerCase(), 
+            error_type: error.message.includes('Invalid') ? 'invalid_credentials' : 'other'
+          },
+          severity: 'WARN'
+        });
+      } else {
+        await supabase.rpc('log_security_event', {
+          event_type: 'signin_success',
+          event_data: { email: email.toLowerCase() },
+          severity: 'INFO'
+        });
+      }
+
+      return { error };
+    } catch (err: any) {
+      console.error('Signin error:', err);
+      return { error: err };
+    }
   };
 
   const signOut = async () => {
@@ -144,6 +224,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const validatePasswordStrength = async (password: string): Promise<{ valid: boolean; errors: string[]; strength_score?: number }> => {
+    try {
+      const { data } = await supabase.rpc('validate_password_strength', {
+        password: password
+      }).single();
+      
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const result = data as Record<string, any>;
+        return {
+          valid: Boolean(result.valid),
+          errors: Array.isArray(result.errors) ? result.errors : [],
+          strength_score: typeof result.strength_score === 'number' ? result.strength_score : undefined
+        };
+      }
+      
+      return { valid: false, errors: ['Unable to validate password'] };
+    } catch (err: any) {
+      console.error('Password validation error:', err);
+      return { valid: false, errors: ['Password validation failed'] };
+    }
+  };
+
   const value = {
     user,
     session,
@@ -154,6 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resendConfirmation,
     resetPassword,
     sendMagicLink,
+    validatePasswordStrength,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

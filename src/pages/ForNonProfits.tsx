@@ -4,11 +4,18 @@ import { CheckCircle, Heart, BookOpen, Users, Shield, BarChart3, Phone, MessageC
 import { Reveal } from "@/components/Reveal";
 import { useNavigate } from "react-router-dom";
 import PublicHeader from "@/components/PublicHeader";
+import { ContactDialog } from "@/components/ContactDialog";
+import { NonProfitsSEO } from "@/components/SEOHead";
+import { useState } from "react";
 
 const ForNonProfits = () => {
   const navigate = useNavigate();
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactType, setContactType] = useState<"demo" | "quote" | "consultation" | "general" | "partnership" | "support">("general");
 
   return (
+    <>
+      <NonProfitsSEO />
     <div className="min-h-screen bg-background">
       <PublicHeader />
       {/* Hero Section */}
@@ -27,10 +34,22 @@ const ForNonProfits = () => {
                 Give the people you serve an AI-powered app that builds habits, delivers reminders, and answers money questions—right on their phone. You fund access; they keep control.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="text-lg px-8 py-4">
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-4"
+                  onClick={() => {
+                    setContactType("consultation");
+                    setContactOpen(true);
+                  }}
+                >
                   Contact Us
                 </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="text-lg px-8 py-4"
+                  onClick={() => navigate("/demo")}
+                >
                   See How It Works
                 </Button>
               </div>
@@ -324,14 +343,28 @@ const ForNonProfits = () => {
               <p className="text-lg text-muted-foreground mb-8">
                 Join nonprofits transforming financial confidence with Pocket Banker.
               </p>
-              <Button size="lg" className="text-lg px-8 py-4">
+              <Button 
+                size="lg" 
+                className="text-lg px-8 py-4"
+                onClick={() => {
+                  setContactType("consultation");
+                  setContactOpen(true);
+                }}
+              >
                 Contact Us for a Free Consultation
               </Button>
             </div>
           </div>
         </section>
       </Reveal>
+      
+      <ContactDialog 
+        open={contactOpen}
+        onOpenChange={setContactOpen}
+        defaultType={contactType}
+      />
     </div>
+    </>
   );
 };
 

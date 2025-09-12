@@ -60,3 +60,15 @@ verify_jwt = false
 
 [functions.send-test-notification]
 verify_jwt = true
+
+[functions.submit-contact-form]
+verify_jwt = false
+
+[functions.plaid-webhook]
+verify_jwt = false
+
+[functions.log-collector]
+verify_jwt = true
+
+[functions.secure-waitlist-signup]
+verify_jwt = false
