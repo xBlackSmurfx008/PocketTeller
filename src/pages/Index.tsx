@@ -105,7 +105,9 @@ const Index = () => {
       });
 
       if (error) {
-        console.error('Waitlist signup error:', error);
+        if (import.meta.env.DEV) {
+          console.error('Waitlist signup error:', error);
+        }
         toast({
           title: "Error",
           description: "Something went wrong. Please try again.",
@@ -145,7 +147,9 @@ const Index = () => {
         }
       }
     } catch (error) {
-      console.error('Waitlist signup error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Waitlist signup error:', error);
+      }
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",

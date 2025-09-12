@@ -62,7 +62,9 @@ export default function Account() {
         setBudgetData(data);
       }
     } catch (error) {
-      console.error('Error fetching budget data:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching budget data:', error);
+      }
     }
   };
 
@@ -83,7 +85,9 @@ export default function Account() {
         setHasPlaidToken(false);
       }
     } catch (error) {
-      console.error('Error checking Plaid connection:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error checking Plaid connection:', error);
+      }
       setHasPlaidToken(false);
     }
   };

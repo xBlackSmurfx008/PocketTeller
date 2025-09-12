@@ -1,101 +1,126 @@
 /**
- * Centralized environment configuration
- * Replaces hardcoded URLs and provides type-safe config
+ * Environment configuration for PocketTeller
+ * Centralized configuration management for the application
  */
 
-interface AppConfig {
-  supabase: {
-    url: string;
-    anonKey: string;
-    functionsUrl: string;
-  };
-  app: {
-    name: string;
-    version: string;
-    environment: 'development' | 'staging' | 'production';
-    baseUrl: string;
-  };
-  features: {
-    enableAnalytics: boolean;
-    enableErrorReporting: boolean;
-    enableDevMode: boolean;
-  };
-  api: {
-    timeout: number;
-    retries: number;
-  };
-}
+// Environment detection
+const isDevelopment = import.meta.env.DEV;
+const isProduction = import.meta.env.PROD;
+const isTest = import.meta.env.MODE === 'test';
 
-// Type-safe environment variable access
-const getEnvVar = (key: string, fallback?: string): string => {
-  const value = import.meta.env[key] || fallback;
-  if (!value) {
-    throw new Error(`Environment variable ${key} is required`);
-  }
-  return value;
+// App configuration
+export const appConfig = {
+  name: 'PocketTeller',
+  version: '1.0.0',
+  environment: isDevelopment ? 'development' : isProduction ? 'production' : 'test',
+  isDevelopment,
+  isProduction,
+  isTest,
 };
 
-const getOptionalEnvVar = (key: string, fallback: string): string => {
-  return import.meta.env[key] || fallback;
+// Feature flags
+export const features = {
+  enableAnalytics: isProduction,
+  enableErrorReporting: isProduction,
+  enableDebugMode: isDevelopment,
+  enableMockData: isDevelopment || isTest,
+  enablePerformanceMonitoring: isProduction,
 };
 
-const getBooleanEnvVar = (key: string, fallback: boolean): boolean => {
-  const value = import.meta.env[key];
-  if (value === undefined) return fallback;
-  return value === 'true' || value === '1';
-};
-
-// Centralized configuration
-export const config: AppConfig = {
-  supabase: {
-    url: 'https://dscndbpqvhvylukvcgpq.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzY25kYnBxdmh2eWx1a3ZjZ3BxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4Mjg1NzksImV4cCI6MjA3MTQwNDU3OX0.GYh0VhUqTpVfwG2mh8WwW8GSBJPvpFAZSFJy7oWbnL0',
-    functionsUrl: 'https://dscndbpqvhvylukvcgpq.supabase.co/functions/v1',
-  },
-  app: {
-    name: 'Pocket Banker',
-    version: '1.0.0',
-    environment: import.meta.env.DEV ? 'development' : 'production',
-    baseUrl: getOptionalEnvVar('VITE_APP_BASE_URL', 'https://pocketbanker.ai'),
-  },
-  features: {
-    enableAnalytics: getBooleanEnvVar('VITE_ENABLE_ANALYTICS', true),
-    enableErrorReporting: getBooleanEnvVar('VITE_ENABLE_ERROR_REPORTING', true),
-    enableDevMode: import.meta.env.DEV,
-  },
-  api: {
-    timeout: 30000, // 30 seconds
-    retries: 3,
-  },
-};
-
-// Validate critical configuration
-if (!config.supabase.url || !config.supabase.anonKey) {
-  throw new Error('Supabase configuration is incomplete');
-}
-
-// Export individual configs for convenience
-export const supabaseConfig = config.supabase;
-export const appConfig = config.app;
-export const featureConfig = config.features;
-export const apiConfig = config.api;
-
-// Helper functions
-export const isDevelopment = config.app.environment === 'development';
-export const isProduction = config.app.environment === 'production';
-export const isStaging = config.app.environment === 'staging';
-
-// API endpoints builder
-export const buildApiUrl = (endpoint: string): string => {
-  return `${config.supabase.functionsUrl}/${endpoint}`;
-};
-
-// Meta information for SEO
+// SEO and metadata configuration
 export const metaConfig = {
-  title: 'Pocket Banker - AI-Powered Personal Finance Management',
-  description: 'Transform your financial future with AI-powered budgeting, smart transaction tracking, and personalized financial insights.',
-  keywords: 'personal finance, budgeting, AI finance, financial planning, expense tracking',
-  ogImage: `${config.app.baseUrl}/og-image.png`,
-  twitterHandle: '@pocketbanker',
-  canonical: (path: string) => `${config.app.baseUrl}${path}`,
+  title: 'PocketTeller - Smart Personal Finance Management',
+  description: 'AI-powered personal finance app that helps you budget, track expenses, and achieve your financial goals with intelligent insights and automation.',
+  keywords: 'personal finance, budgeting, expense tracking, financial goals, AI finance, money management, financial planning',
+  author: 'PocketTeller Team',
+  ogImage: '/og-image.png',
+  twitterHandle: '@pocketteller',
+  
+  // Canonical URL helper
+  canonical: (path: string = '') => {
+    const baseUrl = isProduction 
+      ? 'https://pocketteller.app' 
+      : 'http://localhost:5173';
+    return `${baseUrl}${path}`;
+  },
+  
+  // Social media URLs
+  social: {
+    twitter: 'https://twitter.com/pocketteller',
+    linkedin: 'https://linkedin.com/company/pocketteller',
+    github: 'https://github.com/pocketteller',
+  },
 };
+
+// API configuration
+export const apiConfig = {
+  supabase: {
+    url: import.meta.env.VITE_SUPABASE_URL || '',
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  },
+  timeout: 30000, // 30 seconds
+  retryAttempts: 3,
+};
+
+// Analytics configuration
+export const analyticsConfig = {
+  enabled: features.enableAnalytics,
+  trackingId: import.meta.env.VITE_GA_TRACKING_ID || '',
+  debug: features.enableDebugMode,
+};
+
+// Error reporting configuration
+export const errorConfig = {
+  enabled: features.enableErrorReporting,
+  dsn: import.meta.env.VITE_SENTRY_DSN || '',
+  environment: appConfig.environment,
+  debug: features.enableDebugMode,
+};
+
+// Performance monitoring
+export const performanceConfig = {
+  enabled: features.enablePerformanceMonitoring,
+  sampleRate: isProduction ? 0.1 : 1.0, // 10% in production, 100% in development
+};
+
+// Validation helpers
+export const validateConfig = () => {
+  const errors: string[] = [];
+  
+  if (!apiConfig.supabase.url) {
+    errors.push('VITE_SUPABASE_URL is required');
+  }
+  
+  if (!apiConfig.supabase.anonKey) {
+    errors.push('VITE_SUPABASE_ANON_KEY is required');
+  }
+  
+  if (errors.length > 0) {
+    console.error('Configuration validation failed:', errors);
+    if (isProduction) {
+      throw new Error(`Configuration errors: ${errors.join(', ')}`);
+    }
+  }
+  
+  return errors.length === 0;
+};
+
+// Export main config object for backward compatibility
+export const config = {
+  app: appConfig,
+  features,
+  meta: metaConfig,
+  api: apiConfig,
+  analytics: analyticsConfig,
+  error: errorConfig,
+  performance: performanceConfig,
+  validate: validateConfig,
+};
+
+// Validate configuration on import (in production)
+if (isProduction) {
+  validateConfig();
+}
+
+// Default export
+export default config;
