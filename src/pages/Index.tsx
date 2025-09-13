@@ -158,10 +158,10 @@ const Index = () => {
 
   // Redirect authenticated users or demo users to dashboard
   useEffect(() => {
-    if (user || isDemo) {
+    if (!loading && (user || isDemo)) {
       navigate('/home');
     }
-  }, [user, isDemo, navigate]);
+  }, [user, isDemo, loading, navigate]);
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">

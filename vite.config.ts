@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "rollup/dist/native.js": "rollup/dist/shared/rollup.js",
+      "rollup/dist/native": "rollup/dist/shared/rollup.js",
     },
   },
 }));
