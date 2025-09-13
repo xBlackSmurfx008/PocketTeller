@@ -156,19 +156,12 @@ const Index = () => {
     );
   }
 
-  if (user || isDemo) {
-    return (
-      <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="text-center">
-            <div className="text-xl text-muted-foreground">Loading...</div>
-          </div>
-        </div>
-      }>
-        <Dashboard />
-      </Suspense>
-    );
-  }
+  // Redirect authenticated users or demo users to dashboard
+  useEffect(() => {
+    if (user || isDemo) {
+      navigate('/home');
+    }
+  }, [user, isDemo, navigate]);
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">

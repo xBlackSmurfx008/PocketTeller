@@ -20,6 +20,7 @@ import { ErrorBoundaryProvider } from "@/components/ErrorBoundary";
 // Lazy load page components to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("@/components/Dashboard"));
 const ConversationalAI = lazy(() => import("./pages/ConversationalAI"));
 const Goals = lazy(() => import("./pages/Goals"));
 const Account = lazy(() => import("./pages/Account"));
@@ -57,7 +58,7 @@ const App = () => (
                       <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="pulse h-8 w-8 rounded-full bg-primary/20"></div></div>}>
                         <Routes>
                           <Route path="/" element={<Index />} />
-                          <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                          <Route path="/home" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                           <Route path="/auth" element={<Auth />} />
                           <Route path="/confirm" element={<EmailConfirmation />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
