@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -23,3 +29,21 @@ dist-ssr
 *.sln
 *.sw?
 *.apk
+
+# Mobile app files
+android/app/google-services.json
+ios/App/GoogleService-Info.plist
+android/key.properties
+android/local.properties
+
+# Build artifacts
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
