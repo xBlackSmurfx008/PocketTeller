@@ -14,11 +14,11 @@
 - **Supabase Project**: `dscndbpqvhvylukvcgpq`
 - **Environment**: Production Plaid API with live credentials
 
-### **PocketTeller = Enhanced Version**
-- **Status**: ✅ **Production-ready enhanced version**
+### **PocketTeller = Backup Repository**
+- **Status**: ✅ **Backup repository with enhanced version**
 - **Code**: ✅ **Identical to live version**
 - **Supabase Project**: `dscndbpqvhvylukvcgpq` (SAME project)
-- **Current Issue**: ⚠️ **May be using sandbox Plaid API**
+- **Purpose**: Backup repository for PocketTeller project
 
 ---
 

@@ -15,11 +15,11 @@
 - **Supabase Project**: `dscndbpqvhvylukvcgpq` (SAME as PocketTeller)
 - **Environment**: Production Plaid API with live credentials
 
-### **PocketTeller = Enhanced Version**
+### **PocketTeller = Backup Repository**
 - **URL**: `https://github.com/xBlackSmurfx008/PocketTeller.git`
-- **Status**: Enhanced version with same codebase
+- **Status**: Backup repository with same codebase
 - **Supabase Project**: `dscndbpqvhvylukvcgpq` (SAME project)
-- **Current Issue**: May be using sandbox Plaid API
+- **Purpose**: Backup repository for PocketTeller project
 
 ---
 

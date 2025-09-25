@@ -22,11 +22,12 @@
    - **Remote**: `origin`
    - **⚠️ CRITICAL**: This is the LIVE version with production Plaid API
 
-2. **PocketTeller.git** (New Production)
+2. **PocketTeller.git** (Backup Repository)
    - **URL**: `https://github.com/xBlackSmurfx008/PocketTeller.git`
-   - **Status**: Successfully deployed clean version
+   - **Status**: Backup repository with clean version
    - **Branches**: `main`, `production`
    - **Remote**: `origin1`
+   - **Purpose**: Backup repository for PocketTeller project
 
 3. **PocketTeller-New.git** (Backup)
    - **URL**: `https://github.com/xBlackSmurfx008/PocketTeller-New.git`
