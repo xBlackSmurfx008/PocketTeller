@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { FileAttachment } from '@/hooks/useConversation';
 

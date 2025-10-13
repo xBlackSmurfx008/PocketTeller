@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemo } from "@/hooks/useDemo";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/useMobile";
+import { useToast } from "@/hooks/useToast";
 import { useConversation, EducationSuggestion } from "@/hooks/useConversation";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { MessageInput } from "@/components/chat/MessageInput";
@@ -101,11 +101,11 @@ const ConversationalAI = () => {
   const handlePromptSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion, [], false);
   };
-  return <div className="min-h-screen bg-background flex flex-col content-visible content-container">
+  return <div className="min-h-screen bg-background flex flex-col content-visible">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-        {/* Messages Area */}
-        <ScrollArea className="flex-1 pt-perfect px-4 pb-4">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-hidden">
+        {/* Messages Area - With proper bottom spacing */}
+        <ScrollArea className="flex-1 pt-perfect px-4 pb-2">
           <div className="space-y-4">
             {/* Welcome Message */}
             {messages.length === 0 && <Reveal>
@@ -132,6 +132,61 @@ const ConversationalAI = () => {
             {/* Messages */}
             {messages.map(message => <MessageBubble key={message.id} message={message} />)}
 
+            {/* AI Thinking Indicator */}
+            {isLoading && (
+              <div className="flex gap-3 mb-4">
+                <div className="w-8 h-8 flex-shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                  <svg 
+                    className="w-5 h-5 text-primary" 
+                    fill="none" 
+                    viewBox="0 0 24 24"
+                    style={{
+                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }}
+                  >
+                    {/* Brain/AI icon with subtle pulse */}
+                    <path 
+                      stroke="currentColor" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex flex-col max-w-[80%] items-start">
+                  <div className="rounded-2xl px-4 py-3 bg-muted/50 text-muted-foreground border border-border/50">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-sm font-medium">Analyzing your question</span>
+                      <span className="flex gap-1" aria-label="Loading">
+                        <span 
+                          className="w-1.5 h-1.5 rounded-full bg-primary/70" 
+                          style={{ 
+                            animation: 'bounce 1.4s infinite ease-in-out both',
+                            animationDelay: '0s'
+                          }}
+                        ></span>
+                        <span 
+                          className="w-1.5 h-1.5 rounded-full bg-primary/70" 
+                          style={{ 
+                            animation: 'bounce 1.4s infinite ease-in-out both',
+                            animationDelay: '0.16s'
+                          }}
+                        ></span>
+                        <span 
+                          className="w-1.5 h-1.5 rounded-full bg-primary/70" 
+                          style={{ 
+                            animation: 'bounce 1.4s infinite ease-in-out both',
+                            animationDelay: '0.32s'
+                          }}
+                        ></span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Error Display */}
             {error && <Card className="border-destructive">
                 <CardContent className="pt-6">
@@ -155,45 +210,53 @@ const ConversationalAI = () => {
                 </Card>
               </Reveal>}
 
-            <div ref={messagesEndRef} />
+            {/* Education Panel - Integrated with messages */}
+            {(educationSuggestions.length > 0 || coachQuestions.length > 0) && (
+              <div className="mt-4" data-tour-id="education-panel">
+                <EducationPanel 
+                  suggestions={educationSuggestions} 
+                  coachQuestions={coachQuestions} 
+                  coachStage={coachStage} 
+                  onQuestionClick={handleQuestionClick} 
+                  onToggle={() => setShowSuggestions(!showSuggestions)} 
+                  isVisible={showSuggestions} 
+                />
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} className="h-4" />
           </div>
         </ScrollArea>
 
-        {/* Message Input */}
-        <div className="pt-perfect px-4 pb-4 border-t" data-tour-id="chat-input">
-          <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} disabled={isDemo && promptsUsed >= maxPrompts} />
-          
-          {isDemo && promptsUsed >= maxPrompts && <Card className="mt-4 border-orange-200 bg-orange-50">
-              <CardContent className="pt-4">
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-orange-800">
-                    You've reached the demo limit of {maxPrompts} messages.
-                  </p>
-                  <div className="flex gap-2 justify-center">
-                    <Button onClick={() => navigate('/auth')} size="sm">
-                      Sign Up for Full Access
-                    </Button>
-                    <Button variant="outline" onClick={exitDemo} size="sm">
-                      Exit Demo
-                    </Button>
+        {/* Message Input - Fixed at bottom with proper spacing */}
+        <div className="sticky bottom-0 bg-background border-t border-border/40 pt-4 px-4 pb-safe" data-tour-id="chat-input">
+          <div className="max-w-4xl mx-auto space-y-3">
+            <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} disabled={isDemo && promptsUsed >= maxPrompts} />
+            
+            {isDemo && promptsUsed >= maxPrompts && <Card className="border-orange-200 bg-orange-50">
+                <CardContent className="pt-4">
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-orange-800">
+                      You've reached the demo limit of {maxPrompts} messages.
+                    </p>
+                    <div className="flex gap-2 justify-center">
+                      <Button onClick={() => navigate('/auth')} size="sm">
+                        Sign Up for Full Access
+                      </Button>
+                      <Button variant="outline" onClick={exitDemo} size="sm">
+                        Exit Demo
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>}
-        </div>
-      </div>
-
-      {/* Education Panel */}
-      <div data-tour-id="education-panel">
-        <EducationPanel suggestions={educationSuggestions} coachQuestions={coachQuestions} coachStage={coachStage} onQuestionClick={handleQuestionClick} onToggle={() => setShowSuggestions(!showSuggestions)} isVisible={showSuggestions} />
-      </div>
-
-      {/* Essential actions at bottom for iOS thumb accessibility */}
-      <div className="sticky bottom-20 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 pt-perfect px-4 pb-4">
-        <div className="max-w-4xl mx-auto flex justify-center items-center gap-4">
-          {isDemo && <div className="text-sm text-muted-foreground">
-            Demo: {promptsUsed}/{maxPrompts} messages
-          </div>}
+                </CardContent>
+              </Card>}
+            
+            {isDemo && <div className="text-center">
+              <div className="text-xs text-muted-foreground">
+                Demo: {promptsUsed}/{maxPrompts} messages used
+              </div>
+            </div>}
+          </div>
         </div>
       </div>
     </div>;

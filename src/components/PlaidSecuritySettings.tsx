@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { Shield, RefreshCw, Eye, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
 import {
   AlertDialog,

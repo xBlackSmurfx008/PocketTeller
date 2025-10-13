@@ -62,13 +62,14 @@ serve(async (req) => {
 
     const { recipientEmail, shareUrl, senderName, message }: EmailRequest = await req.json();
     
-    // Validate shareUrl host for security
+    // Validate shareUrl host for security - production domains only
     try {
       const url = new URL(shareUrl);
-      // Only allow production domains (no localhost in production)
-      const allowedHosts = Deno.env.get('DENO_DEPLOYMENT_ID') 
-        ? ['dscndbpqvhvylukvcgpq.supabase.co'] // Production only
-        : ['dscndbpqvhvylukvcgpq.supabase.co', 'localhost']; // Development allows localhost
+      const allowedHosts = [
+        'dscndbpqvhvylukvcgpq.supabase.co',
+        'pocketbanker.app',
+        'www.pocketbanker.app'
+      ];
       if (!allowedHosts.includes(url.hostname)) {
         return new Response(
           JSON.stringify({ error: 'Invalid share URL domain' }),

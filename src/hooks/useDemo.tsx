@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { Transaction, Goal, Bill, Account } from '@/types/models';
 
 export type TourType = 'full' | 'chat' | 'budget' | 'goals';
 
@@ -12,6 +13,35 @@ export interface TourStep {
   position: 'top' | 'bottom' | 'left' | 'right';
 }
 
+/**
+ * Demo sample transaction
+ */
+interface DemoTransaction extends Omit<Transaction, 'user_id' | 'created_at' | 'updated_at'> {
+  account_name: string;
+  name: string;
+}
+
+/**
+ * Demo sample goal
+ */
+interface DemoGoal extends Goal {
+  // Additional demo-specific fields if needed
+}
+
+/**
+ * Demo sample bill
+ */
+interface DemoBill extends Bill {
+  // Additional demo-specific fields if needed
+}
+
+/**
+ * Demo sample account
+ */
+interface DemoAccount extends Omit<Account, 'user_id' | 'created_at' | 'updated_at'> {
+  balance: number;
+}
+
 export interface DemoState {
   isDemo: boolean;
   promptsUsed: number;
@@ -19,10 +49,10 @@ export interface DemoState {
   conversationsUsed: number;
   maxConversations: number;
   sampleData: {
-    transactions: any[];
-    goals: any[];
-    bills: any[];
-    accounts: any[];
+    transactions: DemoTransaction[];
+    goals: DemoGoal[];
+    bills: DemoBill[];
+    accounts: DemoAccount[];
   };
 }
 
@@ -44,7 +74,7 @@ interface DemoContextType extends DemoState {
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
-const SAMPLE_DATA = {
+const SAMPLE_DATA: DemoState['sampleData'] = {
   transactions: [
     {
       id: '1',

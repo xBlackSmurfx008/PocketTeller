@@ -1,22 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
+import { Transaction } from '@/types/models';
+import { normalizeError, getUserErrorMessage, logError } from '@/utils/errorHandler';
 
-export interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  category: string;
-  account_id?: string;
-  category_source?: string;
-  pending?: boolean;
-  created_at?: string;
-  updated_at?: string;
+/**
+ * Result of a transaction operation
+ */
+interface TransactionOperationResult {
+  success: boolean;
+  error?: string;
 }
 
+/**
+ * Hook for managing transactions
+ * Provides CRUD operations for transactions with real-time updates
+ * @returns Transaction state and operations
+ */
 export const useTransactions = () => {
   const { user } = useAuth();
   const { isDemo, sampleData } = useDemo();
@@ -54,9 +56,10 @@ export const useTransactions = () => {
       }
 
       setTransactions(data || []);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch transactions';
+    } catch (err) {
+      const errorMessage = getUserErrorMessage(err, 'Failed to fetch transactions');
       setError(errorMessage);
+      logError(err, 'useTransactions.fetchTransactions');
       toast({
         title: "Error",
         description: errorMessage,
@@ -67,7 +70,16 @@ export const useTransactions = () => {
     }
   }, [user, isDemo, sampleData, toast]);
 
-  const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
+  /**
+   * Updates a transaction
+   * @param id - Transaction ID to update
+   * @param updates - Partial transaction object with fields to update
+   * @returns Operation result with success status and optional error
+   */
+  const updateTransaction = useCallback(async (
+    id: string, 
+    updates: Partial<Transaction>
+  ): Promise<TransactionOperationResult> => {
     if (isDemo) {
       setTransactions(prev => 
         prev.map(t => t.id === id ? { ...t, ...updates } : t)
@@ -91,8 +103,9 @@ export const useTransactions = () => {
       );
 
       return { success: true };
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to update transaction';
+    } catch (err) {
+      const errorMessage = getUserErrorMessage(err, 'Failed to update transaction');
+      logError(err, 'useTransactions.updateTransaction');
       toast({
         title: "Error",
         description: errorMessage,
@@ -102,7 +115,12 @@ export const useTransactions = () => {
     }
   }, [user, isDemo, toast]);
 
-  const deleteTransaction = useCallback(async (id: string) => {
+  /**
+   * Deletes a transaction
+   * @param id - Transaction ID to delete
+   * @returns Operation result with success status and optional error
+   */
+  const deleteTransaction = useCallback(async (id: string): Promise<TransactionOperationResult> => {
     if (isDemo) {
       setTransactions(prev => prev.filter(t => t.id !== id));
       return { success: true };
@@ -122,8 +140,9 @@ export const useTransactions = () => {
       setTransactions(prev => prev.filter(t => t.id !== id));
 
       return { success: true };
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to delete transaction';
+    } catch (err) {
+      const errorMessage = getUserErrorMessage(err, 'Failed to delete transaction');
+      logError(err, 'useTransactions.deleteTransaction');
       toast({
         title: "Error",
         description: errorMessage,

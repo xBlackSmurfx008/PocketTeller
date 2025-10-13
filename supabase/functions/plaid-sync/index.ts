@@ -288,6 +288,7 @@ serve(async (req) => {
           user_id: user.id,
           item_id: accountsData.item.item_id,
           institution_id: accountsData.item.institution_id,
+          institution_name: accountsData.accounts?.[0]?.name?.split(' - ')?.[0] || 'Connected Bank',
           available_products: accountsData.item.available_products || [],
           billed_products: accountsData.item.billed_products || [],
           products: accountsData.item.products || [],
@@ -376,6 +377,10 @@ serve(async (req) => {
       // Process added transactions
       for (const transaction of syncData.added) {
         const mappedCategory = mapPlaidCategory(transaction.category);
+        const hasPlaidCategory = transaction.category && transaction.category.length > 0;
+        
+        // Use 'plaid' source if Plaid provided category data, 'auto' if we defaulted to Other
+        const categorySource = (hasPlaidCategory && mappedCategory !== 'Other') ? 'plaid' : 'auto';
         
         const { error: transactionError } = await supabase
           .from('transactions')
@@ -392,13 +397,14 @@ serve(async (req) => {
             description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
             merchant_name: transaction.merchant_name,
             category: mappedCategory,
-            category_source: 'auto',
+            category_source: categorySource,
             subcategory: transaction.category?.[1] || null,
             pending: transaction.pending || false,
             iso_currency_code: transaction.iso_currency_code || 'USD',
             unofficial_currency_code: transaction.unofficial_currency_code,
             location: transaction.location || null,
             payment_meta: transaction.payment_meta || null,
+            plaid_category: transaction.category?.[0] || null, // Store original Plaid category
           }, {
             onConflict: 'user_id,plaid_transaction_id',
           });
@@ -410,9 +416,9 @@ serve(async (req) => {
         }
       }
 
-      // Process modified transactions (preserve user categories)
+      // Process modified transactions (preserve user and AI categories appropriately)
       for (const transaction of syncData.modified) {
-        // Check if user has manually categorized this transaction
+        // Check existing transaction categorization
         const { data: existingTxn } = await supabase
           .from('transactions')
           .select('category_source, category')
@@ -434,12 +440,34 @@ serve(async (req) => {
           unofficial_currency_code: transaction.unofficial_currency_code,
           location: transaction.location || null,
           payment_meta: transaction.payment_meta || null,
+          plaid_category: transaction.category?.[0] || null,
         };
 
-        // Only update category if user hasn't manually set it
-        if (!existingTxn || existingTxn.category_source !== 'user') {
-          updateData.category = mapPlaidCategory(transaction.category || []);
-          updateData.category_source = 'auto';
+        // Priority: user > plaid > ai > auto
+        // Only update category if we have better information than what's currently stored
+        const hasPlaidCategory = transaction.category && transaction.category.length > 0;
+        const mappedCategory = mapPlaidCategory(transaction.category || []);
+        const isPlaidCategoryGood = hasPlaidCategory && mappedCategory !== 'Other';
+        
+        if (!existingTxn) {
+          // New transaction - use Plaid data
+          updateData.category = mappedCategory;
+          updateData.category_source = isPlaidCategoryGood ? 'plaid' : 'auto';
+        } else if (existingTxn.category_source === 'user') {
+          // Never overwrite user's manual categorization
+          // Don't update category at all
+        } else if (isPlaidCategoryGood && (existingTxn.category_source === 'ai' || existingTxn.category_source === 'auto')) {
+          // Plaid has good data - update even if AI had categorized it
+          // This is because Plaid data is authoritative
+          updateData.category = mappedCategory;
+          updateData.category_source = 'plaid';
+        } else if (existingTxn.category_source === 'ai' && !isPlaidCategoryGood) {
+          // Keep AI categorization if Plaid still has no good data
+          // Don't update category
+        } else if (existingTxn.category_source === 'auto' || !existingTxn.category_source) {
+          // Update auto-categorized or uncategorized transactions
+          updateData.category = mappedCategory;
+          updateData.category_source = isPlaidCategoryGood ? 'plaid' : 'auto';
         }
 
         const { error: transactionError } = await supabase

@@ -4,9 +4,15 @@
  */
 
 import { logger } from './logger';
+import { Capacitor } from '@capacitor/core';
 
-// Disable console logging in production
-if (import.meta.env.PROD) {
+// Keep console logs enabled on native platforms for debugging
+// Only disable in web production builds
+const isNativePlatform = Capacitor.isNativePlatform();
+const shouldDisableConsole = import.meta.env.PROD && !isNativePlatform;
+
+// Disable console logging in production (but NOT on native mobile)
+if (shouldDisableConsole) {
   const originalConsole = {
     log: console.log,
     warn: console.warn,
@@ -56,6 +62,11 @@ if (typeof window !== 'undefined') {
   });
 
   window.addEventListener('error', (event) => {
+    // Ignore generic "Script error" from cross-origin issues (not actionable)
+    if (event.message === 'Script error.' && event.lineno === 0 && event.colno === 0 && !event.filename) {
+      return;
+    }
+    
     logger.error('Global error handler', { 
       message: event.message,
       filename: event.filename,

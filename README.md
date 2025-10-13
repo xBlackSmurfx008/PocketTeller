@@ -1,4 +1,4 @@
-# Pocket Banker - AI-Powered Personal Finance Manager
+# PocketTeller - AI-Powered Personal Finance SaaS
 
 [![Website](https://img.shields.io/badge/Website-Live-brightgreen)](https://pocketbanker.app/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -6,27 +6,51 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-green)](https://supabase.io/)
 [![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-red)](https://supabase.io/)
+[![Stripe](https://img.shields.io/badge/Payments-Stripe-blueviolet)](https://stripe.com/)
 
-> 🚀 **Now Live!** Transform your financial life with AI-powered insights, smart budgeting, and seamless bank integration.
+> 🚀 **Production Ready!** Professional AI financial coaching with automated budgeting, smart categorization, and subscription billing.
 
-**[Try Demo](https://pocketbanker.app/demo)** | **[Join Waitlist](https://pocketbanker.app/)** | **[View Live App](https://pocketbanker.app/)**
+**[Try Free for 30 Days](https://pocketbanker.app/subscription)** | **[View Demo](https://pocketbanker.app/demo)** | **[Sign Up](https://pocketbanker.app/auth)**
+
+---
+
+## 💰 NEW: Subscription Plans
+
+- **Monthly:** $4.99/month with 30-day free trial
+- **Yearly:** $32.99/year with 30-day free trial (save $27/year)
+- **Promo Code:** `SA2025` for extended trial
+- **Referral Bonus:** Earn 1 free month for 3 product suggestions
+
+**[View Pricing →](/subscription)**
 
 ## 🚀 Features
 
-### 🤖 AI-Powered Financial Assistant
-- **Conversational AI**: Chat with your personal finance assistant powered by Google Gemini 2.0 Flash
+### 🤖 AI-Powered Financial Coach (NEW!)
+- **Professional Financial Coaching**: 24/7 AI coach trained in 9 financial expertise areas
+- **Gemini 2.5 Flash**: Latest Google AI model with 1M token context
+- **Strict Financial Focus**: Only financial topics, off-topic attempts denied and reported
 - **Document Analysis**: Upload and analyze PDFs, bank statements, and financial documents
-- **Smart Categorization**: AI automatically categorizes transactions with high accuracy
-- **Spending Insights**: Get personalized recommendations and spending pattern analysis
-- **Coach Mode**: Educational guidance with step-by-step financial coaching and tour system
+- **Smart Categorization**: Plaid + AI hybrid categorization (85-90% accuracy)
+- **Spending Insights**: Personalized recommendations and spending pattern analysis
+- **Coaching Mode**: Socratic questioning and 6-stage coaching framework
 
 ### 💳 Comprehensive Financial Management
-- **Bank Integration**: Secure Plaid integration for automatic transaction syncing across multiple accounts
-- **Transaction Management**: Real-time transaction tracking with manual categorization override
-- **Budget Planning**: Monthly budget creation with category-wise planning and actual vs planned tracking
-- **Bill Tracking**: Never miss a payment with intelligent bill reminders and due date notifications
-- **Goal Setting**: Set and track financial goals with progress visualization and task management
+- **Bank Integration**: Secure Plaid integration for automatic transaction syncing (Pro feature)
+- **Smart Categorization**: Priority hierarchy (User > Plaid > AI > Auto)
+- **Transaction Management**: Real-time tracking with manual override capability
+- **Budget Planning**: Monthly budgets with category-wise planning and actual vs planned tracking
+- **Bill Tracking**: Automated bill reminders and due date notifications
+- **Goal Setting**: Financial goals with progress visualization and task management
 - **Financial Health**: Real-time dashboard showing income, expenses, and net position
+
+### 💰 Subscription & Billing (NEW!)
+- **Stripe Integration**: Secure payment processing with PCI compliance
+- **Multiple Plans**: Monthly ($4.99) and Yearly ($32.99) options
+- **Free Trials**: 30 days free on all plans
+- **Promo Codes**: Marketing campaigns supported (SA2025 active)
+- **Referral Program**: Earn free months for product feedback
+- **Customer Portal**: Self-service billing management
+- **Mobile Ready**: Works on web, iOS, and Android browsers
 
 ### 📊 Advanced Analytics & Reporting
 - **Spending Analytics**: Visual charts and insights powered by Recharts
@@ -125,6 +149,19 @@
    - **App**: `http://localhost:5173`
    - **Demo Mode**: Click "Try Demo" for instant access with sample data
    - **Live Version**: [pocketbanker.app](https://pocketbanker.app)
+
+### 📱 Mobile App Setup (iOS/Android)
+
+For detailed mobile app setup instructions, see:
+- **iOS**: [iOS_PRODUCTION_GUIDE.md](./iOS_PRODUCTION_GUIDE.md)
+- **Android**: [ANDROID_PRODUCTION_GUIDE.md](./ANDROID_PRODUCTION_GUIDE.md)
+
+**🔗 Deep Linking & Email Confirmation:**
+- **Setup Guide**: [DEEP_LINKING_SETUP_GUIDE.md](./DEEP_LINKING_SETUP_GUIDE.md)
+- **Quick Start**: [DEEP_LINKING_QUICK_START.md](./DEEP_LINKING_QUICK_START.md)
+- **Summary**: [DEEP_LINKING_IMPLEMENTATION_SUMMARY.md](./DEEP_LINKING_IMPLEMENTATION_SUMMARY.md)
+
+*Deep linking allows email confirmation links to open directly in the mobile app instead of the browser, providing a seamless user experience.*
 
 ## 🏗️ Architecture
 
@@ -330,6 +367,27 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - Use conventional commit messages
 - Update documentation for new features
 - Test on multiple devices and browsers
+
+## 📚 Documentation
+
+**Comprehensive guides available in `/docs` folder:**
+
+### Quick Start
+- **docs/🚀_START_HERE_FINAL.md** - Main entry point
+- **docs/QUICK_START_PRODUCTION.md** - 30-minute deployment
+- **docs/TEST_STRIPE_NOW.md** - Test payments in 5 minutes
+
+### Complete Guides
+- **Stripe Integration** - 8 comprehensive guides
+- **AI System** - 5 detailed documents  
+- **Categorization** - 2 system guides
+- **Production Deployment** - 5 checklists
+
+**See `/docs/00_README.md` for complete index.**
+
+Total documentation: 31 guides, ~60,000 words, ~120 equivalent pages.
+
+---
 
 ## 📄 License
 

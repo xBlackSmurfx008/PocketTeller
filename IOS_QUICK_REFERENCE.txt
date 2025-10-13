@@ -1,0 +1,74 @@
+═══════════════════════════════════════════════════════════════
+📱 iOS QUICK REFERENCE - PocketTeller
+═══════════════════════════════════════════════════════════════
+
+STATUS: ✅ WORKING - App launches and displays correctly
+
+CRITICAL FILES (DO NOT DELETE):
+────────────────────────────────────────────────────────────────
+1. ios/App/App/SceneDelegate.swift     - Scene lifecycle
+2. ios/App/App/AppDelegate.swift       - App delegate
+3. ios/App/App/Info.plist              - Has UIApplicationSceneManifest
+4. .env                                - Environment variables
+
+CRITICAL CONFIGURATIONS (DO NOT CHANGE):
+────────────────────────────────────────────────────────────────
+1. SceneDelegate.swift:
+   - MUST have: @objc(SceneDelegate)
+   - MUST use: CAPBridgeViewController() 
+   - DON'T use: CAPBridge.shared (doesn't exist)
+
+2. Info.plist:
+   - MUST have: UIApplicationSceneManifest
+   - MUST use: $(PRODUCT_MODULE_NAME).SceneDelegate
+   - DON'T use: Just "SceneDelegate"
+
+BUILD PROCESS (AFTER CODE CHANGES):
+────────────────────────────────────────────────────────────────
+1. rm -rf ios/App/App/public/*
+2. npm run build
+3. export LANG=en_US.UTF-8 && export LC_ALL=en_US.UTF-8
+4. npx cap sync ios
+5. In Xcode: Clean (Cmd+Shift+K) → Run (Cmd+R)
+
+DEBUGGING:
+────────────────────────────────────────────────────────────────
+Safari Web Inspector is your best friend:
+- Run app in simulator
+- Safari → Develop → [Simulator] → PocketTeller
+- Check Console for errors
+
+VERIFICATION COMMANDS:
+────────────────────────────────────────────────────────────────
+# Check @objc attribute exists
+grep "@objc(SceneDelegate)" ios/App/App/SceneDelegate.swift
+
+# Check Info.plist configuration
+grep "PRODUCT_MODULE_NAME" ios/App/App/Info.plist
+
+# Check SceneDelegate in Xcode project (should be 4)
+grep -c "SceneDelegate" ios/App/App.xcodeproj/project.pbxproj
+
+EXPECTED APP BEHAVIOR:
+────────────────────────────────────────────────────────────────
+1. Splash screen (3 seconds)
+2. Authentication page OR Dashboard (if logged in)
+3. Bottom navigation visible
+4. All pages working
+5. NO black screen
+6. NO hangs
+
+COMMON ISSUES:
+────────────────────────────────────────────────────────────────
+"could not load class" → Missing @objc or wrong Info.plist
+Black screen → Missing UIApplicationSceneManifest
+Build fails → Clean build: rm -rf DerivedData
+
+READ FULL DOCS:
+────────────────────────────────────────────────────────────────
+- iosagent.md          - Complete iOS developer guide
+- IOS_FINAL_STATUS.md  - Final status and what was fixed
+
+═══════════════════════════════════════════════════════════════
+Last Updated: October 12, 2025 - WORKING ✅
+═══════════════════════════════════════════════════════════════

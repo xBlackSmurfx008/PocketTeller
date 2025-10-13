@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Share2, Copy, Mail, MessageSquare, Download, FileText, FileSpreadsheet, Shield, Lock } from "lucide-react";
@@ -261,7 +261,7 @@ export function ShareBudgetDialog({ budgetData, children }: ShareBudgetDialogPro
       row.map(cell => {
         const stringValue = String(cell);
         // Escape dangerous characters that could be interpreted as formulas
-        if (/^[=@+\-]/.test(stringValue)) {
+        if (/^[=@+-]/.test(stringValue)) {
           return `'${stringValue}`;
         }
         // Escape double quotes by doubling them and wrap in quotes

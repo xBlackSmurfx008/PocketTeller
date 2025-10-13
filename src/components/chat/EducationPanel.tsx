@@ -24,23 +24,23 @@ export const EducationPanel = ({
 }: EducationPanelProps) => {
   if (!isVisible) {
     return (
-      <div className="fixed bottom-24 right-4 z-50">
+      <div className="flex justify-center my-2">
         <Button
           onClick={onToggle}
           size="sm"
           variant="outline"
-          className="bg-background shadow-lg"
+          className="gap-2"
         >
-          <Lightbulb className="h-4 w-4 mr-2" />
-          Learning
+          <Lightbulb className="h-4 w-4" />
+          Learning Center
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-24 right-4 w-80 max-h-96 z-[60] pointer-events-auto">
-      <Card className="shadow-lg pointer-events-auto">
+    <div className="my-4">
+      <Card className="border-2">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

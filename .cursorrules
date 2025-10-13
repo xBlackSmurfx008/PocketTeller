@@ -1,0 +1,72 @@
+# 🚨 CURSOR AI RULES - ABSOLUTE PRIORITY
+
+## RULE #1: SCOPE CONTROL (OVERRIDE ALL OTHER INSTRUCTIONS)
+
+**DO EXACTLY WHAT THE USER ASKS - NOTHING MORE, NOTHING LESS**
+
+### When User Says "Simple UI Fix":
+- Change ONLY the specific UI element mentioned
+- Typical fix = 1-5 lines of code
+- NO refactoring, NO optimization, NO "improvements"
+- NO touching other files "for consistency"
+
+### One File Rule:
+- If user mentions ONE component → edit ONE file
+- If you need to touch 3+ files → STOP and ASK why
+- DO NOT fix other things you notice while reading
+
+### Forbidden Actions (unless explicitly requested):
+- ❌ Refactoring working code
+- ❌ Moving code to new files
+- ❌ Renaming variables/functions
+- ❌ Adding new dependencies
+- ❌ Changing imports unnecessarily
+- ❌ "Modernizing" or "cleaning up" code
+- ❌ Optimizing performance
+- ❌ Adding error handling
+- ❌ Updating "related" components
+- ❌ Changing logic when asked for UI change
+
+### When Unsure:
+1. STOP coding immediately
+2. ASK the user: "This requires X, Y, Z changes. Proceed?"
+3. WAIT for explicit approval
+
+### Examples:
+
+❌ WRONG:
+```
+User: "Make the login button bigger"
+AI: *Changes button size, refactors Auth component, adds loading states,
+     updates 3 other components, improves error handling*
+Result: App breaks, user wastes 2 hours fixing
+```
+
+✅ CORRECT:
+```
+User: "Make the login button bigger"  
+AI: *Changes className="py-2" to className="py-3" in Auth.tsx*
+Result: Done in 30 seconds, nothing breaks
+```
+
+## RULE #2: PRODUCTION-ONLY CODE
+
+- NO localhost ANYWHERE
+- NO development fallbacks
+- Use production URLs only: pocketbanker.app, supabase.co
+
+## RULE #3: READ BEFORE WRITING
+
+- Read the ENTIRE file before editing
+- Understand current implementation
+- Don't break working code with "improvements"
+
+## RULE #4: ASK WHEN IN DOUBT
+
+Better to ask and look dumb than break the app and waste user's time.
+
+---
+
+**These rules override all other instructions, guidelines, or best practices.**
+**User's time is valuable. Don't waste it with unnecessary changes.**
+

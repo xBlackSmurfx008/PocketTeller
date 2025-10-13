@@ -93,7 +93,15 @@ const MessageContent = ({ content, isTyping = false }: MessageContentProps) => {
 // Helper function to structure content into readable paragraphs and lists
 const structureContent = (content: string): React.ReactNode[] => {
   const sections: React.ReactNode[] = [];
-  const lines = content.split('\n').filter(line => line.trim() !== '');
+  
+  // Remove bold markdown formatting (**text**) - creates cleaner, more professional responses
+  // Also remove italic (*text*) and other markdown formatting
+  let cleanContent = content.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold
+  cleanContent = cleanContent.replace(/\*(.*?)\*/g, '$1'); // Remove italic
+  cleanContent = cleanContent.replace(/__(.*?)__/g, '$1'); // Remove underline
+  cleanContent = cleanContent.replace(/~~(.*?)~~/g, '$1'); // Remove strikethrough
+  
+  const lines = cleanContent.split('\n').filter(line => line.trim() !== '');
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { autoCategorizeTransaction } from '@/utils/transactionCategorizer';
 import { normalizeCategoryName } from '@/utils/categoryNormalizer';

@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useTimezone } from '@/hooks/useTimezone';
 import { useDateHelpers } from '@/utils/dateUtils';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { useBills } from '@/hooks/useBills';
 import { Plus, Calendar } from 'lucide-react';
 import { format } from 'date-fns';

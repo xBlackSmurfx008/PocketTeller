@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Material Design 3 Theme for PocketTeller
+        Following Android design guidelines: https://developer.android.com/design/ui/mobile
+        
+        Key Features:
+        - Material You design system
+        - Dynamic color support (Android 12+)
+        - Edge-to-edge content
+        - Proper accessibility
+        - Modern Android patterns
+    -->
+    
+    <!-- Base Light Theme -->
+    <style name="Base.Theme.PocketTeller" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_onPrimaryContainer</item>
+        
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/md_theme_light_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_light_onSecondaryContainer</item>
+        
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/md_theme_light_tertiary</item>
+        <item name="colorOnTertiary">@color/md_theme_light_onTertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_light_tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_light_onTertiaryContainer</item>
+        
+        <!-- Error Colors -->
+        <item name="colorError">@color/md_theme_light_error</item>
+        <item name="colorErrorContainer">@color/md_theme_light_errorContainer</item>
+        <item name="colorOnError">@color/md_theme_light_onError</item>
+        <item name="colorOnErrorContainer">@color/md_theme_light_onErrorContainer</item>
+        
+        <!-- Background -->
+        <item name="android:colorBackground">@color/md_theme_light_background</item>
+        <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
+        
+        <!-- Surface -->
+        <item name="colorSurface">@color/md_theme_light_surface</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_light_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
+        
+        <!-- Outline -->
+        <item name="colorOutline">@color/md_theme_light_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
+        
+        <!-- Status Bar - Edge to Edge Design -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+        
+        <!-- Window Configuration -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="p">shortEdges</item>
+        
+        <!-- Shape Appearance -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.PocketTeller.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.PocketTeller.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.PocketTeller.LargeComponent</item>
+        
+        <!-- Typography -->
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.PocketTeller.DisplayLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.PocketTeller.HeadlineMedium</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.PocketTeller.TitleLarge</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.PocketTeller.BodyLarge</item>
+        
+        <!-- Elevation -->
+        <item name="elevationOverlayEnabled">true</item>
+    </style>
+    
+    <!-- Base Dark Theme -->
+    <style name="Base.Theme.PocketTeller.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/md_theme_dark_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_dark_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_dark_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_dark_onPrimaryContainer</item>
+        
+        <!-- Secondary Colors -->
+        <item name="colorSecondary">@color/md_theme_dark_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_dark_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_dark_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_dark_onSecondaryContainer</item>
+        
+        <!-- Tertiary Colors -->
+        <item name="colorTertiary">@color/md_theme_dark_tertiary</item>
+        <item name="colorOnTertiary">@color/md_theme_dark_onTertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_dark_tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_dark_onTertiaryContainer</item>
+        
+        <!-- Error Colors -->
+        <item name="colorError">@color/md_theme_dark_error</item>
+        <item name="colorErrorContainer">@color/md_theme_dark_errorContainer</item>
+        <item name="colorOnError">@color/md_theme_dark_onError</item>
+        <item name="colorOnErrorContainer">@color/md_theme_dark_onErrorContainer</item>
+        
+        <!-- Background -->
+        <item name="android:colorBackground">@color/md_theme_dark_background</item>
+        <item name="colorOnBackground">@color/md_theme_dark_onBackground</item>
+        
+        <!-- Surface -->
+        <item name="colorSurface">@color/md_theme_dark_surface</item>
+        <item name="colorOnSurface">@color/md_theme_dark_onSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_dark_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_dark_onSurfaceVariant</item>
+        
+        <!-- Outline -->
+        <item name="colorOutline">@color/md_theme_dark_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_dark_outlineVariant</item>
+        
+        <!-- Status Bar - Edge to Edge Design -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
+        
+        <!-- Window Configuration -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="p">shortEdges</item>
+        
+        <!-- Shape Appearance -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.PocketTeller.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.PocketTeller.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.PocketTeller.LargeComponent</item>
+        
+        <!-- Elevation -->
+        <item name="elevationOverlayEnabled">true</item>
+    </style>
+    
+    <!-- Main App Theme (Light) -->
+    <style name="Theme.PocketTeller" parent="Base.Theme.PocketTeller" />
+    
+    <!-- Dark Theme -->
+    <style name="Theme.PocketTeller.Dark" parent="Base.Theme.PocketTeller.Dark" />
+    
+    <!-- Splash Screen Theme -->
+    <style name="Theme.PocketTeller.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.PocketTeller</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    
+    <!-- Shape Appearances -->
+    <style name="ShapeAppearance.PocketTeller.SmallComponent" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    
+    <style name="ShapeAppearance.PocketTeller.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    
+    <style name="ShapeAppearance.PocketTeller.LargeComponent" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+    
+    <!-- Typography Styles -->
+    <style name="TextAppearance.PocketTeller.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">57sp</item>
+        <item name="android:letterSpacing">-0.0025</item>
+    </style>
+    
+    <style name="TextAppearance.PocketTeller.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">28sp</item>
+    </style>
+    
+    <style name="TextAppearance.PocketTeller.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+    
+    <style name="TextAppearance.PocketTeller.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:letterSpacing">0.005</item>
+    </style>
+    
+    <!-- Button Styles -->
+    <style name="Widget.PocketTeller.Button" parent="Widget.Material3.Button">
+        <item name="cornerRadius">12dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+    
+    <style name="Widget.PocketTeller.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">12dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    
+    <!-- Card Styles -->
+    <style name="Widget.PocketTeller.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+    
+    <!-- Bottom Navigation -->
+    <style name="Widget.PocketTeller.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="itemIconTint">@color/md_theme_light_primary</item>
+        <item name="itemTextColor">@color/md_theme_light_onSurface</item>
+    </style>
+</resources>
+

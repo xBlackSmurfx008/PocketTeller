@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RefreshCw, TrendingUp, AlertTriangle, Lightbulb, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { useDemo } from '@/hooks/useDemo';
 import { useNavigate } from 'react-router-dom';
 

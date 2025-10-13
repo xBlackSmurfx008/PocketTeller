@@ -1,0 +1,52 @@
+═══════════════════════════════════════════════════════════════
+🔍 SAFARI WEB INSPECTOR - Quick Setup Guide
+═══════════════════════════════════════════════════════════════
+
+ENABLE ON IPHONE (One-time):
+-----------------------------
+iPhone → Settings → Safari → Advanced
+Turn ON: "Web Inspector"
+
+OPEN ON MAC:
+------------
+1. Open Safari on Mac
+2. Menu: Develop → [Your iPhone Name] → PocketTeller
+3. Web Inspector window opens
+
+VIEW CONSOLE:
+-------------
+1. Click "Console" tab
+2. See all JavaScript logs from your iPhone
+3. Errors appear in red
+
+TEST THE APP:
+-------------
+1. Log in on your iPhone
+2. Watch console logs appear on Mac
+3. Look for:
+   ✅ "Sign in successful"
+   ✅ "Dashboard component rendering"
+   ❌ Red errors (if any)
+
+WHAT TO SHARE:
+--------------
+Copy the console output (last 30 lines after login)
+and share it so I can diagnose the exact issue.
+
+CONSOLE SHOULD SHOW:
+--------------------
+🚀 PocketTeller starting in MOBILE mode
+📱 iOS Platform Detected
+✅ Sign in successful, navigating to /home
+🔒 ProtectedRoute check: { hasUser: true }
+✅ ProtectedRoute: Access granted
+📊 Dashboard component rendering...
+
+IF THERE'S AN ISSUE:
+-------------------
+The console will show exactly where it breaks!
+
+═══════════════════════════════════════════════════════════════
+This is the BEST tool for debugging mobile app issues!
+═══════════════════════════════════════════════════════════════
+

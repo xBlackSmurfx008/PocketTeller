@@ -16,8 +16,26 @@ export interface Transaction {
   plaid_account_id?: string;
   merchant_name?: string;
   subcategory?: string;
-  location?: any;
-  payment_meta?: any;
+  location?: {
+    address?: string;
+    city?: string;
+    region?: string;
+    postal_code?: string;
+    country?: string;
+    lat?: number;
+    lon?: number;
+    store_number?: string;
+  };
+  payment_meta?: {
+    reference_number?: string;
+    ppd_id?: string;
+    payee?: string;
+    by_order_of?: string;
+    payer?: string;
+    payment_method?: string;
+    payment_processor?: string;
+    reason?: string;
+  };
   pending?: boolean;
   datetime?: string;
   authorized_date?: string;

@@ -1,6 +1,6 @@
-# Contributing to FinanceManager-AI
+# Contributing to PocketTeller
 
-Thank you for your interest in contributing to FinanceManager-AI! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to PocketTeller (Pocket Banker)! This document provides guidelines and information for contributors.
 
 ## 🎯 Ways to Contribute
 
@@ -24,8 +24,8 @@ Thank you for your interest in contributing to FinanceManager-AI! This document 
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/financemanager-ai.git
-   cd financemanager-ai
+   git clone https://github.com/YOUR_USERNAME/pocketteller.git
+   cd pocketteller
    ```
 
 2. **Install dependencies**
@@ -314,4 +314,4 @@ test(components): add button component tests
 
 ---
 
-Thank you for contributing to FinanceManager-AI! Together, we're building the future of personal finance management. 🚀
+Thank you for contributing to PocketTeller! Together, we're building the future of personal finance management. 🚀

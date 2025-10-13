@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Night/Dark Theme Configuration
+        Automatically applied when device is in dark mode
+    -->
+    
+    <!-- Default to dark theme when system is in dark mode -->
+    <style name="Theme.PocketTeller" parent="Base.Theme.PocketTeller.Dark" />
+    
+    <!-- Splash screen maintains brand color -->
+    <style name="Theme.PocketTeller.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.PocketTeller</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
+

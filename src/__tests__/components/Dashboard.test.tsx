@@ -14,7 +14,7 @@ vi.mock('@/hooks/useSignOutAction', () => ({
 vi.mock('@/hooks/useLayoutPreference', () => ({
   useLayoutPreference: () => ({ isDesktopForced: false })
 }));
-vi.mock('@/hooks/use-mobile', () => ({
+vi.mock('@/hooks/useMobile', () => ({
   useIsMobile: () => false
 }));
 

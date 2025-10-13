@@ -66,23 +66,89 @@ const getClientIP = (req: Request): string | null => {
   return null;
 };
 
-// Map Plaid categories to our app categories
+// Map Plaid categories to our app categories (comprehensive mapping)
 const mapPlaidCategory = (plaidCategories: string[]): string => {
   if (!plaidCategories || plaidCategories.length === 0) {
     return 'Other';
   }
 
-  const category = plaidCategories[0].toLowerCase();
+  const primary = plaidCategories[0]?.toLowerCase() || '';
   
-  if (category.includes('food') || category.includes('restaurant')) return 'Food & Dining';
-  if (category.includes('travel') || category.includes('transportation')) return 'Transportation';
-  if (category.includes('shop') || category.includes('retail')) return 'Shopping';
-  if (category.includes('entertainment') || category.includes('recreation')) return 'Entertainment';
-  if (category.includes('healthcare') || category.includes('medical')) return 'Healthcare';
-  if (category.includes('utilities') || category.includes('bills')) return 'Bills & Utilities';
-  if (category.includes('transfer') || category.includes('deposit')) return 'Transfer';
-  if (category.includes('interest') || category.includes('dividend')) return 'Income';
-  
+  // Category mapping from Plaid to our categories
+  const categoryMap: { [key: string]: string } = {
+    'food and drink': 'Food & Dining',
+    'restaurants': 'Food & Dining',
+    'fast food': 'Food & Dining',
+    'coffee shops': 'Food & Dining',
+    'groceries': 'Food & Dining',
+    'food': 'Food & Dining',
+    
+    'transportation': 'Transportation',
+    'gas stations': 'Transportation',
+    'parking': 'Transportation',
+    'public transportation': 'Transportation',
+    'taxi': 'Transportation',
+    'car service': 'Transportation',
+    'travel': 'Transportation',
+    
+    'shops': 'Shopping',
+    'general merchandise': 'Shopping',
+    'clothing and accessories': 'Shopping',
+    'electronics': 'Shopping',
+    'home improvement': 'Shopping',
+    'retail': 'Shopping',
+    
+    'recreation': 'Entertainment',
+    'entertainment': 'Entertainment',
+    'arts and entertainment': 'Entertainment',
+    'gyms and fitness centers': 'Entertainment',
+    'sports': 'Entertainment',
+    
+    'service': 'Bills & Utilities',
+    'utilities': 'Bills & Utilities',
+    'telecommunication services': 'Bills & Utilities',
+    'internet and cable': 'Bills & Utilities',
+    'phone': 'Bills & Utilities',
+    'bills': 'Bills & Utilities',
+    
+    'healthcare': 'Healthcare',
+    'medical': 'Healthcare',
+    'dentists': 'Healthcare',
+    'hospitals': 'Healthcare',
+    
+    'airlines and aviation services': 'Travel',
+    'lodging': 'Travel',
+    'car rental': 'Travel',
+    'hotels': 'Travel',
+    
+    'payment': 'Income',
+    'payroll': 'Income',
+    'deposit': 'Income',
+    'transfer in': 'Income',
+    'interest': 'Income',
+    'dividend': 'Income',
+    
+    'bank fees': 'Bills & Utilities',
+    'overdraft': 'Bills & Utilities'
+  };
+
+  // Check for exact matches first
+  for (const [plaidCat, appCat] of Object.entries(categoryMap)) {
+    if (primary.includes(plaidCat)) {
+      return appCat;
+    }
+  }
+
+  // Check subcategory if available
+  if (plaidCategories.length > 1) {
+    const subcategory = plaidCategories[1]?.toLowerCase() || '';
+    for (const [plaidCat, appCat] of Object.entries(categoryMap)) {
+      if (subcategory.includes(plaidCat)) {
+        return appCat;
+      }
+    }
+  }
+
   return 'Other';
 };
 
@@ -143,7 +209,7 @@ serve(async (req) => {
       });
     }
 
-    const { public_token } = await req.json();
+    const { public_token, institution_name, institution_id } = await req.json();
     
     if (!public_token) {
       return new Response(JSON.stringify({ error: 'No public_token provided' }), {
@@ -310,7 +376,8 @@ serve(async (req) => {
       .upsert({
         user_id: user.id,
         item_id: exchangeData.item_id,
-        institution_id: accountsData.item?.institution_id,
+        institution_id: institution_id || accountsData.item?.institution_id,
+        institution_name: institution_name || accountsData.accounts?.[0]?.name?.split(' - ')?.[0] || 'Connected Bank',
         available_products: accountsData.item?.available_products || [],
         billed_products: accountsData.item?.billed_products || [],
         products: accountsData.item?.products || []
@@ -404,27 +471,36 @@ serve(async (req) => {
         // Save transactions to database  
         if (transactionsData.transactions && transactionsData.transactions.length > 0) {
           try {
-            const transactionsToInsert = transactionsData.transactions.map((transaction: any) => ({
-              user_id: user.id,
-              plaid_transaction_id: transaction.transaction_id,
-              plaid_account_id: transaction.account_id,
-              transaction_id: transaction.transaction_id, // For compatibility
-              amount: Math.abs(transaction.amount), // Plaid uses negative for debits, we store positive
-              date: transaction.date,
-              datetime: transaction.datetime || null,
-              authorized_date: transaction.authorized_date || null,
-              authorized_datetime: transaction.authorized_datetime || null,
-              description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
-              merchant_name: transaction.merchant_name,
-              category: mapPlaidCategory(transaction.category || []),
-              category_source: 'auto',
-              subcategory: transaction.category?.[1] || null,
-              pending: transaction.pending || false,
-              iso_currency_code: transaction.iso_currency_code || 'USD',
-              unofficial_currency_code: transaction.unofficial_currency_code,
-              location: transaction.location ? transaction.location : null,
-              payment_meta: transaction.payment_meta ? transaction.payment_meta : null
-            }));
+            const transactionsToInsert = transactionsData.transactions.map((transaction: any) => {
+              const mappedCategory = mapPlaidCategory(transaction.category || []);
+              const hasPlaidCategory = transaction.category && transaction.category.length > 0;
+              
+              // Use 'plaid' source if Plaid provided category data, 'auto' if we defaulted to Other
+              const categorySource = (hasPlaidCategory && mappedCategory !== 'Other') ? 'plaid' : 'auto';
+              
+              return {
+                user_id: user.id,
+                plaid_transaction_id: transaction.transaction_id,
+                plaid_account_id: transaction.account_id,
+                transaction_id: transaction.transaction_id, // For compatibility
+                amount: Math.abs(transaction.amount), // Plaid uses negative for debits, we store positive
+                date: transaction.date,
+                datetime: transaction.datetime || null,
+                authorized_date: transaction.authorized_date || null,
+                authorized_datetime: transaction.authorized_datetime || null,
+                description: transaction.name || transaction.merchant_name || 'Unknown Transaction',
+                merchant_name: transaction.merchant_name,
+                category: mappedCategory,
+                category_source: categorySource,
+                subcategory: transaction.category?.[1] || null,
+                pending: transaction.pending || false,
+                iso_currency_code: transaction.iso_currency_code || 'USD',
+                unofficial_currency_code: transaction.unofficial_currency_code,
+                location: transaction.location ? transaction.location : null,
+                payment_meta: transaction.payment_meta ? transaction.payment_meta : null,
+                plaid_category: transaction.category?.[0] || null, // Store original Plaid category
+              };
+            });
 
             const { data: transactionInsertResult, error: transactionInsertError } = await supabase
               .from('transactions')

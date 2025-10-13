@@ -1,0 +1,16 @@
+# Build directories
+dist
+android
+ios
+node_modules
+build
+
+# Generated files
+*.min.js
+*.bundle.js
+native-bridge.js
+
+# Test files
+coverage
+.nyc_output
+

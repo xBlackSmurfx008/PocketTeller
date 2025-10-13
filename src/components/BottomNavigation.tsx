@@ -32,10 +32,10 @@ const tabs: TabItem[] = [
     path: '/budget'
   },
   {
-    id: 'chat',
-    label: 'AI Chat',
-    icon: MessageSquare,
-    path: '/chat'
+    id: 'transactions',
+    label: 'Transactions',
+    icon: Receipt,
+    path: '/transactions'
   },
   {
     id: 'goals',
@@ -44,10 +44,16 @@ const tabs: TabItem[] = [
     path: '/goals'
   },
   {
-    id: 'transactions',
-    label: 'Transactions',
-    icon: Receipt,
-    path: '/transactions'
+    id: 'chat',
+    label: 'AI Chat',
+    icon: MessageSquare,
+    path: '/chat'
+  },
+  {
+    id: 'account',
+    label: 'Settings',
+    icon: Settings,
+    path: '/settings'
   }
 ];
 
@@ -70,7 +76,7 @@ export default function BottomNavigation({ className }: BottomNavigationProps) {
       "safe-area-pb", // iOS safe area padding
       className
     )}>
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex items-center justify-around h-16 px-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = location.pathname === tab.path || 
@@ -82,7 +88,7 @@ export default function BottomNavigation({ className }: BottomNavigationProps) {
               onClick={() => handleTabPress(tab.path)}
               className={cn(
                 "flex flex-col items-center justify-center min-w-0 flex-1",
-                "py-2 px-1 rounded-lg transition-all duration-200",
+                "py-3 px-2 rounded-lg transition-all duration-200",
                 "active:scale-95 active:bg-accent/50",
                 isActive 
                   ? "text-primary" 
@@ -105,42 +111,14 @@ export default function BottomNavigation({ className }: BottomNavigationProps) {
               </div>
               <span className={cn(
                 "text-xs mt-1 transition-all duration-200",
-                isActive ? "font-medium" : "font-normal",
-                "truncate max-w-full"
+                isActive ? "font-semibold" : "font-normal",
+                "truncate max-w-full leading-tight"
               )}>
                 {tab.label}
               </span>
             </button>
           );
         })}
-        
-        {/* Settings button - separate styling */}
-        <button
-          onClick={() => navigate('/account')}
-          className={cn(
-            "flex flex-col items-center justify-center min-w-0 flex-1",
-            "py-2 px-1 rounded-lg transition-all duration-200",
-            "active:scale-95 active:bg-accent/50",
-            location.pathname === '/account'
-              ? "text-primary" 
-              : "text-muted-foreground hover:text-foreground"
-          )}
-          aria-label="Settings"
-        >
-          <Settings 
-            className={cn(
-              "h-5 w-5 transition-all duration-200",
-              location.pathname === '/account' && "scale-110"
-            )} 
-          />
-          <span className={cn(
-            "text-xs mt-1 transition-all duration-200",
-            location.pathname === '/account' ? "font-medium" : "font-normal",
-            "truncate max-w-full"
-          )}>
-            Settings
-          </span>
-        </button>
       </div>
     </div>
   );

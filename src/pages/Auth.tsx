@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { getErrorMessage } from '@/utils/authConfig';
 import { Eye, EyeOff, Mail, RotateCcw, AlertCircle } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
@@ -27,17 +27,21 @@ export default function Auth() {
   const [lastSignUpEmail, setLastSignUpEmail] = useState('');
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
-  const { signUp, signIn, user, resendConfirmation, resetPassword, sendMagicLink } = useAuth();
+  const { signUp, signIn, user, loading: authLoading, resendConfirmation, resetPassword, sendMagicLink } = useAuth();
   const { startDemo } = useDemo();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Redirect authenticated users
+  // Redirect authenticated users (only after loading complete)
   useEffect(() => {
-    if (user) {
-      navigate('/home');
+    if (user && !authLoading) {
+      console.log('✅ Auth: User authenticated, navigating to /home', { userId: user.id });
+      // Small delay to ensure user state is fully propagated
+      setTimeout(() => {
+        navigate('/home', { replace: true });
+      }, 100);
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -99,7 +103,7 @@ export default function Auth() {
 
     setLoading(true);
     
-    const { error } = await signUp(email.trim(), password);
+    const { error, user, session } = await signUp(email.trim(), password);
     
     if (error) {
       toast({
@@ -107,14 +111,22 @@ export default function Auth() {
         description: getErrorMessage(error),
         variant: "destructive",
       });
+      setLoading(false);
     } else {
       setLastSignUpEmail(email);
       toast({
-        title: "Success!",
-        description: "Check your email (including spam folder) for the confirmation link.",
+        title: "Welcome!",
+        description: "Your account has been created. Please check your email to confirm your address.",
       });
+      
+      // Redirect to dashboard immediately
+      // User can confirm email later via the reminder banner
+      setTimeout(() => {
+        navigate('/home', { replace: true });
+      }, 500);
+      
+      // Note: Don't set loading to false here, let redirect happen
     }
-    setLoading(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -145,6 +157,7 @@ export default function Auth() {
     const { error } = await signIn(email.trim(), password);
     
     if (error) {
+      console.error('❌ Sign in error:', error);
       if (error.message.includes('Email not confirmed')) {
         setEmailNotConfirmed(true);
         setLastSignUpEmail(email);
@@ -161,7 +174,12 @@ export default function Auth() {
         });
       }
     } else {
-      navigate('/home');
+      console.log('✅ Sign in successful');
+      // Don't navigate here - let the useEffect handle it after user state updates
+      toast({
+        title: "Welcome back!",
+        description: "Redirecting to your dashboard...",
+      });
     }
     setLoading(false);
   };

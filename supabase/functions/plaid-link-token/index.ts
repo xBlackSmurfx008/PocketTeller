@@ -121,19 +121,17 @@ serve(async (req) => {
       });
     }
 
-    // Check rate limit
+    // Check rate limiting for production (50 requests per hour per user)
     const { data: rateLimitCheck, error: rateLimitError } = await supabase
       .rpc('check_link_token_rate', { target_user_id: user.id });
 
     if (rateLimitError) {
       console.error('Rate limit check failed:', rateLimitError);
-      return new Response(JSON.stringify({ error: 'Rate limit check failed' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // Don't fail the request if rate limit check fails, just log it
+      console.warn('Continuing without rate limit check due to error');
     }
 
-    if (!rateLimitCheck) {
+    if (!rateLimitError && !rateLimitCheck) {
       // Log rate limit exceeded
       const { error: auditError } = await supabase
         .from('plaid_token_audit_log')
@@ -152,12 +150,14 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ 
-        error: 'Too many link token requests. Please try again later.' 
+        error: 'Too many link token requests. Please try again in a few minutes.' 
       }), {
         status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    console.log('Rate limit check passed for user:', user.id);
 
     console.log('Creating link token for user:', user.id);
 

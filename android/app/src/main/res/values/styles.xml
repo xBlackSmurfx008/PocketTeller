@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+        Legacy styles.xml - Now using Material Design 3 themes.xml
+        These styles are kept for backward compatibility with Capacitor.
+        Main theming is in themes.xml following Android best practices.
+    -->
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <!-- Base application theme - Delegates to Material Design 3 -->
+    <style name="AppTheme" parent="Theme.PocketTeller">
+        <!-- Material Design 3 theme with PocketTeller brand colors -->
     </style>
 
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <!-- No Action Bar theme for web content -->
+    <style name="AppTheme.NoActionBar" parent="Theme.PocketTeller">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
     </style>
 
-
-    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+    <!-- Splash Screen theme -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.PocketTeller.Splash">
         <item name="android:background">@drawable/splash</item>
     </style>
 </resources>

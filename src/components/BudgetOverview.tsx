@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CATEGORIES } from '@/utils/transactionCategorizer';
 import { ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { startOfMonth, endOfMonth } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 interface BudgetData {
   income: number;
@@ -25,7 +25,17 @@ interface CategorySummary {
   percentage: number;
 }
 
-export default function BudgetOverview() {
+/**
+ * Props for BudgetOverview component
+ */
+interface BudgetOverviewProps {
+  accountFilter?: string | null;
+}
+
+/**
+ * Displays budget overview with category breakdown and spending analysis
+ */
+function BudgetOverview({ accountFilter }: BudgetOverviewProps = {}): JSX.Element {
   const { user } = useAuth();
   const { isDemo, sampleData } = useDemo();
   const navigate = useNavigate();
@@ -364,3 +374,8 @@ export default function BudgetOverview() {
     </Card>
   );
 }
+
+/**
+ * Memoized export for performance optimization
+ */
+export default memo(BudgetOverview);

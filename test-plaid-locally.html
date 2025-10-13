@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Plaid</title>
+</head>
+<body>
+  <h1>Testing Plaid Integration</h1>
+  <button id="testBtn">Test Connection</button>
+  <pre id="output"></pre>
+  
+  <script>
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const output = document.getElementById('output');
+      output.textContent = 'Testing...';
+      
+      try {
+        const response = await fetch('https://aeyxvafivxsvckyjuqso.supabase.co/functions/v1/plaid-link-token', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer YOUR_TOKEN_HERE',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        output.textContent = 'Error: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>

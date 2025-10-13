@@ -122,15 +122,26 @@ serve(async (req) => {
       });
     }
 
-    // Get user's encrypted token
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('encrypted_plaid_token, token_iv')
+    // Get item_id from request body
+    const { item_id } = await req.json();
+    
+    if (!item_id) {
+      return new Response(JSON.stringify({ error: 'item_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get the specific plaid_item with encrypted token
+    const { data: plaidItem, error: itemError } = await supabase
+      .from('plaid_items')
+      .select('item_id, encrypted_access_token, token_iv')
       .eq('user_id', user.id)
+      .eq('item_id', item_id)
       .single();
 
-    if (profileError || !profile || !profile.encrypted_plaid_token) {
-      return new Response(JSON.stringify({ error: 'No Plaid connection found' }), {
+    if (itemError || !plaidItem || !plaidItem.encrypted_access_token) {
+      return new Response(JSON.stringify({ error: 'Plaid connection not found for this bank' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -140,8 +151,8 @@ serve(async (req) => {
     const { data: decryptedToken, error: decryptError } = await supabase
       .rpc('decrypt_plaid_token_with_audit', {
         encrypted_data: {
-          encrypted_token: profile.encrypted_plaid_token,
-          iv: profile.token_iv
+          encrypted_token: plaidItem.encrypted_access_token,
+          iv: plaidItem.token_iv
         },
         encryption_key: plaidEncryptionKey,
         function_name: 'plaid-disconnect',
@@ -202,19 +213,28 @@ serve(async (req) => {
       });
     }
 
-    // Clear encrypted token and token_iv from profile
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ 
-        encrypted_plaid_token: null,
-        token_iv: null,
-        last_token_rotation: new Date().toISOString()
-      })
-      .eq('user_id', user.id);
+    // Delete all accounts associated with this plaid_item
+    const { error: deleteAccountsError } = await supabase
+      .from('accounts')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('plaid_item_id_ref', item_id);
 
-    if (updateError) {
-      console.error('Error clearing profile token:', updateError);
-      return new Response(JSON.stringify({ error: 'Failed to clear stored token' }), {
+    if (deleteAccountsError) {
+      console.error('Error deleting accounts:', deleteAccountsError);
+      // Continue anyway - plaid_item deletion will cascade
+    }
+
+    // Delete the plaid_item (this will also cascade delete related records)
+    const { error: deleteItemError } = await supabase
+      .from('plaid_items')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('item_id', item_id);
+
+    if (deleteItemError) {
+      console.error('Error deleting plaid_item:', deleteItemError);
+      return new Response(JSON.stringify({ error: 'Failed to remove bank connection from database' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

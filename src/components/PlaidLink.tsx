@@ -1,24 +1,36 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Unlink } from 'lucide-react';
+import { Loader2, Building2, Plus, RefreshCw } from 'lucide-react';
 import { usePlaidLink } from 'react-plaid-link';
+import { logInfo, logError, logDebug } from '@/utils/logger';
+import type { 
+  PlaidLinkOnSuccessMetadata, 
+  PlaidLinkOnExitMetadata, 
+  PlaidLinkError 
+} from '@/types/plaid';
 
 interface PlaidLinkProps {
   hasPlaidToken: boolean;
   onConnectionChange: () => void;
+  compact?: boolean;
 }
 
-export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps) => {
+export const PlaidLink = ({ hasPlaidToken, onConnectionChange, compact = false }: PlaidLinkProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const onSuccess = useCallback(async (public_token: string, metadata: any) => {
+  const onSuccess = useCallback(async (public_token: string, metadata: PlaidLinkOnSuccessMetadata): Promise<void> => {
     setIsConnecting(true);
+    
+    logInfo('Plaid onSuccess called', {
+      institution: metadata.institution.name,
+      accountCount: metadata.accounts.length,
+      hasToken: !!public_token
+    });
     
     // Show saving toast immediately
     toast({
@@ -27,9 +39,17 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
     });
 
     try {
-      const { data, error } = await supabase.functions.invoke('plaid-link-exchange', {
-        body: { public_token }
+      logDebug('Calling plaid-link-exchange-v2');
+      
+      const { data, error } = await supabase.functions.invoke('plaid-link-exchange-v2', {
+        body: { 
+          public_token,
+          institution_name: metadata.institution.name,
+          institution_id: metadata.institution.institution_id
+        }
       });
+
+      logDebug('Exchange response received', { hasData: !!data, hasError: !!error });
 
       if (error) {
         throw new Error(error.message || 'Failed to exchange token');
@@ -38,13 +58,23 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       if (data?.error) {
         throw new Error(data.error || 'Failed to exchange token');
       }
+      
+      logInfo('Bank connected successfully', { 
+        institution: metadata.institution.name 
+      });
+      
       toast({
         title: "Bank Connected",
         description: `Successfully connected ${metadata.institution.name}`,
       });
+      
+      // Trigger refresh
       onConnectionChange();
-    } catch (error: any) {
-      const errorMessage = error?.message || error?.toString() || "Failed to connect your bank account";
+    } catch (error) {
+      logError(error, 'PlaidLink.onSuccess');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Failed to connect your bank account";
       toast({
         title: "Connection Failed",
         description: errorMessage,
@@ -55,11 +85,12 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
     }
   }, [toast, onConnectionChange]);
 
-  const onExit = useCallback((err: any, metadata: any) => {
+  const onExit = useCallback((err: PlaidLinkError | null, metadata: PlaidLinkOnExitMetadata): void => {
     if (err) {
+      logError(err, 'PlaidLink.onExit', err.error_message);
       toast({
         title: "Connection Error",
-        description: "Failed to connect bank account.",
+        description: err.display_message || "Failed to connect bank account.",
         variant: "destructive",
       });
     }
@@ -74,13 +105,16 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
 
   const { open, ready } = usePlaidLink(config);
 
-  const fetchLinkToken = async () => {
+  const fetchLinkToken = async (): Promise<string | null> => {
     setIsConnecting(true);
+    
     try {
-      const { data, error } = await supabase.functions.invoke('plaid-link-token');
+      logDebug('Fetching Plaid link token (v2)');
+      const { data, error } = await supabase.functions.invoke('plaid-link-token-v2');
       
       if (error) {
         const errorMessage = error.message || "Failed to initialize bank connection";
+        logError(error, 'PlaidLink.fetchLinkToken');
         toast({
           title: "Connection Error",
           description: errorMessage.includes("Missing required Plaid configuration") 
@@ -93,6 +127,7 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
       }
       
       if (!data?.link_token) {
+        logError('Invalid Plaid link token response', { data });
         toast({
           title: "Connection Error", 
           description: "Invalid response from Plaid service",
@@ -102,10 +137,12 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
         return null;
       }
       
+      logInfo('Plaid link token fetched successfully');
       setLinkToken(data.link_token);
       return data.link_token;
-    } catch (error: any) {
-      const errorMessage = error?.message || "Unknown error occurred";
+    } catch (error) {
+      logError(error, 'PlaidLink.fetchLinkToken');
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       toast({
         title: "Connection Error",
         description: errorMessage.includes("Missing required Plaid configuration")
@@ -122,14 +159,22 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
     // Prevent double invocation
     if (isConnecting) return;
     
+    console.log('🔘 Connect Bank button clicked');
+    
     if (!linkToken) {
       const token = await fetchLinkToken();
-      if (!token) return;
+      if (!token) {
+        console.error('❌ Failed to get link token');
+        return;
+      }
+      console.log('✅ Link token obtained, waiting for Plaid to be ready...');
     }
     
     if (ready) {
+      console.log('✅ Plaid ready, opening modal...');
       open();
     } else {
+      console.log('⏳ Plaid not ready yet, will auto-open when ready');
       toast({
         title: "Initializing Connection",
         description: "Preparing your bank connection...",
@@ -148,7 +193,7 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
   const syncData = async () => {
     setIsSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('plaid-sync');
+      const { data, error } = await supabase.functions.invoke('plaid-sync-v2');
       
       if (error) throw error;
 
@@ -168,71 +213,64 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
     }
   };
 
-  const disconnectBank = async () => {
-    setIsDisconnecting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('plaid-disconnect');
-
-      if (error) {
-        toast({
-          title: "Disconnection Failed",
-          description: "Failed to disconnect your bank account. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.error) {
-        toast({
-          title: "Disconnection Failed",
-          description: data.error,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Bank Disconnected",
-        description: "Your bank account has been disconnected successfully.",
-      });
-      onConnectionChange();
-    } catch (error) {
-      toast({
-        title: "Disconnection Failed",
-        description: "Failed to disconnect your bank account. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDisconnecting(false);
-    }
-  };
+  // Note: Individual bank disconnection is handled in ConnectedAccountsList component
+  // This component is for connecting new banks and syncing all connected banks
 
   if (!hasPlaidToken) {
+    if (compact) {
+      return (
+        <Button 
+          onClick={connectBank} 
+          disabled={isConnecting}
+          variant="outline"
+          size="sm"
+          className="gap-2 shrink-0"
+        >
+          {isConnecting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Connecting...
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4" />
+              <span className="font-medium">Add Bank</span>
+            </>
+          )}
+        </Button>
+      );
+    }
+    
     return (
       <Button 
         onClick={connectBank} 
         disabled={isConnecting}
-        className="w-full"
+        className="w-full h-11 text-base font-medium"
+        size="lg"
       >
         {isConnecting ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin mr-2" />
             Connecting...
           </>
         ) : (
-          'Connect Bank Account'
+          <>
+            <Building2 className="h-5 w-5 mr-2" />
+            Connect Bank
+          </>
         )}
       </Button>
     );
   }
 
   return (
-    <div className="flex gap-2">
+    <>
       <Button 
         onClick={syncData} 
         disabled={isSyncing}
         variant="outline"
-        className="flex-1"
+        size="sm"
+        className="gap-2 shrink-0"
       >
         {isSyncing ? (
           <>
@@ -240,21 +278,31 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange }: PlaidLinkProps)
             Syncing...
           </>
         ) : (
-          'Sync Data'
+          <>
+            <RefreshCw className="h-4 w-4" />
+            Sync
+          </>
         )}
       </Button>
       <Button 
-        onClick={disconnectBank} 
-        disabled={isDisconnecting}
+        onClick={connectBank} 
+        disabled={isConnecting}
         variant="outline"
-        size="icon"
+        size="sm"
+        className="gap-2 shrink-0"
       >
-        {isDisconnecting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+        {isConnecting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Adding...
+          </>
         ) : (
-          <Unlink className="h-4 w-4" />
+          <>
+            <Plus className="h-4 w-4" />
+            Add Bank
+          </>
         )}
       </Button>
-    </div>
+    </>
   );
 };

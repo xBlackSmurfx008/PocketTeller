@@ -3,15 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
+    
+    <!-- Content Security Policy - Disabled for Capacitor (uses native security) -->
+    <!-- CSP is handled by native iOS/Android security when running as mobile app -->
+    <!-- For web builds, server-side headers should be used instead of meta tags -->
+    
     <title>Pocket Banker - Smart Financial Management with AI</title>
     <meta name="description" content="AI-powered finance manager for smart budgeting, expense tracking, and financial insights. Connect your bank, set goals, and take control of your finances." />
     <meta name="keywords" content="AI finance, budget app, expense tracker, financial management, banking, personal finance, Gemini AI, budgeting tool" />
     <meta name="author" content="Pocket Banker" />
-    <link rel="icon" type="image/png" href="/lovable-uploads/8e9b076b-3d75-41b0-9d8a-170ed31f15e1.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/8e9b076b-3d75-41b0-9d8a-170ed31f15e1.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/lovable-uploads/8e9b076b-3d75-41b0-9d8a-170ed31f15e1.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/lovable-uploads/8e9b076b-3d75-41b0-9d8a-170ed31f15e1.png" />
-    <link rel="canonical" href="https://financemanager-ai.lovable.app/" />
+    <link rel="icon" type="image/png" href="/lovable-uploads/robot-icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/lovable-uploads/robot-icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/lovable-uploads/robot-icon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/robot-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/lovable-uploads/robot-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/lovable-uploads/robot-icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/lovable-uploads/robot-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/lovable-uploads/robot-icon-114x114.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/lovable-uploads/robot-icon-76x76.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/lovable-uploads/robot-icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/lovable-uploads/robot-icon-60x60.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/lovable-uploads/robot-icon-57x57.png" />
+    <link rel="canonical" href="https://pocketbanker.app/" />
     <link rel="preconnect" href="https://dscndbpqvhvylukvcgpq.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://dscndbpqvhvylukvcgpq.supabase.co" />
     <!-- Google Fonts - Inter for body, Playfair Display for headings -->
@@ -30,15 +50,15 @@
     <meta property="og:title" content="Pocket Banker - Smart Financial Management with AI" />
     <meta property="og:description" content="AI-powered finance manager for smart budgeting, expense tracking, and financial insights. Connect your bank, set goals, and take control of your finances." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://financemanager-ai.lovable.app/og-image.png" />
-    <meta property="og:url" content="https://financemanager-ai.lovable.app/" />
+    <meta property="og:image" content="https://pocketbanker.app/og-image.png" />
+    <meta property="og:url" content="https://pocketbanker.app/" />
     <meta property="og:site_name" content="Pocket Banker" />
 
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Pocket Banker - Smart Financial Management with AI" />
     <meta name="twitter:description" content="AI-powered finance manager for smart budgeting, expense tracking, and financial insights." />
-    <meta name="twitter:image" content="https://financemanager-ai.lovable.app/og-image.png" />
+    <meta name="twitter:image" content="https://pocketbanker.app/og-image.png" />
 
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -64,10 +84,52 @@
       ]
     }
     </script>
+    
+    <!-- Global Error Handler for Mobile Debugging -->
+    <script>
+      // Catch all JavaScript errors
+      window.addEventListener('error', function(event) {
+        // Ignore generic "Script error" from cross-origin issues (not actionable)
+        if (event.message === 'Script error.' && event.lineno === 0 && event.colno === 0 && !event.filename) {
+          console.warn('⚠️ Cross-origin script error (harmless, ignoring)');
+          return;
+        }
+        
+        console.error('❌ GLOBAL ERROR:', {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          error: event.error ? event.error.stack : 'No stack trace'
+        });
+        
+        // Only show error overlay for real errors (not generic cross-origin errors)
+        var errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a1a; color: #ff6b6b; padding: 20px; font-family: monospace; font-size: 12px; overflow: auto; z-index: 999999;';
+        errorDiv.innerHTML = '<h2 style="color: #ff6b6b; margin-top: 0;">JavaScript Error Detected</h2>' +
+          '<p><strong>Message:</strong> ' + (event.message || 'Unknown error') + '</p>' +
+          '<p><strong>File:</strong> ' + (event.filename || 'Unknown') + '</p>' +
+          '<p><strong>Line:</strong> ' + (event.lineno || 'Unknown') + '</p>' +
+          '<p><strong>Column:</strong> ' + (event.colno || 'Unknown') + '</p>' +
+          '<pre style="background: #000; padding: 10px; border-radius: 5px; overflow: auto;">' + 
+          (event.error && event.error.stack ? event.error.stack : 'No stack trace available') + 
+          '</pre>' +
+          '<p style="color: #888; margin-top: 20px;">Check Safari Web Inspector (Develop → Device → PocketTeller) for more details</p>' +
+          '<button onclick="this.parentElement.remove()" style="margin-top: 20px; padding: 10px 20px; background: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer;">Dismiss</button>';
+        document.body.appendChild(errorDiv);
+      });
+      
+      // Catch unhandled promise rejections
+      window.addEventListener('unhandledrejection', function(event) {
+        console.error('❌ UNHANDLED PROMISE REJECTION:', event.reason);
+      });
+      
+      console.log('🔍 Global error handlers installed');
+    </script>
   </head>
 
-  <body class="text-base">
-    <div id="root"></div>
+  <body class="text-base" style="margin: 0; padding: 0; background-color: white;">
+    <div id="root" style="min-height: 100vh; background-color: white;"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

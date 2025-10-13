@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/useToast';
 import { CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
 import PublicFooter from '@/components/PublicFooter';
 

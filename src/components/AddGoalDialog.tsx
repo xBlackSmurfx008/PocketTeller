@@ -31,7 +31,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useGoals } from '@/hooks/useGoals';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 const formSchema = z.object({
   goal_name: z.string().min(1, 'Goal name is required').max(100, 'Goal name too long'),
