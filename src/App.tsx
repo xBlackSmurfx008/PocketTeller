@@ -17,6 +17,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import AppLayout from "@/components/AppLayout";
 import { ErrorBoundaryProvider } from "@/components/ErrorBoundary";
 import { DeepLinkHandler } from "@/components/DeepLinkHandler";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 
 // Lazy load page components to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
@@ -24,9 +25,10 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Dashboard = lazy(() => import("@/components/Dashboard"));
 const ConversationalAI = lazy(() => import("./pages/ConversationalAI"));
-const Goals = lazy(() => import("./pages/Goals"));
+const GoalsAndTasks = lazy(() => import("./pages/GoalsAndTasks"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const Budget = lazy(() => import("./pages/Budget"));
+const Bills = lazy(() => import("./pages/Bills"));
 const SharedBudget = lazy(() => import("./pages/SharedBudget"));
 const ForInstitutions = lazy(() => import("./pages/ForInstitutions"));
 const ForNonProfits = lazy(() => import("./pages/ForNonProfits"));
@@ -74,9 +76,10 @@ const App = () => {
                     <DeepLinkHandler />
                     <RouteProgress />
                     <ScrollToTop />
-                    <AppLayout>
-                      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="pulse h-8 w-8 rounded-full bg-primary/20"></div></div>}>
-                        <Routes>
+                    <SubscriptionGuard>
+                      <AppLayout>
+                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="pulse h-8 w-8 rounded-full bg-primary/20"></div></div>}>
+                          <Routes>
                           {/* Mobile apps: skip marketing, go to test page first */}
                           {/* Web apps: show marketing page */}
                           <Route path="/" element={isNative ? <MobileRoot /> : <Index />} />
@@ -88,9 +91,13 @@ const App = () => {
                           <Route path="/reset-password" element={<ResetPassword />} />
                           <Route path="/chat" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
                           <Route path="/chat/:threadId" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
-                          <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+                          {/* Alias routes for AI chat to match mobile naming */}
+                          <Route path="/ai" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
+                          <Route path="/ai/:threadId" element={<ProtectedRoute><ConversationalAI /></ProtectedRoute>} />
+                          <Route path="/goals" element={<ProtectedRoute><GoalsAndTasks /></ProtectedRoute>} />
                           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
                           <Route path="/budget" element={<ProtectedRoute><Budget /></ProtectedRoute>} />
+                          <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/banking" element={<ProtectedRoute><BankingSettings /></ProtectedRoute>} />
             <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
@@ -106,9 +113,10 @@ const App = () => {
                           <Route path="/terms" element={<Terms />} />
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                           <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </Suspense>
-                    </AppLayout>
+                          </Routes>
+                        </Suspense>
+                      </AppLayout>
+                    </SubscriptionGuard>
                   </BrowserRouter>
                 </ErrorBoundaryProvider>
               </TooltipProvider>

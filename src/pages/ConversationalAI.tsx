@@ -8,6 +8,7 @@ import { useDemo } from "@/hooks/useDemo";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useToast } from "@/hooks/useToast";
 import { useConversation, EducationSuggestion } from "@/hooks/useConversation";
+import { supabase } from "@/integrations/supabase/client";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { EducationPanel } from "@/components/chat/EducationPanel";
@@ -38,6 +39,7 @@ const ConversationalAI = () => {
   const [coachStage, setCoachStage] = useState<string>('');
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
+  // Financial Review removed
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     messages,
@@ -62,6 +64,8 @@ const ConversationalAI = () => {
       behavior: 'smooth'
     });
   }, [messages]);
+
+  // (Removed) Financial Review
 
   // Handle message sending
   const handleSendMessage = async (content: string, attachments: any[], coachMode: boolean) => {
@@ -107,11 +111,13 @@ const ConversationalAI = () => {
         {/* Messages Area - With proper bottom spacing */}
         <ScrollArea className="flex-1 pt-perfect px-4 pb-2">
           <div className="space-y-4">
+            {/* Financial Review removed */}
+
             {/* Welcome Message */}
             {messages.length === 0 && <Reveal>
                 <Card className="mx-auto max-w-2xl card-hover-lift">
                   <CardHeader>
-                    <CardTitle className="text-center text-gradient">Welcome to your AI Financial Assistant! </CardTitle>
+                    <CardTitle className="text-center text-gradient">Welcome to your AI Financial Assistant!</CardTitle>
                   <CardDescription className="text-center">
                     I'm here to help you manage your finances, analyze spending patterns, create budgets, and answer any financial questions you have.
                   </CardDescription>
@@ -228,8 +234,8 @@ const ConversationalAI = () => {
           </div>
         </ScrollArea>
 
-        {/* Message Input - Fixed at bottom with proper spacing */}
-        <div className="sticky bottom-0 bg-background border-t border-border/40 pt-4 px-4 pb-safe" data-tour-id="chat-input">
+        {/* Message Input - Fixed at bottom with proper spacing and safe-area padding */}
+        <div className="sticky bottom-0 bg-background border-t border-border/40 pt-4 px-4 safe-area-pb" data-tour-id="chat-input">
           <div className="max-w-4xl mx-auto space-y-3">
             <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} disabled={isDemo && promptsUsed >= maxPrompts} />
             

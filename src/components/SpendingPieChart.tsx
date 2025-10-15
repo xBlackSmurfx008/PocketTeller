@@ -1,6 +1,6 @@
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CATEGORIES } from '@/utils/transactionCategorizer';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 interface Transaction {
   amount: number;
@@ -10,25 +10,28 @@ interface Transaction {
 
 interface SpendingPieChartProps {
   transactions: Transaction[];
+  dateFilter?: number; // Days being displayed (0 = all time)
 }
 
-// High contrast, distinct category colors for better visibility
-const CATEGORY_COLORS: Record<string, string> = {
-  'Food & Dining': '#E74C3C',      // Bright red
-  'Transportation': '#3498DB',     // Electric blue
-  'Shopping': '#9B59B6',           // Purple
-  'Entertainment': '#E67E22',      // Orange
-  'Bills & Utilities': '#F39C12',  // Golden orange
-  'Healthcare': '#E91E63',         // Pink
-  'Travel': '#1ABC9C',             // Turquoise
-  'Education': '#8E44AD',          // Dark purple
-  'Income': '#27AE60',             // Green
-  'Savings': '#2ECC71',            // Emerald green
-  'Investments': '#34495E',        // Dark blue-gray
-  'Other': '#95A5A6'               // Gray
-};
+// Bright colors that work well on dark backgrounds
+const BRIGHT_COLORS = [
+  '#3B82F6', // Bright blue
+  '#10B981', // Bright green
+  '#F59E0B', // Bright amber
+  '#EF4444', // Bright red
+  '#8B5CF6', // Bright purple
+  '#06B6D4', // Bright cyan
+  '#F97316', // Bright orange
+  '#84CC16', // Bright lime
+  '#EC4899', // Bright pink
+  '#6366F1', // Bright indigo
+  '#14B8A6', // Bright teal
+  '#F43F5E'  // Bright rose
+];
 
-export default function SpendingPieChart({ transactions }: SpendingPieChartProps) {
+const toCssKey = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+export default function SpendingPieChart({ transactions, dateFilter = 30 }: SpendingPieChartProps) {
   // Calculate category totals for expenses only (exclude Income category)
   const categoryTotals = transactions
     .filter(t => t.category !== 'Income') // Exclude income transactions
@@ -41,14 +44,33 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
 
   const totalSpent = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
 
+  // Format the time period label
+  const getTimePeriodLabel = () => {
+    if (dateFilter === 0) return 'All Time';
+    if (dateFilter === 30) return 'Last 30 Days';
+    if (dateFilter === 60) return 'Last 60 Days';
+    if (dateFilter === 90) return 'Last 90 Days';
+    if (dateFilter === 180) return 'Last 6 Months';
+    if (dateFilter === 365) return 'Last Year';
+    return `Last ${dateFilter} Days`;
+  };
+
   // Convert to chart data format
   const chartData = Object.entries(categoryTotals)
     .map(([category, value]) => ({
       category,
+      key: toCssKey(category || 'other'),
       value: Math.round(value * 100) / 100,
       percentage: Math.round((value / totalSpent) * 100)
     }))
     .sort((a, b) => b.value - a.value); // Sort by value descending
+
+  // Create shadcn ChartContainer config so tooltip/legend can read labels and colors
+  // Colors are exposed as CSS vars per key: --color-{key}
+  const chartConfig = chartData.reduce((cfg, entry, index) => {
+    cfg[entry.key] = { label: entry.category, color: BRIGHT_COLORS[index % BRIGHT_COLORS.length] } as any;
+    return cfg;
+  }, {} as Record<string, { label: string; color: string }>);
 
   if (chartData.length === 0) {
     return (
@@ -63,126 +85,95 @@ export default function SpendingPieChart({ transactions }: SpendingPieChartProps
     );
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-card border-2 border-border rounded-lg p-4 shadow-xl backdrop-blur-sm">
-          <p className="font-bold text-lg text-foreground mb-1">{data.category}</p>
-          <p className="font-semibold text-primary text-base">
-            ${data.value.toFixed(2)}
-          </p>
-          <p className="text-sm text-muted-foreground font-medium">
-            {data.percentage}% of total spending
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  // Tooltip content is provided by shadcn/ui ChartTooltipContent via ChartContainer context
 
-  const renderCustomizedLabel = ({ percentage, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
-    if (percentage < 5) return ''; // Only show labels for slices >= 5%
-    
+  const renderCustomizedLabel = ({ percentage, cx, cy, midAngle, outerRadius, payload }: any) => {
+    if (percentage < 5) return '';
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const offset = 16; // place labels outside the pie, on the surrounding background
+    const radius = outerRadius + offset;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
+      <text
+        x={x}
+        y={y}
+        fill={payload?.key ? `var(--color-${payload.key})` : 'currentColor'}
+        textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         fontSize="12"
         fontWeight="bold"
-        stroke="rgba(0,0,0,0.3)"
-        strokeWidth="1"
       >
         {`${percentage}%`}
       </text>
     );
   };
 
-  const CustomLegend = () => {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-6">
-        {chartData.map((entry, index) => (
-          <div key={index} className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors shadow-sm">
-            <div 
-              className="w-5 h-5 rounded-full flex-shrink-0 shadow-md border-2 border-white"
-              style={{ backgroundColor: CATEGORY_COLORS[entry.category] || CATEGORY_COLORS['Other'] }}
-            />
-            <div className="flex-1">
-              <div className="font-bold text-foreground text-base">
-                {entry.category || 'Uncategorized'}
-              </div>
-              <div className="font-semibold text-primary text-lg">
-                ${entry.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">
-                {entry.percentage}% of total
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  // Legend provided by shadcn/ui components
 
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-semibold">Spending by Category</CardTitle>
+        <p className="text-sm text-muted-foreground mt-1">{getTimePeriodLabel()}</p>
       </CardHeader>
       <CardContent className="pb-6">
-        <div className="flex flex-col items-center space-y-6">
-          <div className="h-72 w-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-full max-w-md mx-auto">
+            <ChartContainer config={chartConfig} className="h-80 w-full min-h-80">
+              <PieChart width={400} height={320}>
                 <Pie
                   data={chartData}
                   dataKey="value"
                   nameKey="category"
                   cx="50%"
                   cy="50%"
-                  outerRadius={120}
-                  innerRadius={50}
-                  labelLine={false}
+                  outerRadius={100}
+                  innerRadius={40}
+                  labelLine
                   label={renderCustomizedLabel}
-                  stroke="rgba(255,255,255,0.8)"
-                  strokeWidth={3}
+                  stroke="transparent"
+                  strokeWidth={0}
                   paddingAngle={2}
                 >
                   {chartData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={CATEGORY_COLORS[entry.category] || '#C8C8C8'} 
+                      fill={`var(--color-${entry.key})`} 
                     />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomTooltip />} />
+                <ChartTooltip content={<ChartTooltipContent nameKey="key" labelKey="category" />} />
               </PieChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
           
+          {/* Scrollable Legend (use the same CSS var as slices for exact parity) */}
           <div className="w-full">
-            <CustomLegend />
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-3 px-2 min-w-max">
+                {chartData.map((entry, index) => (
+                  <div key={entry.key} className="flex items-center gap-2 whitespace-nowrap">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: `var(--color-${entry.key})` }}
+                    />
+                    <span className="text-sm font-medium text-foreground">
+                      {entry.category}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      ${entry.value.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({entry.percentage}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         
-        <div className="mt-6 pt-4 border-t border-border">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Total Expenses
-            </p>
-            <p className="text-2xl font-bold text-foreground">
-              ${totalSpent.toLocaleString()}
-            </p>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

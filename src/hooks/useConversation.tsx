@@ -99,13 +99,15 @@ export const useConversation = (threadId?: string) => {
     }
   }, [user, isDemo, toast]);
 
+  const promptHook = usePrompt();
+
   // Send message
   const sendMessage = useCallback(async (
     content: string, 
     attachments: FileAttachment[] = [],
     coachMode = false
   ) => {
-    if (isDemo && !usePrompt()) {
+    if (isDemo && !promptHook) {
       toast({
         title: "Demo Limit Reached",
         description: "You've reached the demo message limit. Sign up to continue!",
@@ -147,11 +149,12 @@ export const useConversation = (threadId?: string) => {
           ]
         };
       } else {
-        // Prepare request data for real API call
+        // Prepare request data for real API call (match mobile schema exactly)
         const requestData = {
           message: content,
           threadId,
-          coachMode,
+          coach_mode: coachMode, // Use snake_case to match mobile
+          include_user_data: true,
           attachments: attachments.map(att => ({
             name: att.name,
             type: att.type,
