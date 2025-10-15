@@ -1,37 +1,76 @@
-
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
-import { useSignOutAction } from '@/hooks/useSignOutAction';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FinancialHealthSnapshot from '@/components/FinancialHealthSnapshot';
 import BudgetOverview from '@/components/BudgetOverview';
 import GoalsOverview from '@/components/GoalsOverview';
 import UpcomingBills from '@/components/UpcomingBills';
 import { PlaidLink } from '@/components/PlaidLink';
-import { ShareBudgetDialog } from '@/components/ShareBudgetDialog';
-import { useNavigate } from 'react-router-dom';
+import { AccountViewTabs } from '@/components/AccountViewTabs';
 import { supabase } from '@/integrations/supabase/client';
+import { Building2, Lock, Plus } from 'lucide-react';
 
-export default function Dashboard() {
+function Dashboard(): JSX.Element {
   const { user } = useAuth();
   const { isDemo } = useDemo();
-  const { handleSignOut } = useSignOutAction();
-  const navigate = useNavigate();
-  const [hasPlaidToken, setHasPlaidToken] = useState(false);
-  const [budgetData, setBudgetData] = useState<any>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const [hasPlaidToken, setHasPlaidToken] = useState<boolean>(false);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounced fetch function to prevent excessive API calls
-  const debouncedFetchBudgetData = useCallback(() => {
+  const checkPlaidConnection = useCallback(async (): Promise<void> => {
+    if (!user) {
+      setHasPlaidToken(false);
+      return;
+    }
+    
+    try {
+      // Check for actual accounts, not just plaid_items
+      const { data: accounts, error } = await supabase
+        .from('accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (!error && accounts && accounts.length > 0) {
+        setHasPlaidToken(true);
+      } else {
+        setHasPlaidToken(false);
+      }
+    } catch (error) {
+      console.error('Error checking Plaid connection:', error);
+      setHasPlaidToken(false);
+    }
+  }, [user, isDemo]);
+
+  const fetchBudgetData = useCallback(async (): Promise<void> => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('budget')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching budget data:', error);
+      }
+    } catch (error) {
+      console.error('Error fetching budget data:', error);
+    }
+  }, [user]);
+
+  const debouncedFetchBudgetData = useCallback((): void => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
       fetchBudgetData();
     }, 300);
-  }, []);
+  }, [fetchBudgetData]);
 
   useEffect(() => {
     if (!isDemo) {
@@ -39,7 +78,6 @@ export default function Dashboard() {
       fetchBudgetData();
       
       if (user) {
-        // Set up real-time subscription for budget changes
         const budgetChannel = supabase
           .channel('dashboard-budget-changes')
           .on(
@@ -51,7 +89,6 @@ export default function Dashboard() {
               filter: `user_id=eq.${user.id}`
             },
             () => {
-              console.log('Budget updated, refreshing dashboard data');
               debouncedFetchBudgetData();
             }
           )
@@ -65,88 +102,69 @@ export default function Dashboard() {
         };
       }
     }
-  }, [user, isDemo]);
-
-  const checkPlaidConnection = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('encrypted_plaid_token')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!error && data?.encrypted_plaid_token) {
-        setHasPlaidToken(true);
-      }
-    } catch (error) {
-      console.error('Error checking Plaid connection:', error);
-    }
-  };
-
-  const fetchBudgetData = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('budget')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (!error && data) {
-        setBudgetData(data);
-      }
-    } catch (error) {
-      console.error('Error fetching budget data:', error);
-    }
-  };
+  }, [user, isDemo, checkPlaidConnection, fetchBudgetData, debouncedFetchBudgetData]);
 
 
   return (
     <div className="bg-background" data-tour-id="dashboard">
       <main className="max-w-7xl mx-auto space-y-4 sm:space-y-6 pt-perfect px-4 pb-4 content-container">
-        {/* Bank Connection Card - Only show when not connected and not in demo */}
-        {!hasPlaidToken && !isDemo && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Bank Connection</CardTitle>
-              <CardDescription>
-                Connect your bank account to automatically sync transactions and get personalized insights.
-                <br />
-                <span className="text-xs text-muted-foreground mt-2 block">
-                  For testing, use: <strong>Username:</strong> user_good, <strong>Password:</strong> pass_good, <strong>Phone:</strong> 415-555-0011
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PlaidLink 
-                hasPlaidToken={hasPlaidToken} 
-                onConnectionChange={checkPlaidConnection} 
-              />
-            </CardContent>
-          </Card>
+
+        {/* Account View Tabs - Always show for authenticated users (non-demo)
+            This ensures the "ALL" header and inline Add Bank button appear even with 0 banks */}
+        {!isDemo && (
+          <AccountViewTabs
+            onAccountChange={setSelectedAccount}
+            hasPlaidToken={hasPlaidToken}
+            onConnectionChange={checkPlaidConnection}
+          >
+            {(accountId) => (
+              <>
+                <div data-tour-id="financial-snapshot">
+                  <FinancialHealthSnapshot accountFilter={accountId} />
+                </div>
+
+                <div data-tour-id="budget-overview">
+                  <BudgetOverview accountFilter={accountId} />
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div data-tour-id="goals-overview">
+                    <GoalsOverview />
+                  </div>
+                  <div data-tour-id="upcoming-bills">
+                    <UpcomingBills />
+                  </div>
+                </div>
+              </>
+            )}
+          </AccountViewTabs>
         )}
 
-        <div data-tour-id="financial-snapshot">
-          <FinancialHealthSnapshot />
-        </div>
+        {/* Demo mode - show tabs with sample data */}
+        {isDemo && (
+          <>
+            <div data-tour-id="financial-snapshot">
+              <FinancialHealthSnapshot />
+            </div>
 
-        <div data-tour-id="budget-overview">
-          <BudgetOverview />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div data-tour-id="goals-overview">
-            <GoalsOverview />
-          </div>
-          <div data-tour-id="upcoming-bills">
-            <UpcomingBills />
-          </div>
-        </div>
+            <div data-tour-id="budget-overview">
+              <BudgetOverview />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div data-tour-id="goals-overview">
+                <GoalsOverview />
+              </div>
+              <div data-tour-id="upcoming-bills">
+                <UpcomingBills />
+              </div>
+            </div>
+          </>
+        )}
+
       </main>
     </div>
   );
 }
+
+export default memo(Dashboard);

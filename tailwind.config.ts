@@ -18,6 +18,16 @@ export default {
 			}
 		},
 		extend: {
+			fontSize: {
+				'base': '1.0625rem', // 17px - larger base text
+				'sm': '0.9375rem',   // 15px
+				'xs': '0.8125rem',   // 13px
+				'lg': '1.1875rem',   // 19px
+				'xl': '1.375rem',    // 22px
+				'2xl': '1.625rem',   // 26px
+				'3xl': '2rem',       // 32px
+				'4xl': '2.5rem',     // 40px
+			},
 			fontFamily: {
 				'sans': ['Inter', 'system-ui', 'sans-serif'],
 				'serif': ['Playfair Display', 'Georgia', 'serif'],
@@ -150,5 +160,21 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		import("tailwindcss-animate"),
+		function({ addUtilities }) {
+			addUtilities({
+				'.scrollbar-hide': {
+					/* IE and Edge */
+					'-ms-overflow-style': 'none',
+					/* Firefox */
+					'scrollbar-width': 'none',
+					/* Safari and Chrome */
+					'&::-webkit-scrollbar': {
+						display: 'none'
+					}
+				}
+			})
+		}
+	],
 } satisfies Config;

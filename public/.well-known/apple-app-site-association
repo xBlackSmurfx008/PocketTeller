@@ -1,0 +1,22 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.pocketteller.app",
+        "paths": [
+          "/confirm",
+          "/confirm/*",
+          "/reset-password",
+          "/reset-password/*",
+          "/auth/callback",
+          "/auth/callback/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAM_ID.com.pocketteller.app"]
+  }
+}
+

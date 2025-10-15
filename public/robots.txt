@@ -1,4 +1,27 @@
+# Robots.txt for PocketTeller
+
+# Allow all bots to crawl public pages
 User-agent: *
 Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /for-institutions
+Allow: /for-nonprofits
 
-Sitemap: https://financemanager-ai.lovable.app/sitemap.xml
+# Disallow authenticated/private areas
+Disallow: /home
+Disallow: /dashboard
+Disallow: /transactions
+Disallow: /budget
+Disallow: /goals
+Disallow: /chat
+Disallow: /account
+Disallow: /auth
+Disallow: /demo
+Disallow: /subscription
+Disallow: /share/
+Disallow: /confirm
+Disallow: /reset-password
+
+# Sitemap location
+Sitemap: https://pocketbanker.app/sitemap.xml

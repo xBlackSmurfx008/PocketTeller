@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { Bell, Mail, Smartphone, Clock, Calendar, Shield, TrendingUp, CreditCard, Target, AlertTriangle } from "lucide-react";
 
 const NotificationSettings = () => {

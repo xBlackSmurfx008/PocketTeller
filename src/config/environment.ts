@@ -33,22 +33,21 @@ export const metaConfig = {
   description: 'AI-powered personal finance app that helps you budget, track expenses, and achieve your financial goals with intelligent insights and automation.',
   keywords: 'personal finance, budgeting, expense tracking, financial goals, AI finance, money management, financial planning',
   author: 'PocketTeller Team',
-  ogImage: '/og-image.png',
+  ogImage: '/lovable-uploads/robot-og-image.png',
   twitterHandle: '@pocketteller',
   
   // Canonical URL helper
   canonical: (path: string = '') => {
-    const baseUrl = isProduction 
-      ? 'https://pocketteller.app' 
-      : 'http://localhost:5173';
+    // Always use production URL for canonical links (SEO requirement)
+    const baseUrl = 'https://pocketbanker.app';
     return `${baseUrl}${path}`;
   },
   
   // Social media URLs
   social: {
-    twitter: 'https://twitter.com/pocketteller',
-    linkedin: 'https://linkedin.com/company/pocketteller',
-    github: 'https://github.com/pocketteller',
+    twitter: 'https://twitter.com/pocketbanker',
+    linkedin: 'https://linkedin.com/company/pocketbanker',
+    github: 'https://github.com/pocketbanker',
   },
 };
 
@@ -84,9 +83,11 @@ export const performanceConfig = {
 };
 
 // Validation helpers
-export const validateConfig = () => {
+export const validateConfig = (): boolean => {
   const errors: string[] = [];
+  const warnings: string[] = [];
   
+  // Required in all environments
   if (!apiConfig.supabase.url) {
     errors.push('VITE_SUPABASE_URL is required');
   }
@@ -95,11 +96,33 @@ export const validateConfig = () => {
     errors.push('VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY is required');
   }
   
+  // Optional but recommended in production
+  if (isProduction) {
+    if (!analyticsConfig.trackingId && features.enableAnalytics) {
+      warnings.push('VITE_GA_TRACKING_ID is not set (analytics will be disabled)');
+    }
+    
+    if (!errorConfig.dsn && features.enableErrorReporting) {
+      warnings.push('VITE_SENTRY_DSN is not set (error reporting will be disabled)');
+    }
+  }
+  
+  // Log validation results
   if (errors.length > 0) {
-    console.error('Configuration validation failed:', errors);
+    console.error('⚠️ Configuration validation failed:', errors);
     if (isProduction) {
       throw new Error(`Configuration errors: ${errors.join(', ')}`);
+    } else {
+      console.error('⚠️ Fix these errors before deploying to production!');
     }
+  }
+  
+  if (warnings.length > 0) {
+    console.warn('⚠️ Configuration warnings:', warnings);
+  }
+  
+  if (errors.length === 0 && warnings.length === 0) {
+    console.log('✅ Configuration validation passed');
   }
   
   return errors.length === 0;
@@ -117,9 +140,11 @@ export const config = {
   validate: validateConfig,
 };
 
-// Validate configuration on import (in production)
-if (isProduction) {
-  validateConfig();
+// Always validate configuration on import
+const isValid = validateConfig();
+if (!isValid && isProduction) {
+  // This will have already thrown in validateConfig, but adding for clarity
+  throw new Error('Cannot start application with invalid configuration');
 }
 
 // Default export

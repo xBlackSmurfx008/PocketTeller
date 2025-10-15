@@ -25,55 +25,54 @@
     padding-top: 2.5rem; /* 40px total (16px + 24px additional) */
   }
   
-  /* Prevent horizontal scrolling on main content */
+  /* Prevent horizontal scrolling on main content - STRICT */
   .no-horizontal-scroll {
-    overflow-x: hidden;
-    max-width: 100vw;
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    overscroll-behavior-x: none;
+    touch-action: pan-y pinch-zoom;
   }
   
-  /* Ensure content containers don't overflow */
+  /* Ensure content containers don't overflow - STRICT */
   .content-container {
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     width: 100%;
-    max-width: 100%;
+    max-width: 100% !important;
+    overscroll-behavior-x: none;
   }
   
-  /* Prevent horizontal scrolling on all elements */
-  * {
-    max-width: 100%;
-  }
+  /* Prevent horizontal scrolling on all elements - BUT NOT ON FLEX/GRID */
+  /* Removed global max-width: 100% and overflow-x from flex/grid as it was hiding content */
   
-  /* Specific fixes for common overflow elements */
-  .grid {
-    overflow-x: hidden;
-  }
-  
-  .flex {
-    overflow-x: hidden;
-  }
-  
-  /* Ensure cards and containers don't overflow */
+  /* Ensure cards and containers don't overflow - STRICT */
   .card-hover-lift {
-    overflow-x: hidden;
-    max-width: 100%;
+    overflow-x: hidden !important;
+    max-width: 100% !important;
   }
   
   /* Ensure all images fit properly on iOS */
   img {
-    max-width: 100%;
+    max-width: 100% !important;
     height: auto;
     object-fit: cover;
   }
   
-  /* Prevent any element from causing horizontal overflow */
+  /* Prevent any element from causing horizontal overflow - STRICT */
   .max-w-7xl, .max-w-4xl, .max-w-2xl, .max-w-md {
-    overflow-x: hidden;
+    overflow-x: hidden !important;
+    max-width: 100% !important;
   }
   
-  /* Ensure proper scrolling behavior */
+  /* Ensure proper scrolling behavior - VERTICAL ONLY */
   .overflow-y-auto {
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
+  }
+  
+  /* Prevent scroll containers from horizontal scrolling */
+  .overflow-auto {
+    overflow-x: hidden !important;
+    overflow-y: auto;
   }
   
   /* Ensure buttons are always accessible */
@@ -93,10 +92,35 @@ All colors MUST be HSL.
 */
 
 @layer base {
-  /* Prevent horizontal scrolling globally */
+  /* Prevent horizontal scrolling globally - STRICT MODE */
   html, body {
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     max-width: 100vw;
+    width: 100%;
+    height: 100%;
+    overscroll-behavior-x: none;
+    touch-action: pan-y pinch-zoom;
+    position: relative;
+  }
+  
+  /* Ensure root div takes full height and prevents horizontal scroll */
+  #root {
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden !important;
+    position: relative;
+  }
+  
+  /* Prevent horizontal scrolling on ALL elements */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Allow only vertical scrolling globally */
+  body * {
+    overscroll-behavior-x: none;
   }
   
   :root {
@@ -124,8 +148,8 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 220 13% 82%; /* Darker for better contrast */
+    --input: 220 13% 85%; /* Slightly darker input borders */
     --ring: 262.1 83.3% 57.8%;
 
     --radius: 0.75rem;
@@ -138,16 +162,16 @@ All colors MUST be HSL.
     --info: 199.4 89.5% 48%;
     --info-foreground: 210 20% 98%;
 
-    /* Typography scale for better readability */
-    --text-xs: 0.75rem;
-    --text-sm: 0.875rem;
-    --text-base: 1rem;
-    --text-lg: 1.125rem;
-    --text-xl: 1.25rem;
-    --text-2xl: 1.5rem;
-    --text-3xl: 1.875rem;
-    --text-4xl: 2.25rem;
-    --text-5xl: 3rem;
+    /* Typography scale for better readability - increased base sizes */
+    --text-xs: 0.8125rem;  /* 13px */
+    --text-sm: 0.9375rem;  /* 15px */
+    --text-base: 1.0625rem; /* 17px - slightly larger base */
+    --text-lg: 1.1875rem;  /* 19px */
+    --text-xl: 1.375rem;   /* 22px */
+    --text-2xl: 1.625rem;  /* 26px */
+    --text-3xl: 2rem;      /* 32px */
+    --text-4xl: 2.5rem;    /* 40px */
+    --text-5xl: 3.25rem;   /* 52px */
     
     /* Gradient variables */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(262.1 83.3% 47.8%));
@@ -188,7 +212,7 @@ All colors MUST be HSL.
     --secondary-foreground: 210 20% 98%;
 
     --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
+    --muted-foreground: 217.9 10.6% 78%;
 
     --accent: 215 27.9% 16.9%;
     --accent-foreground: 210 20% 98%;
@@ -196,8 +220,8 @@ All colors MUST be HSL.
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 217.2 32.6% 21%; /* 20% more visible (17.5% + 3.5%) */
-    --input: 217.2 32.6% 21%; /* 20% more visible (17.5% + 3.5%) */
+    --border: 217.2 32.6% 28%; /* Darker for better contrast in dark mode */
+    --input: 217.2 32.6% 25%; /* Slightly darker input borders */
     --ring: 263.4 70% 50.4%;
     
     /* Enhanced dark mode colors */
@@ -238,6 +262,189 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Material Design 3 Elevation System - Applied to Web */
+.elevation-0 {
+  box-shadow: none;
+}
+
+.elevation-1 {
+  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 
+              0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+}
+
+.elevation-2 {
+  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 
+              0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+}
+
+.elevation-3 {
+  box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 
+              0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+.elevation-4 {
+  box-shadow: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 
+              0px 2px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+.elevation-5 {
+  box-shadow: 0px 8px 12px 6px rgba(0, 0, 0, 0.15), 
+              0px 4px 4px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Material Ripple Effect - Applied to Web */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.3);
+  transform: scale(0);
+  animation: ripple-animation 600ms cubic-bezier(0.2, 0, 0, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Material Design 3 State Layers - Applied to Web */
+.state-layer {
+  position: relative;
+}
+
+.state-layer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.state-layer:hover::before {
+  opacity: 0.08;
+}
+
+.state-layer:focus-visible::before {
+  opacity: 0.12;
+}
+
+.state-layer:active::before {
+  opacity: 0.12;
+}
+
+/* Enhanced Button Styling - Applied to Web */
+.btn-magnetic {
+  transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-magnetic:active {
+  transform: scale(0.98);
+}
+
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-shimmer:hover::before {
+  left: 100%;
+}
+
+/* Enhanced Card Styling - Applied to Web */
+.card-hover-lift {
+  transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 
+              0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced Input Styling - Applied to Web */
+.input-enhanced {
+  border-radius: 4px 4px 0 0;
+  background: rgba(124, 58, 237, 0.08);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.4);
+  transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.input-enhanced:focus {
+  background: rgba(124, 58, 237, 0.12);
+  border-bottom-width: 2px;
+  border-bottom-color: rgb(124, 58, 237);
+}
+
+/* Enhanced List Item Styling - Applied to Web */
+.list-item-enhanced {
+  min-height: 56px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  transition: background 200ms cubic-bezier(0.2, 0, 0, 1);
+  border-radius: 8px;
+}
+
+.list-item-enhanced:active {
+  background: rgba(124, 58, 237, 0.12);
+}
+
+/* Enhanced Bottom Navigation - Applied to Web */
+.bottom-nav-enhanced {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dark .bottom-nav-enhanced {
+  background: rgba(28, 27, 31, 0.95);
+}
+
+/* Enhanced Touch Targets - Applied to Web */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(124, 58, 237, 0.2);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Enhanced Focus States - Applied to Web */
+*:focus-visible {
+  outline: 2px solid rgb(124, 58, 237);
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* Aurora and Animation Keyframes */

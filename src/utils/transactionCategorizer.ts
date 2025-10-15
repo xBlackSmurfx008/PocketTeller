@@ -1,5 +1,8 @@
 // Auto-categorization utility for transactions
 export const CATEGORIES = [
+  'Income',
+  'Transfer',
+  'Subscriptions',
   'Food & Dining',
   'Transportation',
   'Shopping',
@@ -8,7 +11,6 @@ export const CATEGORIES = [
   'Healthcare',
   'Travel',
   'Education',
-  'Income',
   'Savings',
   'Investments',
   'Other'

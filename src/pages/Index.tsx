@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useReveal } from '@/hooks/useReveal';
 import { useSiteMetrics } from '@/hooks/useSiteMetrics';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Landmark, BarChart3, CreditCard, Target, CalendarCheck2 } from 'lucide-react';
 
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicFooter from '@/components/PublicFooter';
 import PublicHeader from '@/components/PublicHeader';
+import { AppStoreButtons } from '@/components/AppStoreButtons';
 
 
 const Index = () => {
@@ -143,8 +144,14 @@ const Index = () => {
       setSubmitting(false);
     }
   };
-  
 
+  // Redirect authenticated users or demo users to dashboard
+  useEffect(() => {
+    if (!loading && (user || isDemo)) {
+      console.log('Index: Redirecting authenticated user to /home');
+      navigate('/home', { replace: true });
+    }
+  }, [user, isDemo, loading, navigate]);
 
   if (loading) {
     return (
@@ -155,13 +162,6 @@ const Index = () => {
       </div>
     );
   }
-
-  // Redirect authenticated users or demo users to dashboard
-  useEffect(() => {
-    if (!loading && (user || isDemo)) {
-      navigate('/home');
-    }
-  }, [user, isDemo, loading, navigate]);
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">
@@ -194,7 +194,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
+              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect touch-target"
             >
               Get Started Free
             </Button>
@@ -202,11 +202,14 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-magnetic"
+              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-magnetic touch-target"
             >
               Try Demo
             </Button>
           </div>
+
+          {/* Mobile App Download Buttons */}
+          <AppStoreButtons className="mb-6" />
 
           {/* Waitlist Signup */}
           <div className="max-w-md mx-auto mt-4 sm:mt-8">

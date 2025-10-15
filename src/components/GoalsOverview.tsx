@@ -1,4 +1,4 @@
-
+import { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,10 @@ import { Target, TrendingUp, Calendar } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { Goal } from '@/types/models';
 
-export default function GoalsOverview() {
+/**
+ * Displays an overview of user's financial goals with progress tracking
+ */
+function GoalsOverview(): JSX.Element {
   const { goals, loading } = useGoals();
   const { timezone } = useTimezone();
   const dateHelpers = useDateHelpers(timezone);
@@ -139,3 +142,8 @@ export default function GoalsOverview() {
     </Card>
   );
 }
+
+/**
+ * Memoized export for performance optimization
+ */
+export default memo(GoalsOverview);

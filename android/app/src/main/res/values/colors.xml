@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PocketTeller Brand Colors - Material Design 3 -->
+    <!-- Based on primary HSL(262, 83%, 58%) - Professional Violet -->
+    
+    <!-- Primary Colors (Brand Violet) -->
+    <color name="md_theme_light_primary">#7C3AED</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#EADEFF</color>
+    <color name="md_theme_light_onPrimaryContainer">#270059</color>
+    
+    <!-- Secondary Colors -->
+    <color name="md_theme_light_secondary">#625B71</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#E8DEF8</color>
+    <color name="md_theme_light_onSecondaryContainer">#1D192B</color>
+    
+    <!-- Tertiary Colors (Financial Green for positive values) -->
+    <color name="md_theme_light_tertiary">#22C55E</color>
+    <color name="md_theme_light_onTertiary">#FFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#D1F4E0</color>
+    <color name="md_theme_light_onTertiaryContainer">#002114</color>
+    
+    <!-- Error Colors -->
+    <color name="md_theme_light_error">#EF4444</color>
+    <color name="md_theme_light_errorContainer">#FEE2E2</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_onErrorContainer">#7F1D1D</color>
+    
+    <!-- Background Colors -->
+    <color name="md_theme_light_background">#FFFFFF</color>
+    <color name="md_theme_light_onBackground">#1C1B1F</color>
+    
+    <!-- Surface Colors -->
+    <color name="md_theme_light_surface">#FFFFFF</color>
+    <color name="md_theme_light_onSurface">#1C1B1F</color>
+    <color name="md_theme_light_surfaceVariant">#E7E0EC</color>
+    <color name="md_theme_light_onSurfaceVariant">#49454F</color>
+    
+    <!-- Outline Colors -->
+    <color name="md_theme_light_outline">#79747E</color>
+    <color name="md_theme_light_outlineVariant">#CAC4D0</color>
+    
+    <!-- Dark Theme -->
+    <color name="md_theme_dark_primary">#9B6FFF</color>
+    <color name="md_theme_dark_onPrimary">#3E0099</color>
+    <color name="md_theme_dark_primaryContainer">#5600C8</color>
+    <color name="md_theme_dark_onPrimaryContainer">#EADEFF</color>
+    
+    <color name="md_theme_dark_secondary">#CCC2DC</color>
+    <color name="md_theme_dark_onSecondary">#332D41</color>
+    <color name="md_theme_dark_secondaryContainer">#4A4458</color>
+    <color name="md_theme_dark_onSecondaryContainer">#E8DEF8</color>
+    
+    <color name="md_theme_dark_tertiary">#34D399</color>
+    <color name="md_theme_dark_onTertiary">#003823</color>
+    <color name="md_theme_dark_tertiaryContainer">#005234</color>
+    <color name="md_theme_dark_onTertiaryContainer">#D1F4E0</color>
+    
+    <color name="md_theme_dark_error">#F87171</color>
+    <color name="md_theme_dark_errorContainer">#7F1D1D</color>
+    <color name="md_theme_dark_onError">#7F1D1D</color>
+    <color name="md_theme_dark_onErrorContainer">#FEE2E2</color>
+    
+    <color name="md_theme_dark_background">#1C1B1F</color>
+    <color name="md_theme_dark_onBackground">#E6E1E5</color>
+    
+    <color name="md_theme_dark_surface">#1C1B1F</color>
+    <color name="md_theme_dark_onSurface">#E6E1E5</color>
+    <color name="md_theme_dark_surfaceVariant">#49454F</color>
+    <color name="md_theme_dark_onSurfaceVariant">#CAC4D0</color>
+    
+    <color name="md_theme_dark_outline">#938F99</color>
+    <color name="md_theme_dark_outlineVariant">#49454F</color>
+    
+    <!-- Financial App Specific Colors -->
+    <color name="success">#22C55E</color>
+    <color name="success_container">#D1F4E0</color>
+    <color name="warning">#F59E0B</color>
+    <color name="warning_container">#FEF3C7</color>
+    <color name="info">#3B82F6</color>
+    <color name="info_container">#DBEAFE</color>
+    
+    <!-- Legacy colors for backward compatibility -->
+    <color name="colorPrimary">#7C3AED</color>
+    <color name="colorPrimaryDark">#5B21B6</color>
+    <color name="colorAccent">#7C3AED</color>
+    
+    <!-- Accent Color Options -->
+    <color name="accent_violet">#7C3AED</color>
+    <color name="accent_blue">#3B82F6</color>
+    <color name="accent_emerald">#10B981</color>
+    <color name="accent_amber">#F59E0B</color>
+    <color name="accent_rose">#F43F5E</color>
+    
+    <!-- Splash Screen -->
+    <color name="splash_background">#FFFFFF</color>
+    <color name="splash_foreground">#FFFFFF</color>
+</resources>
+

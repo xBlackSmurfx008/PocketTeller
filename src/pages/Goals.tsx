@@ -25,7 +25,7 @@ import { AddGoalDialog } from '@/components/AddGoalDialog';
 import { EditGoalDialog } from '@/components/EditGoalDialog';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { format, differenceInDays, isPast } from 'date-fns';
 
 interface Goal {
@@ -337,27 +337,42 @@ export default function Goals() {
     );
   }
 
+  // Show centered empty state (Budget page framework)
+  if (!loading && goals.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pt-perfect px-4 pb-4 content-container">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Target className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <CardTitle>Set Your Financial Goals</CardTitle>
+            <CardDescription>
+              Create goals to save for what matters most - emergency fund, vacation, house, retirement, or anything else
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={() => setIsAddGoalOpen(true)} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Your First Goal
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Track progress, set deadlines, and break down goals into actionable tasks
+            </p>
+          </CardContent>
+        </Card>
+        <AddGoalDialog
+          open={isAddGoalOpen}
+          onOpenChange={setIsAddGoalOpen}
+          onGoalAdded={fetchGoals}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background content-visible">
       <main className="max-w-7xl mx-auto pt-perfect px-3 pb-3 sm:pt-perfect sm:px-4 sm:pb-4 space-y-4 sm:space-y-6 relative content-visible content-container">
-        {goals.length === 0 ? (
-          <Reveal>
-            <Card className="text-center py-12 card-hover-lift">
-              <CardHeader>
-                <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <CardTitle>No Goals Yet</CardTitle>
-                <CardDescription>
-                  Create your first financial goal to start tracking your progress
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Empty state - no action button needed */}
-              </CardContent>
-            </Card>
-          </Reveal>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" data-tour-id="goals-list">
-            {goals.map((goal, index) => {
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" data-tour-id="goals-list">
+          {goals.map((goal, index) => {
               const financialProgress = getGoalProgress(goal);
               const taskProgress = getTaskProgress(goal.id);
               const onTrack = isGoalOnTrack(goal);
@@ -377,51 +392,32 @@ export default function Goals() {
                           }
                           <CardTitle className="text-lg">{goal.goal_name}</CardTitle>
                         </div>
-                         <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                            <Button
-                             size="icon"
-                             variant="ghost"
-                             className="h-8 w-8 ripple-effect"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               handleEditGoal(goal);
-                             }}
-                             title="Edit goal"
-                             aria-label="Edit goal"
+                           size="icon"
+                           variant="ghost"
+                           className="h-8 w-8 ripple-effect"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleEditGoal(goal);
+                           }}
+                           title="Edit goal"
+                           aria-label="Edit goal"
                            >
-                             <Edit className="h-3 w-3" />
+                           <Edit className="h-3 w-3" />
                            </Button>
                            <Button
-                             size="icon"
-                             variant="ghost"
-                             className="h-8 w-8 text-destructive hover:text-destructive ripple-effect"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               setDeletingGoalId(goal.id);
-                             }}
-                             title="Delete goal"
-                             aria-label="Delete goal"
+                           size="icon"
+                           variant="ghost"
+                           className="h-8 w-8 text-destructive hover:text-destructive ripple-effect"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             setDeletingGoalId(goal.id);
+                           }}
+                           title="Delete goal"
+                           aria-label="Delete goal"
                            >
-                             <Trash2 className="h-3 w-3" />
-                           </Button>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             className="ripple-effect"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               if (isDemo) {
-                                 toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
-                               } else {
-                                 setSelectedGoal(goal.id);
-                                 setIsAddTaskOpen(true);
-                               }
-                             }}
-                             title="Add task to this goal"
-                             aria-label="Add task to this goal"
-                           >
-                             <Plus className="h-3 w-3 mr-1" />
-                             Add Task
+                           <Trash2 className="h-3 w-3" />
                            </Button>
                           {onTrack ? (
                             <Badge variant="outline" className="text-green-600 border-green-600">
@@ -585,8 +581,7 @@ export default function Goals() {
                 </Reveal>
               );
              })}
-          </div>
-        )}
+        </div>
 
         {/* Mobile FAB for adding goals */}
         <div className="fixed bottom-6 right-6 md:hidden">

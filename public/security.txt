@@ -1,0 +1,24 @@
+# Security Policy
+
+## Security Contact
+If you discover a security vulnerability, please email: security@pocketbanker.app
+
+## Security Features
+- Content Security Policy (CSP) enabled
+- HTTP Security Headers configured
+- Row Level Security (RLS) on all database tables
+- Authentication with Supabase Auth
+- Rate limiting on API endpoints
+- Encrypted data transmission (HTTPS only)
+- Secure token management
+
+## Responsible Disclosure
+We appreciate the security research community's efforts to keep our users safe.
+Please report vulnerabilities responsibly and give us time to address issues before public disclosure.
+
+## Bug Bounty
+We currently do not have a formal bug bounty program, but we appreciate all security reports.
+
+## Last Updated
+October 12, 2025
+

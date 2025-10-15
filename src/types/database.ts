@@ -24,22 +24,10 @@ export interface BudgetCategories {
   };
 }
 
-// Transaction types
-export interface Transaction {
-  id: string;
-  user_id: string;
-  account_id?: string;
-  amount: number;
-  description: string;
-  category: string;
-  subcategory?: string;
-  date: string;
-  merchant_name?: string;
-  pending: boolean;
-  plaid_transaction_id?: string;
-  created_at: string;
-  updated_at: string;
-}
+/**
+ * NOTE: Transaction type moved to @/types/models.ts
+ * Import Transaction from models.ts for consistent Plaid integration
+ */
 
 // Goal types
 export interface Goal {
@@ -137,7 +125,7 @@ export interface NotificationPreferences {
 }
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: {
     message: string;
@@ -205,10 +193,10 @@ export interface FinancialInsights {
 export interface AppError {
   message: string;
   code?: string;
-  details?: any;
+  details?: unknown;
   timestamp: string;
   userId?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 // Chart data types

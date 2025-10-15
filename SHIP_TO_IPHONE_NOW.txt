@@ -1,0 +1,83 @@
+
+═══════════════════════════════════════════════════════════════
+📱 SHIP POCKETTELLER TO YOUR IPHONE - QUICK GUIDE
+═══════════════════════════════════════════════════════════════
+
+STEP 1: CONNECT IPHONE
+-----------------------
+1. Plug iPhone into Mac with USB cable
+2. Unlock iPhone
+3. If prompted "Trust This Computer?" → Tap "Trust"
+4. Enter iPhone passcode
+
+STEP 2: OPEN XCODE
+-------------------
+cd /Users/mr.adams/pockettellerxchanges/PocketTeller/ios/App
+open App.xcworkspace
+
+STEP 3: SELECT YOUR IPHONE
+---------------------------
+In Xcode top bar:
+- Click device dropdown (currently shows simulator)
+- Select your iPhone name from the list
+  (e.g., "John's iPhone" or "iPhone")
+
+STEP 4: CONFIGURE SIGNING (First Time Only)
+--------------------------------------------
+1. Click "App" project in left panel (blue icon)
+2. Select "App" target
+3. Click "Signing & Capabilities" tab
+4. Check "Automatically manage signing"
+5. Select your Team (Apple ID)
+   - If no team: Click "Add Account" → Sign in with Apple ID
+6. Wait for Xcode to create certificates
+
+STEP 5: BUILD & RUN
+--------------------
+Press Cmd + R (or click Play button ▶️)
+
+Xcode will:
+✅ Build the app
+✅ Sign it with your certificate
+✅ Install on your iPhone
+✅ Launch automatically
+
+STEP 6: TRUST DEVELOPER (First Time Only)
+------------------------------------------
+If iPhone shows "Untrusted Developer":
+1. On iPhone: Settings → General → VPN & Device Management
+2. Tap your Apple ID email
+3. Tap "Trust [Your Email]"
+4. Confirm
+5. Launch PocketTeller from home screen
+
+═══════════════════════════════════════════════════════════════
+
+EXPECTED RESULT ON YOUR IPHONE:
+--------------------------------
+✅ Splash screen shows (3 seconds)
+✅ Authentication page appears
+✅ Can sign up or sign in
+✅ Dashboard loads
+✅ Bottom navigation works
+✅ ALL features functional:
+   - AI Chat
+   - Payments
+   - Bank Linking
+   - Budget, Goals, Transactions
+
+TROUBLESHOOTING:
+----------------
+"iPhone is busy" → Wait for device preparation
+"Code signing error" → Enable automatic signing
+"Untrusted Developer" → Trust in iPhone Settings
+"Build failed" → Clean build (Cmd+Shift+K), try again
+
+═══════════════════════════════════════════════════════════════
+📖 Full Guide: DEPLOY_TO_IPHONE.md
+═══════════════════════════════════════════════════════════════
+
+TIME TO DEPLOY: ~2 minutes (first time: ~5 minutes for signing)
+
+READY? Connect iPhone and open Xcode! 🚀
+

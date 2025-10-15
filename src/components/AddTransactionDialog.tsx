@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 const CATEGORIES = [
   'Food & Dining',
@@ -102,6 +102,7 @@ export default function AddTransactionDialog({
           description: formData.description.trim(),
           amount: parseFloat(formData.amount),
           category: formData.category,
+          category_source: 'user', // Mark as user-created (highest priority, never overwritten)
           date: formData.date,
         });
 

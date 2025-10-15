@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { Download, Upload, Trash2 } from 'lucide-react';
 
@@ -58,9 +58,13 @@ export const TransactionBulkActions = ({
         throw new Error('User not authenticated');
       }
 
+      // Update category and mark as user-defined (highest priority in categorization hierarchy)
       const { error } = await supabase
         .from('transactions')
-        .update({ category })
+        .update({ 
+          category,
+          category_source: 'user' // Mark as user-defined to prevent AI/Plaid from overwriting
+        })
         .in('id', selectedIds)
         .eq('user_id', user.id); // Ensure user can only update their own transactions
 
@@ -68,7 +72,7 @@ export const TransactionBulkActions = ({
 
       toast({
         title: "Categories Updated",
-        description: `Updated ${selectedIds.length} transactions`,
+        description: `Updated ${selectedIds.length} transactions to "${category}"`,
       });
       
       onSelectionChange([]);
@@ -139,7 +143,7 @@ export const TransactionBulkActions = ({
       row.map(cell => {
         const stringValue = String(cell);
         // Escape dangerous characters that could be interpreted as formulas
-        if (/^[=@+\-]/.test(stringValue)) {
+        if (/^[=@+-]/.test(stringValue)) {
           return `'${stringValue}`;
         }
         // Escape double quotes by doubling them and wrap in quotes
@@ -181,10 +185,11 @@ export const TransactionBulkActions = ({
         const { data: user } = await supabase.auth.getUser();
         if (!user.user) throw new Error('User not authenticated');
 
-        // Add user_id to all transactions
+        // Add user_id and category_source to all transactions
         const transactionsWithUserId = newTransactions.map(tx => ({
           ...tx,
-          user_id: user.user.id
+          user_id: user.user.id,
+          category_source: 'user' // Mark CSV imports as user-defined (never overwritten by AI/Plaid)
         }));
 
         const { error } = await supabase

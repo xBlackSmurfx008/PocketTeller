@@ -72,6 +72,13 @@ android/local.properties
 *.p12
 *.mobileprovision
 
+# App Store Connect API Keys
+AuthKey_*.p8
+ios/.env
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/test_output
+
 # Temporary files
 *.tmp
 *.temp
@@ -90,3 +97,8 @@ PLAID_API_IMPLEMENTATION_PLAN.md
 PRODUCTION_DEPLOYMENT_CHECKLIST.md
 PROJECT_COMPLETION_SUMMARY.md
 TESTING_CHECKLIST.md
+.cache/
+.temp/
+
+# Documentation backups
+.documentation-backup/

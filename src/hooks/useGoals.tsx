@@ -1,12 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { Goal } from '@/types/models';
+import { getUserErrorMessage, logError } from '@/utils/errorHandler';
 
 export type { Goal };
 
+/**
+ * Operation result interface
+ */
+interface OperationResult<T = void> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+/**
+ * Hook for managing financial goals
+ * Provides CRUD operations for goals with real-time updates
+ * @returns Goals state and operations
+ */
 export const useGoals = () => {
   const { user } = useAuth();
   const { isDemo, sampleData } = useDemo();
@@ -44,9 +59,10 @@ export const useGoals = () => {
       }
 
       setGoals(data || []);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch goals';
+    } catch (err) {
+      const errorMessage = getUserErrorMessage(err, 'Failed to fetch goals');
       setError(errorMessage);
+      logError(err, 'useGoals.fetchGoals');
       toast({
         title: "Error",
         description: errorMessage,
@@ -57,7 +73,14 @@ export const useGoals = () => {
     }
   }, [user, isDemo, sampleData, toast]);
 
-  const createGoal = useCallback(async (goalData: Omit<Goal, 'id' | 'created_at' | 'updated_at'>) => {
+  /**
+   * Creates a new goal
+   * @param goalData - Goal data without system-generated fields
+   * @returns Operation result with created goal data
+   */
+  const createGoal = useCallback(async (
+    goalData: Omit<Goal, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<OperationResult<Goal>> => {
     if (isDemo) {
       const newGoal: Goal = {
         ...goalData,
@@ -87,8 +110,9 @@ export const useGoals = () => {
       });
 
       return { success: true, data };
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to create goal';
+    } catch (err) {
+      const errorMessage = getUserErrorMessage(err, 'Failed to create goal');
+      logError(err, 'useGoals.createGoal');
       toast({
         title: "Error",
         description: errorMessage,
@@ -98,7 +122,16 @@ export const useGoals = () => {
     }
   }, [user, isDemo, toast]);
 
-  const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
+  /**
+   * Updates an existing goal
+   * @param id - Goal ID to update
+   * @param updates - Partial goal object with fields to update
+   * @returns Operation result
+   */
+  const updateGoal = useCallback(async (
+    id: string, 
+    updates: Partial<Goal>
+  ): Promise<OperationResult> => {
     if (isDemo) {
       setGoals(prev => 
         prev.map(g => g.id === id ? { ...g, ...updates, updated_at: new Date().toISOString() } : g)
@@ -127,8 +160,9 @@ export const useGoals = () => {
       });
 
       return { success: true };
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to update goal';
+    } catch (err) {
+      const errorMessage = getUserErrorMessage(err, 'Failed to update goal');
+      logError(err, 'useGoals.updateGoal');
       toast({
         title: "Error",
         description: errorMessage,
@@ -138,7 +172,12 @@ export const useGoals = () => {
     }
   }, [user, isDemo, toast]);
 
-  const deleteGoal = useCallback(async (id: string) => {
+  /**
+   * Deletes a goal
+   * @param id - Goal ID to delete
+   * @returns Operation result
+   */
+  const deleteGoal = useCallback(async (id: string): Promise<OperationResult> => {
     if (isDemo) {
       setGoals(prev => prev.filter(g => g.id !== id));
       return { success: true };
@@ -163,8 +202,9 @@ export const useGoals = () => {
       });
 
       return { success: true };
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to delete goal';
+    } catch (err) {
+      const errorMessage = getUserErrorMessage(err, 'Failed to delete goal');
+      logError(err, 'useGoals.deleteGoal');
       toast({
         title: "Error",
         description: errorMessage,

@@ -3,13 +3,16 @@ require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 platform :ios, '14.0'
 use_frameworks!
 
-# Modern CocoaPods configuration
-install! 'cocoapods', :deterministic_uuids => false
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
 end
 
 target 'App' do
@@ -19,19 +22,4 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
-  
-  # Fix for Xcode warning about script phase outputs
-  installer.pods_project.targets.each do |target|
-    target.build_phases.each do |phase|
-      if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
-        if phase.name == '[CP] Embed Pods Frameworks'
-          # Add output paths to prevent the warning
-          phase.output_paths = [
-            "$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Capacitor.framework",
-            "$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Cordova.framework"
-          ]
-        end
-      end
-    end
-  end
 end

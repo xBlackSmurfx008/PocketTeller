@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { useDemo } from '@/hooks/useDemo';
 import { useBudgetData } from '@/hooks/useBudgetData';
+import { useBills } from '@/hooks/useBills';
+import { supabase } from '@/integrations/supabase/client';
 import { BudgetCategoryManager } from '@/components/budget/BudgetCategoryManager';
 import { BudgetSummaryCards } from '@/components/budget/BudgetSummaryCards';
 import { Reveal } from '@/components/Reveal';
@@ -32,6 +34,8 @@ export default function Budget() {
     saveBudget
   } = useBudgetData(selectedMonth);
 
+  const { bills } = useBills();
+
   // Check if we need to show setup screen
   useEffect(() => {
     if (!hasExistingBudget && !loading && !isDemo) {
@@ -39,10 +43,10 @@ export default function Budget() {
     }
   }, [hasExistingBudget, loading, isDemo]);
 
-  const handleQuickStart = () => {
-    setBudgetData({
-      income: 5000,
-      categories: [
+  const handleQuickStart = async () => {
+    try {
+      let smartIncome = 5000; // Default fallback
+      let smartCategories = [
         { id: '1', name: 'Housing', planned: 1500, actual: 0 },
         { id: '2', name: 'Food & Dining', planned: 600, actual: 0 },
         { id: '3', name: 'Transportation', planned: 400, actual: 0 },
@@ -50,9 +54,67 @@ export default function Budget() {
         { id: '5', name: 'Entertainment', planned: 300, actual: 0 },
         { id: '6', name: 'Savings', planned: 500, actual: 0 },
         { id: '7', name: 'Other', planned: 500, actual: 0 }
-      ]
-    });
-    setShowSetup(false);
+      ];
+
+      if (!isDemo) {
+        // Fetch user's income from transactions
+        const { data: incomeTransactions } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('category', 'Income')
+          .eq('pending', false)
+          .gte('date', format(new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1), 'yyyy-MM-dd'))
+          .lte('date', format(new Date(), 'yyyy-MM-dd'));
+
+        if (incomeTransactions && incomeTransactions.length > 0) {
+          const totalIncome = incomeTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+          // Use average of last 3 months if available
+          smartIncome = Math.round(totalIncome / Math.max(incomeTransactions.length, 1));
+        }
+
+        // Convert bills to budget categories
+        const billCategories = bills
+          .filter(bill => !bill.is_paid)
+          .map((bill, index) => ({
+            id: `bill-${bill.id}`,
+            name: bill.name,
+            planned: bill.amount,
+            actual: 0
+          }));
+
+        // Add bill categories to smart categories
+        if (billCategories.length > 0) {
+          smartCategories = [
+            ...billCategories,
+            ...smartCategories.filter(cat => 
+              !billCategories.some(bill => bill.name.toLowerCase().includes(cat.name.toLowerCase()))
+            )
+          ];
+        }
+      }
+
+      setBudgetData({
+        income: smartIncome,
+        categories: smartCategories
+      });
+      setShowSetup(false);
+    } catch (error) {
+      console.error('Error creating smart budget:', error);
+      // Fallback to default budget
+      setBudgetData({
+        income: 5000,
+        categories: [
+          { id: '1', name: 'Housing', planned: 1500, actual: 0 },
+          { id: '2', name: 'Food & Dining', planned: 600, actual: 0 },
+          { id: '3', name: 'Transportation', planned: 400, actual: 0 },
+          { id: '4', name: 'Utilities', planned: 200, actual: 0 },
+          { id: '5', name: 'Entertainment', planned: 300, actual: 0 },
+          { id: '6', name: 'Savings', planned: 500, actual: 0 },
+          { id: '7', name: 'Other', planned: 500, actual: 0 }
+        ]
+      });
+      setShowSetup(false);
+    }
   };
 
   const handleStartFromScratch = () => {
@@ -87,10 +149,10 @@ export default function Budget() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button onClick={handleQuickStart} className="w-full">
-              Quick Start Template
+              Smart Quick Start
             </Button>
             <p className="text-sm text-muted-foreground text-center">
-              Start with a pre-filled budget template
+              Create budget using your income and bills data
             </p>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

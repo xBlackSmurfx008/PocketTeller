@@ -1,0 +1,19 @@
+# Matchfile for PocketTeller iOS  
+
+# Storage mode
+storage_mode("git")
+
+# Git URL - using a local directory
+git_url("file://#{Dir.home}/.fastlane_match_certs")
+
+# App Identifier
+app_identifier(["com.pocketteller.app"])
+
+# Your Apple Developer Portal username
+username("mradams@digiwealth.io")
+
+# Team ID
+team_id("Z3L3NYSA9D")
+
+# Type of provisioning profile
+type("appstore")

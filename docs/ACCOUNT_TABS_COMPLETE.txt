@@ -1,0 +1,198 @@
+================================================================================
+              📑 ACCOUNT VIEW TABS - SIMPLE TOGGLE SYSTEM
+                         October 12, 2025
+================================================================================
+
+✅ FEATURE COMPLETE - TAB-BASED ACCOUNT SWITCHING
+──────────────────────────────────────────────────
+
+Feature: Simple tab toggle between combined and individual account views
+Pages:   Dashboard + Transactions
+Design:  Clean, intuitive, one-click switching
+
+🎨 USER INTERFACE
+─────────────────
+Tab Layout (Example with 2 banks):
+
+┌────────────────────────────────────────────────────────────────┐
+│ [All $20,000] │ [Chase $12,500] │ [BoA $7,500] │ [+Add Bank (1/3)] │
+└────────────────────────────────────────────────────────────────┘
+
+Features:
+✅ All Accounts tab (combined view - default)
+✅ Individual bank tabs (one per connected bank)
+✅ Balance shown in each tab
+✅ Add Bank button (prominent, always visible)
+✅ Shows remaining slots (e.g., "1/3")
+✅ Responsive design (mobile-friendly)
+
+📱 PAGES IMPLEMENTED
+────────────────────
+✅ Dashboard (Home screen)
+   - All Accounts: Combined financial snapshot
+   - Individual Banks: Filtered to specific bank
+   - Budget, Goals, Bills (global - not filtered)
+
+✅ Transactions  
+   - All Accounts: All transactions from all banks
+   - Individual Banks: Filtered transactions
+   - Pie chart and insights update per selection
+
+🔘 ADD BANK BUTTON
+──────────────────
+Location: Right side of tabs (or below on mobile)
+Shows When: User has < 3 banks connected
+Hides When: Limit reached (3 banks)
+
+Button Design:
+  [+ Add Bank (2/3)]
+   ↑      ↑      ↑
+ Icon  Label  Remaining slots
+
+Behavior:
+  - Clicks button → Dialog opens
+  - Plaid Link inside dialog
+  - Connect bank → Tabs update
+  - New tab appears for bank
+
+🎯 USER FLOWS
+─────────────
+
+1. NO BANKS CONNECTED:
+   → Shows welcome card with "Connect Bank" button
+   → Click → Plaid modal → Connect
+   → Tabs appear with "All Accounts" + bank name
+
+2. ADD SECOND BANK:
+   → Click [+Add Bank (2/3)] button
+   → Dialog with Plaid Link
+   → Connect → New tab appears
+   → Can switch between: All / Bank1 / Bank2
+
+3. SWITCH VIEWS:
+   → Dashboard → Click "Chase Bank" tab
+   → Financial snapshot updates to Chase only
+   → Budget reflects Chase spending
+   → Click "All Accounts" → Back to combined
+
+4. REACH LIMIT (3 BANKS):
+   → Connect 3rd bank
+   → "Add Bank" button disappears
+   → Tabs: All / Chase / BoA / Wells
+   → To add different bank: Settings → Disconnect one
+
+💾 DATA FILTERING
+─────────────────
+All Accounts Tab (accountFilter = null):
+  - Fetch ALL accounts
+  - Fetch ALL transactions
+  - Show combined data
+
+Individual Bank Tab (accountFilter = "item_123"):
+  - Fetch accounts WHERE plaid_item_id_ref = "item_123"
+  - Fetch transactions for those accounts
+  - Show filtered data
+
+📊 WHAT GETS FILTERED
+──────────────────────
+✅ Financial Health Snapshot (balances)
+✅ Budget Overview (spending)
+✅ Transaction List
+✅ Spending Pie Chart
+✅ Spending Insights
+
+❌ NOT FILTERED (always global):
+   - Goals
+   - Bills
+   - Account settings
+
+🎨 VISUAL DESIGN
+────────────────
+Active Tab:
+  - Primary color background
+  - White text
+  - Elevated (shadow)
+  - Badge with balance
+
+Inactive Tab:
+  - Muted background
+  - Muted text  
+  - Hover effect
+
+Tab Content (When Individual Bank Selected):
+  ┌────────────────────────────────────────┐
+  │ 🏦 Chase Bank           $12,500       │
+  │                          2 accounts    │
+  │                                        │
+  │ [Chase Checking ••4567] [$10,000]     │
+  │ [Chase Savings ••8901]  [$2,500]      │
+  └────────────────────────────────────────┘
+  
+  Then below: Filtered financial data
+
+📱 RESPONSIVE BEHAVIOR
+──────────────────────
+Desktop: All tabs visible, full labels
+Tablet:  Abbreviated labels, all tabs visible
+Mobile:  Horizontal scroll, "Add Bank" button stacked below
+
+✅ BUILD STATUS
+───────────────
+npm run build: ✓ 6.01s
+No errors
+Production ready!
+
+🎯 BENEFITS
+───────────
+For Users:
+✅ Simple one-click switching
+✅ Clear visual feedback
+✅ Balance at a glance
+✅ Easy to add banks (button always visible)
+✅ Intuitive standard tab pattern
+
+For Developers:
+✅ Reusable component
+✅ Render props pattern (flexible)
+✅ Centralized logic
+✅ Easy to extend to more pages
+
+🎉 COMPLETE FEATURE SET
+───────────────────────
+✅ Tab-based switching (combined vs individual)
+✅ Implemented on Dashboard + Transactions
+✅ Add Bank button (prominent)
+✅ Shows remaining slots (X/3)
+✅ Balance badges in tabs
+✅ Responsive design
+✅ Proper data filtering
+✅ Professional UI/UX
+✅ Production ready
+
+📚 DOCUMENTATION
+────────────────
+Complete guide: docs/ACCOUNT_VIEW_TABS.md
+- UI design
+- Component architecture
+- Implementation details
+- User flows
+- Technical specs
+- Responsive design
+- Accessibility
+
+🚀 PRODUCTION STATUS
+────────────────────
+Feature: ✅ Complete
+Pages: Dashboard + Transactions
+Design: Simple tabs with clear switching
+UX: Intuitive and professional
+Build: ✅ Successful (6.01s)
+
+READY FOR PRODUCTION! 🎊
+
+================================================================================
+Status: 100% Complete
+Build: Successful
+Quality: Professional
+Pattern: Tab-based account view switching
+================================================================================

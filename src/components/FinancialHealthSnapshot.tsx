@@ -1,54 +1,94 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { memo, useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
-import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, CreditCard, PiggyBank } from 'lucide-react';
+import { useFinancialTotals } from '@/hooks/useFinancialTotals';
+import { calculateAccountSummary } from '@/utils/accountCategories';
 
-interface FinancialData {
-  totalBalance: number;
-  monthlyIncome: number;
-  monthlyExpenses: number;
+/**
+ * Props for FinancialHealthSnapshot component
+ */
+interface FinancialHealthSnapshotProps {
+  accountFilter?: string | null;
+  dateRangeDays?: number; // default last 30 days for consistency
 }
 
-export default function FinancialHealthSnapshot() {
-  const { user } = useAuth();
-  const { isDemo, sampleData } = useDemo();
-  const [data, setData] = useState<FinancialData>({
-    totalBalance: 0,
-    monthlyIncome: 0,
-    monthlyExpenses: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const debounceRef = useRef<NodeJS.Timeout>();
 
-  // Debounced fetch function to prevent excessive API calls
-  const debouncedFetchFinancialData = useCallback(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+/**
+ * Displays a snapshot of the user's financial health
+ * Shows assets, monthly income, monthly expenses, and total debts
+ */
+function FinancialHealthSnapshot({ accountFilter, dateRangeDays = 30 }: FinancialHealthSnapshotProps): JSX.Element {
+  const { user } = useAuth();
+  const { isDemo } = useDemo();
+  const { totals, loading: totalsLoading } = useFinancialTotals({ mode: 'days', dateRangeDays, accountFilter });
+  const [totalDebts, setTotalDebts] = useState(0);
+  const [checkingBalance, setCheckingBalance] = useState(0);
+  const [savingsInvestments, setSavingsInvestments] = useState(0);
+  const [loadingDebts, setLoadingDebts] = useState(true);
+
+  const fetchAccountData = useCallback(async () => {
+    if (!user) {
+      setLoadingDebts(false);
+      return;
     }
-    debounceRef.current = setTimeout(() => {
-      fetchFinancialData();
-    }, 300);
-  }, []);
+
+    try {
+      // Fetch all accounts to calculate debts and balances
+      const { data: allAccounts, error: accountsError } = await supabase
+        .from('accounts')
+        .select('available_balance, current_balance, type, subtype')
+        .eq('user_id', user.id);
+
+      if (accountsError) {
+        console.error('Accounts fetch error:', accountsError);
+        setLoadingDebts(false);
+        return;
+      }
+
+      // Calculate debts from all accounts
+      const accountSummary = calculateAccountSummary(allAccounts || []);
+      setTotalDebts(accountSummary.totalDebts);
+
+      // Calculate checking balance - prioritize available_balance for checking accounts
+      const checkingAccounts = (allAccounts || []).filter(account => 
+        account.type === 'depository' && account.subtype === 'checking'
+      );
+      const checkingTotal = checkingAccounts.reduce((sum, account) => {
+        // For checking accounts, use available_balance if present, otherwise current_balance
+        const balance = account.available_balance !== null && account.available_balance !== undefined 
+          ? Number(account.available_balance) 
+          : Number(account.current_balance) || 0;
+        return sum + balance;
+      }, 0);
+      setCheckingBalance(checkingTotal);
+
+      // Calculate savings only
+      const savingsInvestTotal = (allAccounts || []).reduce((sum, account) => {
+        if (account.subtype === 'savings') {
+          return sum + (Number(account.available_balance) || Number(account.current_balance) || 0);
+        }
+        return sum;
+      }, 0);
+      setSavingsInvestments(savingsInvestTotal);
+
+    } catch (error) {
+      console.error('Error fetching account data:', error);
+    } finally {
+      setLoadingDebts(false);
+    }
+  }, [user]);
 
   useEffect(() => {
-    if (isDemo && !user) {
-      // Only show demo data if in demo mode AND no authenticated user
-      const totalBalance = sampleData.accounts.reduce((sum, account) => sum + account.balance, 0);
-      setData({
-        totalBalance,
-        monthlyIncome: 2500,
-        monthlyExpenses: 1850,
-      });
-      setLoading(false);
-    } else if (user) {
-      fetchFinancialData();
+    if (user && !isDemo) {
+      fetchAccountData();
       
-      // Set up real-time subscriptions for accounts and budget changes
+      // Add real-time subscription for account balance updates
       const accountsChannel = supabase
-        .channel('accounts-changes')
+        .channel('accounts-changes-snapshot')
         .on(
           'postgres_changes',
           {
@@ -58,131 +98,90 @@ export default function FinancialHealthSnapshot() {
             filter: `user_id=eq.${user.id}`
           },
           () => {
-            console.log('Accounts updated, refreshing financial data');
-            debouncedFetchFinancialData();
-          }
-        )
-        .subscribe();
-
-      const budgetChannel = supabase
-        .channel('budget-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'budget',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            console.log('Budget updated, refreshing financial data');
-            debouncedFetchFinancialData();
-          }
-        )
-        .subscribe();
-
-      const transactionsChannel = supabase
-        .channel('transactions-changes-snapshot')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'transactions',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            console.log('Transactions updated, refreshing financial data');
-            debouncedFetchFinancialData();
+            console.log('Account balances updated, refreshing data');
+            fetchAccountData(); // Refetch when accounts change
           }
         )
         .subscribe();
 
       return () => {
-        if (debounceRef.current) {
-          clearTimeout(debounceRef.current);
-        }
         supabase.removeChannel(accountsChannel);
-        supabase.removeChannel(budgetChannel);
-        supabase.removeChannel(transactionsChannel);
       };
     } else {
-      setLoading(false);
+      setLoadingDebts(false);
     }
-  }, [user, isDemo, sampleData]);
+  }, [user, isDemo, fetchAccountData]);
 
-  const fetchFinancialData = async () => {
-    try {
-      // Fetch total balance from accounts
-      const { data: accounts, error: accountsError } = await supabase
-        .from('accounts')
-        .select('balance')
-        .eq('user_id', user?.id);
+  if (isDemo && !user) {
+    // Demo data
+    return (
+      <Card className="card-hover-lift elevation-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Your Financial Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+            <div className="p-5 bg-blue-50 dark:bg-blue-950/20 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+              <h3 className="text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide mb-2">Checking Balance</h3>
+              <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">$1,250</p>
+              <p className="text-xs text-blue-600 dark:text-blue-500 mt-2">Available to spend</p>
+            </div>
+            <div className="p-5 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <h3 className="text-sm font-bold text-green-700 dark:text-green-400 uppercase tracking-wide">Income</h3>
+              </div>
+              <p className="text-3xl font-bold text-green-700 dark:text-green-400">$2,500</p>
+              <p className="text-xs text-green-600 dark:text-green-500 mt-2">Last 30 days</p>
+            </div>
+            <div className="p-5 bg-orange-50 dark:bg-orange-950/20 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <h3 className="text-sm font-bold text-orange-700 dark:text-orange-400 uppercase tracking-wide">Expenses</h3>
+              </div>
+              <p className="text-3xl font-bold text-orange-700 dark:text-orange-400">$1,850</p>
+              <p className="text-xs text-orange-600 dark:text-orange-500 mt-2">Last 30 days</p>
+            </div>
+            <div className="p-5 bg-purple-50 dark:bg-purple-950/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+              <div className="flex items-center gap-2 mb-2">
+                <PiggyBank className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <h3 className="text-sm font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">Savings</h3>
+              </div>
+              <p className="text-3xl font-bold text-purple-700 dark:text-purple-400">$5,250</p>
+              <p className="text-xs text-purple-600 dark:text-purple-500 mt-2">Total saved</p>
+            </div>
+            <div className="p-5 bg-red-50 dark:bg-red-950/20 rounded-lg border-2 border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <h3 className="text-sm font-bold text-red-700 dark:text-red-400 uppercase tracking-wide">Debts</h3>
+              </div>
+              <p className="text-3xl font-bold text-red-700 dark:text-red-400">$3,200</p>
+              <p className="text-xs text-red-600 dark:text-red-500 mt-2">Loans & Credit</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">Cash Flow (Last 30 Days)</span>
+              <Badge variant="default" className="text-base">
+                +$650
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">Savings</span>
+              <Badge variant="secondary" className="text-base">
+                $7,250
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-      if (accountsError) throw accountsError;
-
-      const totalBalance = accounts?.reduce((sum, account) => sum + Number(account.balance), 0) || 0;
-
-      // Fetch budget for fallback values
-      const { data: budget, error: budgetError } = await supabase
-        .from('budget')
-        .select('income, expenses')
-        .eq('user_id', user?.id)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (budgetError && budgetError.code !== 'PGRST116') {
-        console.error('Budget fetch error:', budgetError);
-      }
-
-      // Compute monthly income/expenses from transactions for current month
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const start = startOfMonth.toISOString().split('T')[0];
-      const end = now.toISOString().split('T')[0];
-
-      const { data: monthlyTxns, error: txnsError } = await supabase
-        .from('transactions')
-        .select('amount, category, date')
-        .eq('user_id', user?.id)
-        .gte('date', start)
-        .lte('date', end);
-
-      if (txnsError) {
-        console.error('Transactions fetch error:', txnsError);
-      }
-
-      let monthlyIncomeCalc = 0;
-      let monthlyExpensesCalc = 0;
-      if (monthlyTxns && monthlyTxns.length > 0) {
-        for (const t of monthlyTxns as any[]) {
-          const amtNum = Number(t.amount) || 0;
-          const absAmt = Math.abs(amtNum);
-          if ((t.category || '').toLowerCase() === 'income') {
-            monthlyIncomeCalc += absAmt;
-          } else {
-            monthlyExpensesCalc += amtNum < 0 ? -amtNum : absAmt;
-          }
-        }
-      }
-
-      setData({
-        totalBalance,
-        monthlyIncome: (monthlyTxns && monthlyTxns.length > 0) ? monthlyIncomeCalc : (budget?.income ? Number(budget.income) : 0),
-        monthlyExpenses: (monthlyTxns && monthlyTxns.length > 0) ? monthlyExpensesCalc : (budget?.expenses ? Number(budget.expenses) : 0),
-      });
-    } catch (error) {
-      console.error('Error fetching financial data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Safe calculation with fallbacks
-  const netIncome = (data?.monthlyIncome || 0) - (data?.monthlyExpenses || 0);
-  const isPositive = netIncome >= 0;
-
-  if (loading) {
+  if (totalsLoading || loadingDebts) {
     return (
       <Card>
         <CardHeader>
@@ -195,51 +194,92 @@ export default function FinancialHealthSnapshot() {
     );
   }
 
+  const isPositiveCashFlow = totals.net >= 0;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Financial Health Snapshot
+          Your Financial Overview
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-          <div className="text-center space-y-2">
-            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Total Balance</h3>
-            <p className="text-2xl sm:text-3xl font-bold text-primary">
-              ${(data?.totalBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        {/* THE FIVE MAIN METRICS - Grid layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+          {/* 1. CHECKING BALANCE - Available to spend */}
+          <div className="p-5 bg-blue-50 dark:bg-blue-950/20 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+            <h3 className="text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide mb-2">Checking Balance</h3>
+            <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">
+              ${checkingBalance.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </p>
+            <p className="text-xs text-blue-600 dark:text-blue-500 mt-2">Available to spend</p>
           </div>
-          
-          <div className="text-center space-y-2">
-            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Monthly Income</h3>
-            <p className="text-xl sm:text-2xl font-semibold text-green-600 flex items-center justify-center gap-1">
-              <TrendingUp className="h-4 w-4" />
-              ${(data?.monthlyIncome || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+
+          {/* 2. INCOME - Use totals.income directly like Transactions page */}
+          <div className="p-5 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <h3 className="text-sm font-bold text-green-700 dark:text-green-400 uppercase tracking-wide">Income</h3>
+            </div>
+            <p className="text-3xl font-bold text-green-700 dark:text-green-400">
+              ${totals.income.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </p>
+            <p className="text-xs text-green-600 dark:text-green-500 mt-2">Last 30 days</p>
           </div>
-          
-          <div className="text-center space-y-2">
-            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Monthly Expenses</h3>
-            <p className="text-xl sm:text-2xl font-semibold text-red-600 flex items-center justify-center gap-1">
-              <TrendingDown className="h-4 w-4" />
-              ${(data?.monthlyExpenses || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+
+          {/* 3. EXPENSES - Use totals.expenses directly like Transactions page */}
+          <div className="p-5 bg-orange-50 dark:bg-orange-950/20 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingDown className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <h3 className="text-sm font-bold text-orange-700 dark:text-orange-400 uppercase tracking-wide">Expenses</h3>
+            </div>
+            <p className="text-3xl font-bold text-orange-700 dark:text-orange-400">
+              ${totals.expenses.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </p>
+            <p className="text-xs text-orange-600 dark:text-orange-500 mt-2">Last 30 days</p>
+          </div>
+
+          {/* 4. SAVINGS (Total of Savings accounts) */}
+          <div className="p-5 bg-purple-50 dark:bg-purple-950/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-2 mb-2">
+              <PiggyBank className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <h3 className="text-sm font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">Savings</h3>
+            </div>
+            <p className="text-3xl font-bold text-purple-700 dark:text-purple-400">
+              ${savingsInvestments.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            </p>
+            <p className="text-xs text-purple-600 dark:text-purple-500 mt-2">Total saved</p>
+          </div>
+
+          {/* 5. DEBTS (Loans, Credit Cards, etc.) */}
+          <div className="p-5 bg-red-50 dark:bg-red-950/20 rounded-lg border-2 border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-2 mb-2">
+              <CreditCard className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <h3 className="text-sm font-bold text-red-700 dark:text-red-400 uppercase tracking-wide">Debts</h3>
+            </div>
+            <p className="text-3xl font-bold text-red-700 dark:text-red-400">
+              ${totalDebts.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-500 mt-2">Loans & Credit</p>
           </div>
         </div>
-        
-        <div className="mt-6 pt-6 border-t border-border">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Net Monthly Cash Flow</span>
-            <div className="flex items-center gap-2">
-              <Badge variant={isPositive ? 'default' : 'destructive'}>
-                {isPositive ? '+' : ''}${netIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </Badge>
-            </div>
+
+        {/* SECONDARY METRICS - Cash Flow and Savings/Investments */}
+          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 pt-4 border-t">
+          <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+            <span className="text-sm font-medium text-muted-foreground">Cash Flow (Last 30 Days)</span>
+            <Badge variant={isPositiveCashFlow ? 'default' : 'destructive'} className="text-base">
+              {isPositiveCashFlow ? '+' : ''}${totals.net.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            </Badge>
           </div>
         </div>
       </CardContent>
     </Card>
   );
 }
+
+/**
+ * Memoized export for performance optimization
+ */
+export default memo(FinancialHealthSnapshot);

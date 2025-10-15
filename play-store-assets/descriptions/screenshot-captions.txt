@@ -1,0 +1,27 @@
+Screenshot Captions for Google Play Store
+==========================================
+
+1. 01-welcome-auth.png
+   "Secure authentication with biometric support"
+
+2. 02-dashboard.png
+   "See all your accounts and finances in one place"
+
+3. 03-accounts.png
+   "Connect multiple bank accounts securely via Plaid"
+
+4. 04-transactions.png
+   "Track every transaction with smart categorization"
+
+5. 05-budget-goals.png
+   "Set budgets and achieve your financial goals"
+
+6. 06-ai-coaching.png
+   "Get personalized advice from your AI financial coach"
+
+7. 07-insights.png
+   "Understand your spending with intelligent insights"
+
+8. 08-settings.png (Optional)
+   "Customize your experience with powerful settings"
+

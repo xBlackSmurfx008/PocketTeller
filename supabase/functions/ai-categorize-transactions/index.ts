@@ -1,3 +1,13 @@
+/**
+ * ⚠️ DEPRECATED - AI Categorization Function
+ * 
+ * This function is deprecated and no longer used in the application.
+ * Transaction categorization now relies exclusively on Plaid's category data.
+ * 
+ * @deprecated Use Plaid's built-in categorization instead
+ * @see plaid-sync edge function for Plaid-based categorization
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -27,15 +37,19 @@ function checkRateLimit(userId: string, maxRequests = 100, windowMs = 3600000): 
 }
 
 const CATEGORIES = [
+  'Income',
+  'Transfer',
+  'Subscriptions',
   'Food & Dining',
-  'Transportation', 
+  'Transportation',
   'Shopping',
   'Entertainment',
   'Bills & Utilities',
   'Healthcare',
   'Travel',
   'Education',
-  'Income',
+  'Savings',
+  'Investments',
   'Other'
 ];
 
@@ -56,6 +70,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Return deprecation notice
+  return new Response(
+    JSON.stringify({ 
+      deprecated: true,
+      message: 'This function is deprecated. Transaction categorization now uses Plaid categories exclusively.',
+      recommendation: 'Plaid automatically categorizes transactions during sync. No manual categorization needed.'
+    }),
+    { 
+      status: 410, // 410 Gone - indicates the resource is no longer available
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+
+  // Original implementation kept for reference but unreachable
   try {
     // Extract JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -103,15 +131,20 @@ serve(async (req) => {
       });
     }
 
-    const { limit = 50, threshold = 0.55 }: CategorizeRequest = await req.json();
+    const { limit = 100, threshold = 0.70 }: CategorizeRequest = await req.json();
     
-    // Fetch uncategorized transactions
+    // Fetch transactions that need AI categorization
+    // Priority: user > plaid > ai > auto
+    // Only categorize transactions where:
+    // - Category is 'Other' or null (unclear categorization)
+    // - Source is 'auto' or null (not from Plaid's specific data or user choice)
+    // This ensures Plaid's authoritative data is never overwritten by AI
     const { data: transactions, error: fetchError } = await supabaseClient
       .from('transactions')
-      .select('id, description, amount, date')
+      .select('id, description, merchant_name, amount, date, category, category_source')
       .eq('user_id', user.id)
-      .neq('category_source', 'user')
       .in('category', ['Other', null])
+      .in('category_source', ['auto', null])
       .order('date', { ascending: false })
       .limit(limit);
 
@@ -150,7 +183,7 @@ ${transactions.map(t => `ID: ${t.id}, Description: "${t.description}", Amount: $
 Return only a JSON array of objects, no additional text.`;
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -201,29 +234,35 @@ Return only a JSON array of objects, no additional text.`;
     // Validate and update transactions
     let updatedCount = 0;
     const updates = [];
+    let lowConfidenceCount = 0;
 
     for (const cat of categorizations) {
       // Validate category
       if (!CATEGORIES.includes(cat.category)) {
+        console.warn(`Invalid category "${cat.category}" returned by AI for transaction ${cat.id}`);
         cat.category = 'Other';
         cat.confidence = 0.3;
         cat.reason = 'Invalid category returned by AI';
       }
 
-      // Apply threshold
+      // Apply threshold - only high confidence categorizations are applied
       if (cat.confidence >= threshold) {
         updates.push({
           id: cat.id,
           category: cat.category,
           category_source: 'ai',
           category_confidence: cat.confidence,
-          category_model: 'gemini-1.5-flash',
+          category_model: 'gemini-2.5-flash',
           category_reason: cat.reason
         });
+      } else {
+        lowConfidenceCount++;
+        console.log(`Low confidence (${cat.confidence}) for transaction ${cat.id}, skipping auto-categorization`);
       }
     }
 
     // Batch update transactions
+    // Priority: user > plaid > ai > auto
     for (const update of updates) {
       const { error: updateError } = await supabaseClient
         .from('transactions')
@@ -236,7 +275,7 @@ Return only a JSON array of objects, no additional text.`;
         })
         .eq('id', update.id)
         .eq('user_id', user.id)
-        .neq('category_source', 'user'); // Don't overwrite user choices
+        .in('category_source', ['auto', null]); // Only update auto-categorized, never user or plaid
 
       if (!updateError) {
         updatedCount++;
@@ -245,15 +284,15 @@ Return only a JSON array of objects, no additional text.`;
       }
     }
 
-    console.log(`AI categorization completed: ${updatedCount} transactions updated`);
+    console.log(`AI categorization completed: ${updatedCount} transactions updated, ${lowConfidenceCount} skipped due to low confidence`);
 
-    // Check remaining uncategorized transactions
+    // Check remaining uncategorized transactions (that could benefit from AI)
     const { data: remainingTransactions } = await supabaseClient
       .from('transactions')
       .select('id')
       .eq('user_id', user.id)
-      .neq('category_source', 'user')
-      .in('category', ['Other', null]);
+      .in('category', ['Other', null])
+      .in('category_source', ['auto', null]);
 
     const remainingCount = remainingTransactions?.length || 0;
 
@@ -262,9 +301,13 @@ Return only a JSON array of objects, no additional text.`;
         updatedCount,
         totalProcessed: transactions.length,
         remainingUncategorized: remainingCount,
+        lowConfidenceCount,
+        threshold,
         details: updatedCount > 0 
-          ? `Categorized ${updatedCount} of ${transactions.length} transactions using AI`
-          : 'No transactions met the confidence threshold for automatic categorization'
+          ? `Successfully categorized ${updatedCount} of ${transactions.length} transactions using AI (threshold: ${threshold * 100}%)${lowConfidenceCount > 0 ? `. ${lowConfidenceCount} transactions had low confidence and were skipped.` : ''}`
+          : lowConfidenceCount > 0
+          ? `No transactions met the ${threshold * 100}% confidence threshold for automatic categorization. ${lowConfidenceCount} transactions need manual review.`
+          : 'No transactions needed categorization'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -272,17 +315,28 @@ Return only a JSON array of objects, no additional text.`;
   } catch (error) {
     console.error('AI categorization error:', error);
     
-    // Sanitize error message
+    // Sanitize error message for user consumption
     let sanitizedError = 'Service temporarily unavailable';
-    if (error.message?.includes('Rate limit') || error.message?.includes('Unauthorized')) {
-      sanitizedError = error.message;
+    let statusCode = 500;
+    
+    if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
+      sanitizedError = 'AI service is temporarily busy. Please try again in a few minutes.';
+      statusCode = 429;
+    } else if (error.message?.includes('Unauthorized') || error.message?.includes('Invalid session')) {
+      sanitizedError = 'Your session has expired. Please refresh the page and try again.';
+      statusCode = 401;
+    } else if (error.message?.includes('not configured') || error.message?.includes('GEMINI_API_KEY')) {
+      sanitizedError = 'AI service is temporarily unavailable. Please try again later.';
+      statusCode = 503;
     } else if (error.message?.includes('AI service')) {
-      sanitizedError = 'AI service temporarily unavailable';
+      sanitizedError = error.message;
     }
+    
+    console.error('Final error response:', { sanitizedError, statusCode, originalError: error.message });
     
     return new Response(
       JSON.stringify({ error: sanitizedError }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

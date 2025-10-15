@@ -1,0 +1,138 @@
+# Fastfile for PocketTeller iOS
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+
+default_platform(:ios)
+
+platform :ios do
+  # Configuration
+  before_all do
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "120"
+    
+    # Configure App Store Connect API Key
+    ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"] = "V43L3BZNA9"
+    ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"] = "e63db961-afb6-44db-a75b-64174d1dea17"
+    ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"] = File.expand_path("../AuthKey_V43L3BZNA9.p8", __dir__)
+  end
+
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # Ensure we're on the latest code
+    # ensure_git_status_clean  # Commented out for quick deployment
+    
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "App/App.xcodeproj"
+    )
+    
+    # Build the app with automatic signing
+    build_app(
+      workspace: "App/App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "automatic",
+        teamID: "Z3L3NYSA9D"
+      }
+    )
+    
+    # Upload to TestFlight
+    upload_to_testflight(
+      api_key_path: "AuthKey_V43L3BZNA9.p8",
+      skip_waiting_for_build_processing: true
+    )
+    
+    # Commit version bump
+    # commit_version_bump(  # Commented out - will commit manually
+    #   message: "Version bump by fastlane",
+    #   xcodeproj: "App/App.xcodeproj"
+    # )
+  end
+
+  desc "Build for release (App Store submission)"
+  lane :release do
+    # Ensure clean git status
+    ensure_git_status_clean
+    
+    # Increment version if needed
+    # increment_version_number(
+    #   xcodeproj: "App/App.xcodeproj"
+    # )
+    
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "App/App.xcodeproj"
+    )
+    
+    # Build the app
+    build_app(
+      workspace: "App/App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.pocketteller.app" => "match AppStore com.pocketteller.app"
+        }
+      }
+    )
+    
+    # Upload to App Store
+    upload_to_app_store(
+      api_key_path: "AuthKey_V43L3BZNA9.p8",
+      submit_for_review: false,
+      automatic_release: false,
+      force: true,
+      skip_metadata: true,
+      skip_screenshots: true
+    )
+    
+    # Commit version bump
+    commit_version_bump(
+      message: "Release version bump",
+      xcodeproj: "App/App.xcodeproj"
+    )
+  end
+
+  desc "Build the app without uploading"
+  lane :build_only do
+    build_app(
+      workspace: "App/App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      skip_codesigning: false
+    )
+  end
+
+  desc "Download certificates and provisioning profiles"
+  lane :sync_certificates do
+    match(
+      type: "appstore",
+      app_identifier: "com.pocketteller.app",
+      readonly: true
+    )
+  end
+
+  desc "Register new devices for ad-hoc distribution"
+  lane :register_devices do
+    register_devices(
+      devices_file: "./devices.txt"
+    )
+  end
+
+  desc "Capture screenshots for App Store"
+  lane :screenshots do
+    capture_screenshots(
+      workspace: "App/App.xcworkspace",
+      scheme: "App"
+    )
+  end
+
+  # Error handling
+  error do |lane, exception|
+    slack(
+      message: "Error in lane #{lane}: #{exception.message}",
+      success: false
+    ) if ENV["SLACK_URL"]
+  end
+end
+

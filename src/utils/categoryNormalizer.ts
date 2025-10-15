@@ -14,9 +14,24 @@ export const CATEGORY_ALIASES: Record<string, string> = {
 };
 
 export const STANDARD_CATEGORIES = [
-  'Housing', 'Transportation', 'Food & Dining', 'Utilities', 'Healthcare', 
-  'Entertainment', 'Shopping', 'Personal Care', 'Education', 'Savings', 
-  'Investments', 'Insurance', 'Debt Payments', 'Travel', 'Income', 'Other'
+  'Income',
+  'Transfer',
+  'Subscriptions',
+  'Food & Dining',
+  'Transportation',
+  'Shopping',
+  'Entertainment',
+  'Bills & Utilities',
+  'Healthcare',
+  'Travel',
+  'Housing',
+  'Personal Care',
+  'Education',
+  'Savings',
+  'Investments',
+  'Insurance',
+  'Debt Payments',
+  'Other'
 ];
 
 /**
@@ -82,8 +97,9 @@ export const isIncomeCategory = (category: string): boolean => {
 /**
  * Checks if a category is an expense category
  * @param category - The category name to check
- * @returns True if it's an expense category
+ * @returns True if it's an expense category (excludes Income and Transfer)
  */
 export const isExpenseCategory = (category: string): boolean => {
-  return !isIncomeCategory(category);
+  const normalized = normalizeCategoryName(category);
+  return normalized !== 'Income' && normalized !== 'Transfer';
 };

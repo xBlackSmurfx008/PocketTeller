@@ -2,18 +2,19 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthConfig } from '@/utils/authConfig';
+import { AuthResponse, PasswordValidation, AuthErrorType, SupabaseError } from '@/types/api';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any; passwordValidation?: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<{ error: any }>;
-  resendConfirmation: (email: string) => Promise<{ error: any; errorType?: string | null }>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
-  sendMagicLink: (email: string) => Promise<{ error: any }>;
-  validatePasswordStrength: (password: string) => Promise<any>;
+  signUp: (email: string, password: string) => Promise<AuthResponse>;
+  signIn: (email: string, password: string) => Promise<AuthResponse>;
+  signOut: () => Promise<AuthResponse>;
+  resendConfirmation: (email: string) => Promise<AuthResponse>;
+  resetPassword: (email: string) => Promise<AuthResponse>;
+  sendMagicLink: (email: string) => Promise<AuthResponse>;
+  validatePasswordStrength: (password: string) => Promise<PasswordValidation>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,14 +58,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       // Validate password strength before attempting signup
       const passwordValidation = await validatePasswordStrength(password);
       
-      if (!passwordValidation?.valid) {
+      if (!passwordValidation.valid) {
         return { 
-          error: { message: Array.isArray(passwordValidation?.errors) ? passwordValidation.errors.join(', ') : 'Password validation failed' }, 
+          error: { 
+            message: Array.isArray(passwordValidation.errors) 
+              ? passwordValidation.errors.join(', ') 
+              : 'Password validation failed' 
+          }, 
           passwordValidation 
         };
       }
@@ -84,11 +89,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: AuthConfig.emailConfirmRedirect
+          emailRedirectTo: AuthConfig.emailConfirmRedirect,
+          // Allow users to access app immediately without email confirmation
+          // They can confirm email later via the reminder banner
+          data: {
+            email_confirmed: false
+          }
         }
       });
 
@@ -101,14 +111,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      return { error, passwordValidation };
-    } catch (err: any) {
+      // If signup successful, user and session are automatically set by the auth state listener
+      // No need to manually set them here
+      
+      return { 
+        error: error as SupabaseError | null, 
+        passwordValidation,
+        user: data?.user ?? null,
+        session: data?.session ?? null
+      };
+    } catch (err) {
       console.error('Signup error:', err);
-      return { error: err };
+      return { 
+        error: err instanceof Error 
+          ? { message: err.message } 
+          : { message: 'An unexpected error occurred' }
+      };
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       // Check for suspicious activity before signin
       const { data: suspiciousCheck } = await supabase.rpc('check_suspicious_auth_activity', {
@@ -148,24 +170,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      return { error };
-    } catch (err: any) {
+      return { error: error as SupabaseError | null };
+    } catch (err) {
       console.error('Signin error:', err);
-      return { error: err };
+      return { 
+        error: err instanceof Error 
+          ? { message: err.message } 
+          : { message: 'An unexpected error occurred' }
+      };
     }
   };
 
-  const signOut = async () => {
+  const signOut = async (): Promise<AuthResponse> => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
       // Clear all state
       setUser(null);
       setSession(null);
     }
-    return { error };
+    return { error: error as SupabaseError | null };
   };
 
-  const resendConfirmation = async (email: string) => {
+  const resendConfirmation = async (email: string): Promise<AuthResponse> => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       
@@ -183,30 +209,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Return structured error info for better UX decisions
         const errorType = error.message.toLowerCase();
+        let typedErrorType: AuthErrorType = 'unknown';
+        
         if (errorType.includes('rate') || errorType.includes('limit')) {
-          return { error, errorType: 'rate_limit' };
+          typedErrorType = 'rate_limit';
         } else if (errorType.includes('confirmed') || errorType.includes('already')) {
-          return { error, errorType: 'already_confirmed' };
+          typedErrorType = 'already_confirmed';
         } else if (errorType.includes('delivery') || errorType.includes('provider')) {
-          return { error, errorType: 'delivery_failed' };
+          typedErrorType = 'delivery_failed';
         }
+        
+        return { 
+          error: error as SupabaseError, 
+          errorType: typedErrorType 
+        };
       }
       
-      return { error, errorType: error ? 'unknown' : null };
-    } catch (err: any) {
+      return { error: null, errorType: null };
+    } catch (err) {
       console.error('Unexpected resend error:', err);
-      return { error: err, errorType: 'unknown' };
+      return { 
+        error: err instanceof Error 
+          ? { message: err.message } 
+          : { message: 'An unexpected error occurred' },
+        errorType: 'unknown' as AuthErrorType
+      };
     }
   };
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string): Promise<AuthResponse> => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: AuthConfig.passwordResetRedirect
     });
-    return { error };
+    return { error: error as SupabaseError | null };
   };
 
-  const sendMagicLink = async (email: string) => {
+  const sendMagicLink = async (email: string): Promise<AuthResponse> => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       
@@ -217,21 +255,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
       
-      return { error };
-    } catch (err: any) {
+      return { error: error as SupabaseError | null };
+    } catch (err) {
       console.error('Magic link error:', err);
-      return { error: err };
+      return { 
+        error: err instanceof Error 
+          ? { message: err.message } 
+          : { message: 'An unexpected error occurred' }
+      };
     }
   };
 
-  const validatePasswordStrength = async (password: string): Promise<{ valid: boolean; errors: string[]; strength_score?: number }> => {
+  const validatePasswordStrength = async (password: string): Promise<PasswordValidation> => {
     try {
       const { data } = await supabase.rpc('validate_password_strength', {
         password: password
       }).single();
       
       if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const result = data as Record<string, any>;
+        const result = data as Record<string, unknown>;
         return {
           valid: Boolean(result.valid),
           errors: Array.isArray(result.errors) ? result.errors : [],
@@ -240,7 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       return { valid: false, errors: ['Unable to validate password'] };
-    } catch (err: any) {
+    } catch (err) {
       console.error('Password validation error:', err);
       return { valid: false, errors: ['Password validation failed'] };
     }
@@ -262,7 +304,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+/**
+ * Hook to access authentication context
+ * @throws {Error} If used outside of AuthProvider
+ * @returns {AuthContextType} Authentication context with user, session, and auth methods
+ */
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

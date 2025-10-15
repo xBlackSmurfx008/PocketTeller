@@ -1,0 +1,51 @@
+═══════════════════════════════════════════════════════════════
+iOS BUILD CHECKLIST - PocketTeller
+═══════════════════════════════════════════════════════════════
+
+✅ COMPLETED AUTOMATICALLY:
+────────────────────────────────────────────────────────────────
+✅ 1. Added UIApplicationSceneManifest to Info.plist
+✅ 2. Created SceneDelegate.swift with Capacitor integration  
+✅ 3. Created .env with Supabase credentials
+✅ 4. Cleaned old iOS assets
+✅ 5. Rebuilt web app (npm run build)
+✅ 6. Synced to iOS with UTF-8 locale
+✅ 7. Verified Info.plist syntax (valid)
+✅ 8. Verified environment variables in build
+✅ 9. Opened Xcode workspace
+
+⚠️  MANUAL STEPS REQUIRED (IN XCODE):
+────────────────────────────────────────────────────────────────
+📋 1. ADD SceneDelegate.swift TO PROJECT:
+   - Right-click "App" folder in Project Navigator
+   - Select "Add Files to App..."
+   - Choose "ios/App/App/SceneDelegate.swift"
+   - Verify "Add to targets: App" is checked
+   - Click "Add"
+
+📋 2. CLEAN BUILD FOLDER:
+   - Menu: Product → Clean Build Folder
+   - Or press: Cmd + Shift + K
+
+📋 3. BUILD & RUN:
+   - Select iPhone simulator (top bar)
+   - Press Cmd + R or click Play button
+   - Wait for build to complete
+
+EXPECTED RESULT:
+────────────────────────────────────────────────────────────────
+✅ Build succeeds (no errors)
+✅ App launches on simulator
+✅ Shows authentication screen
+✅ NO black screen
+✅ Bottom navigation visible
+✅ App is functional
+
+DEBUGGING (if needed):
+────────────────────────────────────────────────────────────────
+Safari Web Inspector: Safari → Develop → [Device] → PocketTeller
+Check Console for: JavaScript errors, environment variables
+
+═══════════════════════════════════════════════════════════════
+READ FULL DETAILS: IOS_BUILD_READY.md
+═══════════════════════════════════════════════════════════════
