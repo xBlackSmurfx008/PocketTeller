@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/popover';
 import { useConnectedAccounts, ConnectedBank } from '@/hooks/useConnectedAccounts';
 import { Badge } from './ui/badge';
+import { getAccountDisplayName } from '@/utils/accountDisplay';
 
 interface AccountSelectorProps {
   value?: string; // plaidAccountId or 'all'
@@ -76,7 +77,13 @@ export function AccountSelector({ value = 'all', onChange, className }: AccountS
               <Building2 className="h-4 w-4 shrink-0" />
               <span className="truncate">
                 {selectedAccount 
-                  ? `${selectedAccount.name} (${selectedAccount.mask || '****'})`
+                  ? getAccountDisplayName({
+                      type: selectedAccount.type,
+                      subtype: selectedAccount.subtype,
+                      officialName: selectedAccount.officialName,
+                      name: selectedAccount.name,
+                      mask: selectedAccount.mask,
+                    })
                   : 'All Accounts'}
               </span>
             </div>
@@ -133,14 +140,25 @@ export function AccountSelector({ value = 'all', onChange, className }: AccountS
                     <div className="flex-1 flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="font-medium truncate">
-                          {account.name}
+                          {getAccountDisplayName({
+                            type: account.type,
+                            subtype: account.subtype,
+                            officialName: account.officialName,
+                            name: account.name,
+                            mask: account.mask,
+                          })}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {account.type} {account.mask && `• ••${account.mask}`}
                         </div>
                       </div>
                       <Badge variant="secondary" className="shrink-0">
-                        {formatBalance(account.balanceAvailable || account.balanceCurrent)}
+                        {account.balanceCurrent != null
+                          ? formatBalance(account.balanceCurrent)
+                          : formatBalance(account.balanceAvailable)}
+                        {account.balanceAvailable != null && account.balanceCurrent != null && account.balanceAvailable !== account.balanceCurrent && (
+                          <span className="ml-1 opacity-80 text-[10px]">avail {formatBalance(account.balanceAvailable)}</span>
+                        )}
                       </Badge>
                     </div>
                   </CommandItem>

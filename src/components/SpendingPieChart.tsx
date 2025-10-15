@@ -112,7 +112,7 @@ export default function SpendingPieChart({ transactions, dateFilter = 30 }: Spen
   // Legend provided by shadcn/ui components
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden card-hover-lift elevation-2">
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-semibold">Spending by Category</CardTitle>
         <p className="text-sm text-muted-foreground mt-1">{getTimePeriodLabel()}</p>

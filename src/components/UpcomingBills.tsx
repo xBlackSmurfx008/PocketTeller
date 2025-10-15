@@ -8,7 +8,8 @@ import { useTimezone } from '@/hooks/useTimezone';
 import { useDateHelpers } from '@/utils/dateUtils';
 import { useToast } from '@/hooks/useToast';
 import { useBills } from '@/hooks/useBills';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Calendar, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import AddBillDialog from '@/components/AddBillDialog';
 import { Bill } from '@/types/models';
@@ -18,6 +19,10 @@ export default function UpcomingBills() {
   const dateHelpers = useDateHelpers(timezone);
   const { toast } = useToast();
   const { bills, loading, updateBill, refetch } = useBills();
+  const navigate = useNavigate();
+  
+  // Filter out paid bills - only show upcoming (unpaid) bills
+  const upcomingBills = bills?.filter(bill => !bill.is_paid) || [];
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   const updateBillStatus = async (billId: string, isPaid: boolean) => {
@@ -74,23 +79,33 @@ export default function UpcomingBills() {
             <Calendar className="h-5 w-5" />
             Upcoming Bills
           </CardTitle>
-          <Button 
-            onClick={() => setShowAddDialog(true)} 
-            size="sm"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Bill
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => navigate('/bills')} 
+              size="sm"
+              variant="outline"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Bills
+            </Button>
+            <Button 
+              onClick={() => setShowAddDialog(true)} 
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Bill
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3 max-h-[400px] overflow-y-auto">
-          {bills.length === 0 ? (
+          {upcomingBills.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              No bills found. Add your first bill to get started.
+              No upcoming bills. All bills are paid or add your first bill.
             </div>
           ) : (
-            (bills || []).map((bill) => (
+            upcomingBills.map((bill) => (
               <div key={bill.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                 <div className="flex items-center gap-3">
                   <Checkbox

@@ -1,3 +1,13 @@
+/**
+ * ⚠️ DEPRECATED - AI Categorization Function
+ * 
+ * This function is deprecated and no longer used in the application.
+ * Transaction categorization now relies exclusively on Plaid's category data.
+ * 
+ * @deprecated Use Plaid's built-in categorization instead
+ * @see plaid-sync edge function for Plaid-based categorization
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -27,15 +37,19 @@ function checkRateLimit(userId: string, maxRequests = 100, windowMs = 3600000): 
 }
 
 const CATEGORIES = [
+  'Income',
+  'Transfer',
+  'Subscriptions',
   'Food & Dining',
-  'Transportation', 
+  'Transportation',
   'Shopping',
   'Entertainment',
   'Bills & Utilities',
   'Healthcare',
   'Travel',
   'Education',
-  'Income',
+  'Savings',
+  'Investments',
   'Other'
 ];
 
@@ -56,6 +70,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Return deprecation notice
+  return new Response(
+    JSON.stringify({ 
+      deprecated: true,
+      message: 'This function is deprecated. Transaction categorization now uses Plaid categories exclusively.',
+      recommendation: 'Plaid automatically categorizes transactions during sync. No manual categorization needed.'
+    }),
+    { 
+      status: 410, // 410 Gone - indicates the resource is no longer available
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+
+  // Original implementation kept for reference but unreachable
   try {
     // Extract JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -113,7 +141,7 @@ serve(async (req) => {
     // This ensures Plaid's authoritative data is never overwritten by AI
     const { data: transactions, error: fetchError } = await supabaseClient
       .from('transactions')
-      .select('id, description, amount, date, category_source')
+      .select('id, description, merchant_name, amount, date, category, category_source')
       .eq('user_id', user.id)
       .in('category', ['Other', null])
       .in('category_source', ['auto', null])

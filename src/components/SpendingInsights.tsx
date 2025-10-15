@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import { useDemo } from '@/hooks/useDemo';
 import { useNavigate } from 'react-router-dom';
+import { Transaction } from '@/types/models';
 
 interface SpendingInsight {
   summary: string;
@@ -46,7 +47,92 @@ const normalizeInsights = (rawInsights: any): SpendingInsight => {
   };
 };
 
-export default function SpendingInsights() {
+// Local fallback: compute insights from provided transactions when API is unavailable
+const computeLocalInsights = (txns: Transaction[], days: number, topN: number): SpendingInsight => {
+  const expenses = txns.filter(t => (t.category || '') !== 'Income');
+  if (!expenses.length) {
+    return {
+      summary: `No expense transactions found in the last ${days} days.`,
+      topCategories: [],
+      savingsOpportunities: [],
+      anomalies: [],
+      notes: 'Add some transactions to see AI insights!'
+    };
+  }
+
+  const categoryTotals: Record<string, number> = {};
+  const merchantTotals: Record<string, number> = {};
+  let totalSpend = 0;
+
+  expenses.forEach(t => {
+    const amount = Math.abs(Number(t.amount));
+    const category = t.category || 'Other';
+    categoryTotals[category] = (categoryTotals[category] || 0) + amount;
+    const merchant = (t as any).merchant_name || t.description || 'Unknown';
+    merchantTotals[merchant] = (merchantTotals[merchant] || 0) + amount;
+    totalSpend += amount;
+  });
+
+  const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+  const topCategories = sortedCategories.slice(0, topN).map(([name, total]) => ({
+    name,
+    total: Math.round(total * 100) / 100,
+    percent: totalSpend > 0 ? Math.round((total / totalSpend) * 100) : 0
+  }));
+
+  // Simple anomaly detection
+  const anomalies: Array<{ description: string; date?: string; amount?: number; transactionId?: string }> = [];
+  const avgTransactionAmount = totalSpend / expenses.length;
+  const largeThreshold = Math.max(avgTransactionAmount * 3, 200);
+
+  expenses
+    .filter(t => Math.abs(Number(t.amount)) > largeThreshold)
+    .slice(0, 3)
+    .forEach(t => {
+      anomalies.push({
+        description: `Large ${t.category || 'Other'} transaction: ${t.description}`,
+        date: (t as any).date,
+        amount: Math.abs(Number(t.amount)),
+        transactionId: (t as any).id
+      });
+    });
+
+  const amountGroups = expenses.reduce((acc, t) => {
+    const amt = Math.abs(Number(t.amount));
+    acc[amt] = acc[amt] || [];
+    acc[amt].push(t);
+    return acc;
+  }, {} as Record<number, Transaction[]>);
+
+  Object.entries(amountGroups)
+    .filter(([, list]) => list.length >= 3)
+    .slice(0, 2)
+    .forEach(([amount, list]) => {
+      anomalies.push({
+        description: `Recurring $${amount} charges (${list.length} times)`,
+        amount: parseFloat(amount),
+        transactionId: (list[0] as any)?.id
+      });
+    });
+
+  const summary = `You spent $${totalSpend.toFixed(2)} across ${expenses.length} transactions in the last ${days} days.`;
+
+  return {
+    summary,
+    topCategories,
+    savingsOpportunities: [],
+    anomalies,
+    notes: 'AI analysis temporarily unavailable'
+  };
+};
+
+interface SpendingInsightsProps {
+  accountFilter?: string | null;
+  dateFilter?: number;
+  transactions?: Transaction[];
+}
+
+export default function SpendingInsights({ accountFilter, dateFilter = 30, transactions }: SpendingInsightsProps = {}) {
   const [insights, setInsights] = useState<SpendingInsight | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -56,7 +142,7 @@ export default function SpendingInsights() {
   const THROTTLE_KEY = 'aiInsightsLastRun';
   const THROTTLE_HOURS = 1;
 
-  const canRunInsights = () => {
+  const canRunInsights = useCallback(() => {
     if (isDemo) return false;
     
     const lastRun = localStorage.getItem(THROTTLE_KEY);
@@ -67,9 +153,9 @@ export default function SpendingInsights() {
     const hoursSinceLastRun = (now.getTime() - lastRunTime.getTime()) / (1000 * 60 * 60);
     
     return hoursSinceLastRun >= THROTTLE_HOURS;
-  };
+  }, [isDemo]);
 
-  const fetchInsights = async () => {
+  const fetchInsights = useCallback(async () => {
     if (isDemo) {
       toast({
         title: "Demo Mode",
@@ -81,17 +167,19 @@ export default function SpendingInsights() {
 
     setIsLoading(true);
     try {
+      // Use dateFilter or default to 30 days, but if dateFilter is 0 (All), use 365 days for insights
+      const daysToAnalyze = dateFilter === 0 ? 365 : dateFilter;
+      
       const { data, error } = await supabase.functions.invoke('ai-spending-insights', {
-        body: { days: 60, topN: 6 }
+        body: { days: daysToAnalyze, topN: 6 }
       });
 
       if (error) {
-        console.error('Insights error:', error);
-        toast({
-          title: "Insights Error",
-          description: error.details || "Failed to generate spending insights. Please try again.",
-          variant: "destructive"
-        });
+        if (transactions && transactions.length > 0) {
+          const local = computeLocalInsights(transactions, daysToAnalyze, 6);
+          setInsights(local);
+          localStorage.setItem(THROTTLE_KEY, new Date().toISOString());
+        }
         return;
       }
 
@@ -105,23 +193,23 @@ export default function SpendingInsights() {
         variant: "default"
       });
     } catch (error) {
-      console.error('Insights fetch error:', error);
-      toast({
-        title: "Connection Error",
-        description: "Unable to connect to insights service. Please check your connection.",
-        variant: "destructive"
-      });
+      // Silent fallback to local insights when API is unavailable
+      if (transactions && transactions.length > 0) {
+        const local = computeLocalInsights(transactions, dateFilter === 0 ? 365 : dateFilter, 6);
+        setInsights(local);
+        localStorage.setItem(THROTTLE_KEY, new Date().toISOString());
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isDemo, dateFilter, toast, transactions]);
 
-  // Auto-load on mount if throttle allows
+  // Auto-load on mount if throttle allows, and re-fetch when dateFilter changes
   useEffect(() => {
     if (canRunInsights()) {
       fetchInsights();
     }
-  }, []);
+  }, [dateFilter, canRunInsights, fetchInsights]);
 
   const handleRefresh = () => {
     if (!canRunInsights()) {

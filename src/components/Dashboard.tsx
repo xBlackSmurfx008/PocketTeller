@@ -13,23 +13,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, Lock, Plus } from 'lucide-react';
 
 function Dashboard(): JSX.Element {
-  console.log('🔥 Dashboard component is rendering!');
   const { user } = useAuth();
   const { isDemo } = useDemo();
-  console.log('🔥 Dashboard auth state:', { user: !!user, userId: user?.id, isDemo });
   const [hasPlaidToken, setHasPlaidToken] = useState<boolean>(false);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkPlaidConnection = useCallback(async (): Promise<void> => {
-    console.log('🔍 Dashboard: Checking Plaid connection...', { 
-      hasUser: !!user, 
-      userId: user?.id,
-      isDemo 
-    });
-    
     if (!user) {
-      console.log('❌ Dashboard: No user, setting hasPlaidToken = false');
       setHasPlaidToken(false);
       return;
     }
@@ -42,22 +33,13 @@ function Dashboard(): JSX.Element {
         .eq('user_id', user.id)
         .limit(1);
 
-      console.log('📊 Dashboard: Accounts query result:', { 
-        accounts, 
-        error, 
-        count: accounts?.length,
-        hasError: !!error 
-      });
-
       if (!error && accounts && accounts.length > 0) {
-        console.log('✅ Dashboard: Setting hasPlaidToken = true (found accounts)');
         setHasPlaidToken(true);
       } else {
-        console.log('❌ Dashboard: Setting hasPlaidToken = false (no accounts found)');
         setHasPlaidToken(false);
       }
     } catch (error) {
-      console.error('💥 Dashboard: Error checking Plaid connection:', error);
+      console.error('Error checking Plaid connection:', error);
       setHasPlaidToken(false);
     }
   }, [user, isDemo]);
@@ -122,15 +104,6 @@ function Dashboard(): JSX.Element {
     }
   }, [user, isDemo, checkPlaidConnection, fetchBudgetData, debouncedFetchBudgetData]);
 
-
-  // Debug render conditions
-  console.log('🎨 Dashboard: Render conditions:', {
-    hasPlaidToken,
-    isDemo,
-    shouldShowBankCard: !hasPlaidToken && !isDemo,
-    shouldShowAccountTabs: hasPlaidToken && !isDemo,
-    shouldShowDemoMode: isDemo
-  });
 
   return (
     <div className="bg-background" data-tour-id="dashboard">

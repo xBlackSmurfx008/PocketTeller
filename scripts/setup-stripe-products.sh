@@ -107,6 +107,24 @@ echo "  Price: \$32.99/year"
 echo "  Savings: \$27/year vs monthly"
 echo ""
 
+# Step 3.5: Create 6-Month Price
+echo "💰 Step 3.5: Creating 6-Month price (\$15.00 for 6 months)..."
+
+PRICE_6MONTH=$(stripe prices create $MODE_FLAG \
+  --product "$PRODUCT_ID" \
+  --unit-amount 1500 \
+  --currency usd \
+  --recurring interval=month \
+  --recurring interval-count=6 \
+  --nickname "PocketTeller Pro - 6 Months" \
+  --lookup-key "pocketteller_6month" \
+  --json | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+
+echo -e "${GREEN}✓ 6-Month price created: $PRICE_6MONTH${NC}"
+echo "  Price: \$15.00 for 6 months"
+echo "  Limited time offer"
+echo ""
+
 # Step 4: Create SA2025 Promo Code (30 days free trial)
 echo "🎟️  Step 4: Creating SA2025 promo code (30 days free trial)..."
 
@@ -163,6 +181,7 @@ echo -e "${BLUE}📋 Summary:${NC}"
 echo ""
 echo "Product ID:       $PRODUCT_ID"
 echo "Monthly Price:    $PRICE_MONTHLY (\$4.99/month)"
+echo "6-Month Price:    $PRICE_6MONTH (\$15.00 for 6 months)"
 echo "Yearly Price:     $PRICE_YEARLY (\$32.99/year)"
 echo "Promo Code:       SA2025 (30 days free)"
 echo "Referral Bonus:   REFERRAL_BONUS (1 free month)"
@@ -172,6 +191,7 @@ echo ""
 echo "1. Set Supabase secrets:"
 echo "   supabase secrets set STRIPE_SECRET_KEY=sk_${MODE_NAME,,}_xxxxx --project-ref dscndbpqvhvylukvcgpq"
 echo "   supabase secrets set STRIPE_PRICE_MONTHLY=$PRICE_MONTHLY --project-ref dscndbpqvhvylukvcgpq"
+echo "   supabase secrets set STRIPE_PRICE_6MONTH=$PRICE_6MONTH --project-ref dscndbpqvhvylukvcgpq"
 echo "   supabase secrets set STRIPE_PRICE_YEARLY=$PRICE_YEARLY --project-ref dscndbpqvhvylukvcgpq"
 echo ""
 echo "2. Set up webhook:"
@@ -203,6 +223,7 @@ cat > /tmp/stripe-config.txt << EOF
 
 PRODUCT_ID=$PRODUCT_ID
 PRICE_MONTHLY=$PRICE_MONTHLY
+PRICE_6MONTH=$PRICE_6MONTH
 PRICE_YEARLY=$PRICE_YEARLY
 PROMO_CODE=SA2025
 REFERRAL_COUPON=REFERRAL_BONUS
@@ -210,6 +231,7 @@ REFERRAL_COUPON=REFERRAL_BONUS
 # Set these secrets in Supabase:
 # supabase secrets set STRIPE_SECRET_KEY=sk_${MODE_NAME,,}_xxxxx --project-ref dscndbpqvhvylukvcgpq
 # supabase secrets set STRIPE_PRICE_MONTHLY=$PRICE_MONTHLY --project-ref dscndbpqvhvylukvcgpq
+# supabase secrets set STRIPE_PRICE_6MONTH=$PRICE_6MONTH --project-ref dscndbpqvhvylukvcgpq
 # supabase secrets set STRIPE_PRICE_YEARLY=$PRICE_YEARLY --project-ref dscndbpqvhvylukvcgpq
 # supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxxxx --project-ref dscndbpqvhvylukvcgpq
 EOF

@@ -26,6 +26,7 @@ import {
   getPlaidItem,
   upsertPlaidItem,
   upsertAccounts,
+  upsertTransactions,
   updateSyncCursor,
   deleteTransactions,
 } from '../_shared/database-utils.ts';
@@ -161,16 +162,37 @@ serve(async (req) => {
       // Process added transactions
       if (syncData.added && syncData.added.length > 0) {
         const addedTransactions: DatabaseTransaction[] = syncData.added.map((txn: any) => {
-          const mappedCategory = mapPlaidCategory(txn.category || []);
+          // CRITICAL: Detect transaction type in priority order
+          
+          // 1. Check if it's a transfer (money movement, not income/expense)
+          const plaidCategoryLower = txn.category?.[0]?.toLowerCase() || '';
+          const isTransfer = plaidCategoryLower.includes('transfer') || 
+                           plaidCategoryLower.includes('payment transfer') ||
+                           plaidCategoryLower.includes('third party');
+          
+          // 2. Check if it's a deposit (income) - Plaid uses negative for money IN
+          const isDeposit = txn.amount < 0 && !isTransfer;
+          
+          // 3. Map Plaid category to our app category (PLAID IS PRIMARY)
+          let mappedCategory = mapPlaidCategory(txn.category || []);
           const hasPlaidCategory = txn.category && txn.category.length > 0;
-          const categorySource = (hasPlaidCategory && mappedCategory !== 'Other') ? 'plaid' : 'auto';
+          
+          // 4. Apply detection priority: Transfer > Income > Plaid Category
+          if (isTransfer) {
+            mappedCategory = 'Transfer';
+          } else if (isDeposit) {
+            mappedCategory = 'Income';
+          }
+          
+          // Category source: 'plaid' if Plaid provided category or we detected transfer/income, 'auto' if unknown
+          const categorySource = (hasPlaidCategory && mappedCategory !== 'Other') || isTransfer || isDeposit ? 'plaid' : 'auto';
 
           return {
             user_id: user.id,
             transaction_id: txn.transaction_id,
             plaid_transaction_id: txn.transaction_id,
             plaid_account_id: txn.account_id,
-            amount: Math.abs(txn.amount),
+            amount: Math.abs(txn.amount),  // Store as positive, use category to determine type
             date: txn.date,
             datetime: txn.datetime || null,
             authorized_date: txn.authorized_date || null,
@@ -208,25 +230,42 @@ serve(async (req) => {
               .eq('plaid_transaction_id', txn.transaction_id)
               .single();
 
-            const mappedCategory = mapPlaidCategory(txn.category || []);
+            // CRITICAL: Detect transaction type in priority order (PLAID IS PRIMARY)
+            
+            // 1. Check if it's a transfer
+            const plaidCategoryLower = txn.category?.[0]?.toLowerCase() || '';
+            const isTransfer = plaidCategoryLower.includes('transfer') || 
+                             plaidCategoryLower.includes('payment transfer') ||
+                             plaidCategoryLower.includes('third party');
+            
+            // 2. Check if it's a deposit (income) - Plaid uses negative for money IN
+            const isDeposit = txn.amount < 0 && !isTransfer;
+            
+            // 3. Map Plaid category
+            let mappedCategory = mapPlaidCategory(txn.category || []);
             const hasPlaidCategory = txn.category && txn.category.length > 0;
-            const isPlaidCategoryGood = hasPlaidCategory && mappedCategory !== 'Other';
+            
+            // 4. Apply detection priority: Transfer > Income > Plaid Category
+            if (isTransfer) {
+              mappedCategory = 'Transfer';
+            } else if (isDeposit) {
+              mappedCategory = 'Income';
+            }
+            
+            const isPlaidCategoryGood = (hasPlaidCategory && mappedCategory !== 'Other') || isTransfer || isDeposit;
 
             let category = mappedCategory;
-            let categorySource: 'user' | 'plaid' | 'ai' | 'auto' = 'auto';
+            let categorySource: 'user' | 'plaid' | 'auto' = 'auto';
 
             if (existingTxn?.category_source === 'user') {
-              // Never overwrite user's manual categorization
+              // Never overwrite user's manual categorization (highest priority)
               category = existingTxn.category;
               categorySource = 'user';
             } else if (isPlaidCategoryGood) {
-              // Use Plaid's good category
+              // Use Plaid's category (Plaid is authoritative source)
               categorySource = 'plaid';
-            } else if (existingTxn?.category_source === 'ai') {
-              // Keep AI categorization if Plaid has no good data
-              category = existingTxn.category;
-              categorySource = 'ai';
             } else {
+              // Fallback to auto-categorized or keep existing if available
               categorySource = 'auto';
             }
 
@@ -282,11 +321,47 @@ serve(async (req) => {
       transactions: totalSyncedTransactions,
     });
 
+    // AUTO-TRIGGER AI CATEGORIZATION after successful sync
+    // Only run if we synced new transactions
+    let aiCategorizedCount = 0;
+    if (totalSyncedTransactions > 0) {
+      try {
+        logger.info('Auto-triggering AI categorization for newly synced transactions');
+        
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const aiResponse = await fetch(`${supabaseUrl}/functions/v1/ai-categorize-transactions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': req.headers.get('Authorization') || '',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            limit: 100,
+            threshold: 0.70
+          })
+        });
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          aiCategorizedCount = aiData.updatedCount || 0;
+          logger.success(`AI categorization completed: ${aiCategorizedCount} transactions auto-categorized`);
+        } else {
+          const errorText = await aiResponse.text();
+          logger.warn('AI categorization failed (non-critical)', { error: errorText });
+        }
+      } catch (aiError) {
+        logger.error('AI categorization error (non-critical)', aiError);
+        // Don't fail the entire sync if AI categorization fails
+      }
+    }
+
     return successResponse({
       success: true,
       accounts: syncedAccounts,
       transactions: totalSyncedTransactions,
       cursor_updated: !!cursor,
+      ai_categorized: aiCategorizedCount,
+      auto_categorization_ran: totalSyncedTransactions > 0
     });
 
   } catch (error) {

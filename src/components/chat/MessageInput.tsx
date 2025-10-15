@@ -5,9 +5,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, Upload, X, Loader2 } from 'lucide-react';
+import { Send, Upload, X, Loader2, HelpCircle, GraduationCap } from 'lucide-react';
 import { FileAttachment } from '@/hooks/useConversation';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { useToast } from '@/hooks/useToast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 interface MessageInputProps {
   onSendMessage: (message: string, attachments: FileAttachment[], coachMode: boolean) => void;
@@ -20,6 +25,27 @@ export const MessageInput = ({ onSendMessage, isLoading, disabled }: MessageInpu
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [coachMode, setCoachMode] = useState(false);
   const { uploadFiles, isUploading } = useFileUpload();
+  const { toast } = useToast();
+  const [showCoachModeInfo, setShowCoachModeInfo] = useState(false);
+
+  const handleCoachModeChange = (checked: boolean) => {
+    setCoachMode(checked);
+    if (checked) {
+      toast({
+        title: '🎓 Coach Mode Activated',
+        description: "I'll guide you with deeper questions and a structured coaching framework.",
+      });
+      const hasSeen = typeof window !== 'undefined' && localStorage.getItem('hasSeenCoachModeInfo');
+      if (!hasSeen) {
+        setShowCoachModeInfo(true);
+      }
+    } else {
+      toast({
+        title: 'Coach Mode Off',
+        description: 'Returning to direct answers without coaching prompts.',
+      });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +85,13 @@ export const MessageInput = ({ onSendMessage, isLoading, disabled }: MessageInpu
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg">Ask your AI Assistant</CardTitle>
+            <CardTitle className={cn('text-lg', coachMode && 'text-primary')}>
+              {coachMode ? '🎓 AI Coach Ready' : 'Ask your AI Assistant'}
+            </CardTitle>
             <CardDescription>
-              Upload files or ask questions about your finances
+              {coachMode
+                ? "I'll guide you with coaching questions and structured frameworks"
+                : 'Upload files or ask questions about your finances'}
             </CardDescription>
           </div>
           
@@ -69,16 +99,47 @@ export const MessageInput = ({ onSendMessage, isLoading, disabled }: MessageInpu
             <Switch
               id="coach-mode"
               checked={coachMode}
-              onCheckedChange={setCoachMode}
+              onCheckedChange={handleCoachModeChange}
             />
-            <Label htmlFor="coach-mode" className="text-sm">
+            <Label htmlFor="coach-mode" className="text-sm flex items-center gap-1">
               Coach Mode
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" aria-label="Coach Mode info" className="text-muted-foreground">
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Enhanced Coaching</p>
+                  <p className="text-xs">
+                    Activates Socratic questions, step-by-step guidance, and a 6-stage coaching framework.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </Label>
           </div>
         </div>
       </CardHeader>
       
       <CardContent className="pt-0">
+        {coachMode && (
+          <Alert className="mb-4">
+            <GraduationCap className="h-4 w-4" />
+            <AlertTitle>Coach Mode Active</AlertTitle>
+            <AlertDescription className="text-xs">
+              I will use coaching questions and a structured process to help you create an action plan.
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 ml-2"
+                type="button"
+                onClick={() => setShowCoachModeInfo(true)}
+              >
+                Learn more
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         {/* File Attachments */}
         {attachments.length > 0 && (
           <div className="mb-4 space-y-2">
@@ -115,9 +176,9 @@ export const MessageInput = ({ onSendMessage, isLoading, disabled }: MessageInpu
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything about your finances..."
+                placeholder={coachMode ? 'Ask about your goals, challenges, or habits…' : 'Ask me anything about your finances...'}
                 disabled={isLoading || disabled}
-                className="min-h-[80px] resize-none"
+                className={cn('min-h-[80px] resize-none', coachMode && 'border-2 border-primary')}
               />
             </div>
           </div>
@@ -172,6 +233,53 @@ export const MessageInput = ({ onSendMessage, isLoading, disabled }: MessageInpu
           </div>
         </form>
       </CardContent>
+      <Dialog open={showCoachModeInfo} onOpenChange={setShowCoachModeInfo}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <GraduationCap className="h-6 w-6 text-primary" />
+              Welcome to Coach Mode
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert>
+              <AlertTitle>What changes?</AlertTitle>
+              <AlertDescription>
+                Coach Mode turns your assistant into an intensive financial coach using Socratic questions and a structured 6-stage framework: Assess → Clarify → Explore → Plan → Commit → Review.
+              </AlertDescription>
+            </Alert>
+            <div className="grid gap-3 text-sm">
+              <div>
+                <p className="font-semibold">Socratic Questions</p>
+                <p className="text-muted-foreground">Thoughtful prompts that help you discover insights yourself.</p>
+              </div>
+              <div>
+                <p className="font-semibold">Step-by-Step Guidance</p>
+                <p className="text-muted-foreground">Complex topics are broken into clear, actionable steps.</p>
+              </div>
+              <div>
+                <p className="font-semibold">Accountability</p>
+                <p className="text-muted-foreground">We’ll set commitments and check confidence before actions.</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.setItem('hasSeenCoachModeInfo', 'true');
+                } catch {
+                  // Ignore localStorage errors
+                }
+                setShowCoachModeInfo(false);
+              }}
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

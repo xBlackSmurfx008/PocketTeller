@@ -94,7 +94,7 @@ export interface DatabaseTransaction {
   description: string;
   merchant_name?: string;
   category: string;
-  category_source: 'user' | 'plaid' | 'ai' | 'auto';
+  category_source: 'user' | 'plaid' | 'auto';
   subcategory?: string;
   pending: boolean;
   iso_currency_code: string;

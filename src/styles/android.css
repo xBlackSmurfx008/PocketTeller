@@ -1,0 +1,379 @@
+/* Android-Specific Material Design 3 Styles */
+/* Loaded only on Android platform for optimal performance */
+
+/* Material Design 3 Elevation System */
+.elevation-0 {
+  box-shadow: none;
+}
+
+.elevation-1 {
+  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 
+              0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+}
+
+.elevation-2 {
+  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 
+              0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+}
+
+.elevation-3 {
+  box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 
+              0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+.elevation-4 {
+  box-shadow: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 
+              0px 2px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+.elevation-5 {
+  box-shadow: 0px 8px 12px 6px rgba(0, 0, 0, 0.15), 
+              0px 4px 4px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Material Ripple Effect */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.3);
+  transform: scale(0);
+  animation: ripple-animation 600ms cubic-bezier(0.2, 0, 0, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Android Touch Optimizations */
+* {
+  -webkit-tap-highlight-color: rgba(124, 58, 237, 0.1);
+}
+
+button,
+a,
+[role="button"],
+[role="tab"],
+.clickable {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(124, 58, 237, 0.2);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Minimum Touch Target Size (48dp = ~3rem) */
+button:not(.icon-button),
+a.button,
+[role="button"]:not(.icon-button) {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Icon buttons can be slightly smaller but still accessible */
+button.icon-button,
+[role="button"].icon-button {
+  min-height: 40px;
+  min-width: 40px;
+  padding: 8px;
+}
+
+/* Android Navigation Bar Spacing */
+.android-nav-spacing {
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
+}
+
+.android-status-bar-spacing {
+  padding-top: max(env(safe-area-inset-top), 24px);
+}
+
+/* Smooth Scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent overscroll bounce (optional, Material Design preference) */
+body {
+  overscroll-behavior: contain;
+}
+
+/* Material Design 3 State Layers */
+.state-layer {
+  position: relative;
+}
+
+.state-layer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.state-layer:hover::before {
+  opacity: 0.08;
+}
+
+.state-layer:focus-visible::before {
+  opacity: 0.12;
+}
+
+.state-layer:active::before {
+  opacity: 0.12;
+}
+
+/* Android-specific Card Styling */
+.card-android {
+  border-radius: 12px;
+  background: var(--md-sys-surface);
+  transition: box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.card-android:active {
+  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 
+              0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+}
+
+/* Bottom Navigation Bar Enhancement */
+.bottom-nav-android {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dark .bottom-nav-android {
+  background: rgba(28, 27, 31, 0.95);
+}
+
+/* Android-specific button styling */
+.button-android {
+  border-radius: 20px; /* Full rounded corners per MD3 */
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  text-transform: none; /* No all-caps in MD3 */
+  transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.button-android:active {
+  transform: scale(0.98);
+}
+
+/* FAB (Floating Action Button) */
+.fab-android {
+  position: fixed;
+  bottom: 80px; /* Above bottom nav */
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  box-shadow: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 
+              0px 2px 3px 0px rgba(0, 0, 0, 0.3);
+  transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+  z-index: 40;
+}
+
+.fab-android:active {
+  transform: scale(0.96);
+  box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 
+              0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Android-specific input styling */
+.input-android {
+  border-radius: 4px 4px 0 0; /* Material filled text field */
+  background: rgba(124, 58, 237, 0.08);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.4);
+  transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.input-android:focus {
+  background: rgba(124, 58, 237, 0.12);
+  border-bottom-width: 2px;
+  border-bottom-color: rgb(124, 58, 237);
+}
+
+/* Android-specific list item */
+.list-item-android {
+  min-height: 56px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  transition: background 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.list-item-android:active {
+  background: rgba(124, 58, 237, 0.12);
+}
+
+/* Material Design 3 Motion Tokens */
+:root {
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  
+  --md-sys-motion-duration-short1: 50ms;
+  --md-sys-motion-duration-short2: 100ms;
+  --md-sys-motion-duration-short3: 150ms;
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  --md-sys-motion-duration-long1: 450ms;
+  --md-sys-motion-duration-long2: 500ms;
+  --md-sys-motion-duration-long3: 550ms;
+  --md-sys-motion-duration-long4: 600ms;
+}
+
+/* Performance Optimizations */
+.will-animate {
+  will-change: transform, opacity;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Android-specific focus states */
+*:focus-visible {
+  outline: 2px solid rgb(124, 58, 237);
+  outline-offset: 2px;
+}
+
+/* Disable focus outline for mouse users, keep for keyboard */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Android system bars integration */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 24px);
+  }
+  
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  }
+  
+  .safe-left {
+    padding-left: max(env(safe-area-inset-left), 0px);
+  }
+  
+  .safe-right {
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+}
+
+/* Material Design 3 Typography Scale for Android */
+.display-large-android {
+  font-size: 3.56rem; /* 57sp */
+  line-height: 4rem;
+  letter-spacing: -0.25px;
+}
+
+.display-medium-android {
+  font-size: 2.81rem; /* 45sp */
+  line-height: 3.25rem;
+  letter-spacing: 0;
+}
+
+.display-small-android {
+  font-size: 2.25rem; /* 36sp */
+  line-height: 2.75rem;
+  letter-spacing: 0;
+}
+
+.headline-large-android {
+  font-size: 2rem; /* 32sp */
+  line-height: 2.5rem;
+  letter-spacing: 0;
+}
+
+.headline-medium-android {
+  font-size: 1.75rem; /* 28sp */
+  line-height: 2.25rem;
+  letter-spacing: 0;
+}
+
+.headline-small-android {
+  font-size: 1.5rem; /* 24sp */
+  line-height: 2rem;
+  letter-spacing: 0;
+}
+
+.title-large-android {
+  font-size: 1.38rem; /* 22sp */
+  line-height: 1.75rem;
+  letter-spacing: 0;
+}
+
+.title-medium-android {
+  font-size: 1rem; /* 16sp */
+  line-height: 1.5rem;
+  letter-spacing: 0.15px;
+  font-weight: 500;
+}
+
+.title-small-android {
+  font-size: 0.88rem; /* 14sp */
+  line-height: 1.25rem;
+  letter-spacing: 0.1px;
+  font-weight: 500;
+}
+
+.body-large-android {
+  font-size: 1rem; /* 16sp */
+  line-height: 1.5rem;
+  letter-spacing: 0.5px;
+}
+
+.body-medium-android {
+  font-size: 0.88rem; /* 14sp */
+  line-height: 1.25rem;
+  letter-spacing: 0.25px;
+}
+
+.body-small-android {
+  font-size: 0.75rem; /* 12sp */
+  line-height: 1rem;
+  letter-spacing: 0.4px;
+}
+
+.label-large-android {
+  font-size: 0.88rem; /* 14sp */
+  line-height: 1.25rem;
+  letter-spacing: 0.1px;
+  font-weight: 500;
+}
+
+.label-medium-android {
+  font-size: 0.75rem; /* 12sp */
+  line-height: 1rem;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.label-small-android {
+  font-size: 0.69rem; /* 11sp */
+  line-height: 1rem;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+

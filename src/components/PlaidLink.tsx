@@ -159,22 +159,22 @@ export const PlaidLink = ({ hasPlaidToken, onConnectionChange, compact = false }
     // Prevent double invocation
     if (isConnecting) return;
     
-    console.log('🔘 Connect Bank button clicked');
+    logDebug('Connect Bank button clicked');
     
     if (!linkToken) {
       const token = await fetchLinkToken();
       if (!token) {
-        console.error('❌ Failed to get link token');
+        logError('Failed to get link token', 'PlaidLink.connectBank');
         return;
       }
-      console.log('✅ Link token obtained, waiting for Plaid to be ready...');
+      logDebug('Link token obtained, waiting for Plaid to be ready');
     }
     
     if (ready) {
-      console.log('✅ Plaid ready, opening modal...');
+      logDebug('Plaid ready, opening modal');
       open();
     } else {
-      console.log('⏳ Plaid not ready yet, will auto-open when ready');
+      logDebug('Plaid not ready yet, will auto-open when ready');
       toast({
         title: "Initializing Connection",
         description: "Preparing your bank connection...",

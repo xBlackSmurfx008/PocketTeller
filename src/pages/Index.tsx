@@ -144,8 +144,14 @@ const Index = () => {
       setSubmitting(false);
     }
   };
-  
 
+  // Redirect authenticated users or demo users to dashboard
+  useEffect(() => {
+    if (!loading && (user || isDemo)) {
+      console.log('Index: Redirecting authenticated user to /home');
+      navigate('/home', { replace: true });
+    }
+  }, [user, isDemo, loading, navigate]);
 
   if (loading) {
     return (
@@ -156,14 +162,6 @@ const Index = () => {
       </div>
     );
   }
-
-  // Redirect authenticated users or demo users to dashboard
-  useEffect(() => {
-    if (!loading && (user || isDemo)) {
-      console.log('Index: Redirecting authenticated user to /home');
-      navigate('/home', { replace: true });
-    }
-  }, [user, isDemo, loading, navigate]);
 
   return (
     <div className="min-h-screen bg-background scroll-smooth">
@@ -196,7 +194,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               size="lg"
-              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect"
+              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-shimmer btn-magnetic ripple-effect touch-target"
             >
               Get Started Free
             </Button>
@@ -204,7 +202,7 @@ const Index = () => {
               onClick={() => navigate('/demo')} 
               variant="outline"
               size="lg"
-              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-magnetic"
+              className="text-base sm:text-lg px-6 sm:px-8 py-3 h-auto btn-magnetic touch-target"
             >
               Try Demo
             </Button>

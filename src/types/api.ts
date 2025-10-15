@@ -56,8 +56,8 @@ export interface AuthResponse {
   error: SupabaseError | null;
   errorType?: AuthErrorType;
   passwordValidation?: PasswordValidation;
-  user?: any; // Supabase User object
-  session?: any; // Supabase Session object
+  user?: unknown; // Supabase User object - use proper Supabase types when importing
+  session?: unknown; // Supabase Session object - use proper Supabase types when importing
 }
 
 /**

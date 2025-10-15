@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     // Initialize Stripe
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || Deno.env.get('STRIPE_SECRET_KEY_TEST');
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     
     if (!stripeSecretKey) {

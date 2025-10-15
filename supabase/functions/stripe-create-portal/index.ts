@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     // Initialize Stripe
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || Deno.env.get('STRIPE_SECRET_KEY_TEST');
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
       throw new Error('Stripe secret key not configured');
     }

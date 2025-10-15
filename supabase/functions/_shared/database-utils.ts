@@ -319,12 +319,51 @@ export async function upsertAccounts(
 }
 
 /**
- * Batch upsert transactions
+ * Batch upsert transactions with user category rules applied
  */
 export async function upsertTransactions(
   supabase: SupabaseClient,
   transactions: DatabaseTransaction[]
 ): Promise<number> {
+  if (transactions.length === 0) return 0;
+
+  // Apply user category rules for future transaction memory
+  const merchantNames = transactions
+    .map(t => t.merchant_name)
+    .filter(Boolean) as string[];
+
+  if (merchantNames.length > 0) {
+    try {
+      const { data: categoryRules } = await supabase
+        .from('user_category_rules')
+        .select('merchant_name, category')
+        .eq('user_id', transactions[0].user_id)
+        .in('merchant_name', merchantNames);
+
+      if (categoryRules && categoryRules.length > 0) {
+        // Apply user rules to matching transactions (user category > plaid > auto)
+        const rulesMap = new Map(categoryRules.map(r => [r.merchant_name, r.category]));
+        
+        transactions = transactions.map(txn => {
+          if (txn.merchant_name && rulesMap.has(txn.merchant_name)) {
+            // User has a saved rule for this merchant - ALWAYS apply it
+            return {
+              ...txn,
+              category: rulesMap.get(txn.merchant_name)!,
+              category_source: 'user'  // User's preference is highest priority
+            };
+          }
+          return txn;
+        });
+
+        logger.info(`Applied ${categoryRules.length} user category rules`);
+      }
+    } catch (error) {
+      logger.warn('Failed to apply category rules', error);
+      // Continue with upsert even if rule application fails
+    }
+  }
+
   const { data, error } = await supabase
     .from('transactions')
     .upsert(transactions, {

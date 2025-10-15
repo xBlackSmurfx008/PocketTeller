@@ -18,9 +18,9 @@ export default function Subscription() {
   const { isActive, isPro, status, trialDaysRemaining, planType, loading: subLoading } = useSubscription();
   const { createCheckoutSession, loading } = useSubscription();
   const [promoCode, setPromoCode] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly' | '6month'>('6month');
 
-  const handleSubscribe = async (plan: 'monthly' | 'yearly') => {
+  const handleSubscribe = async (plan: 'monthly' | 'yearly' | '6month') => {
     if (!user) {
       toast.error('Please sign in to subscribe');
       navigate('/auth');
@@ -92,7 +92,7 @@ export default function Subscription() {
           )}
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-12">
             {/* Monthly Plan */}
             <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -137,27 +137,71 @@ export default function Subscription() {
               </CardFooter>
             </Card>
 
-            {/* Yearly Plan */}
-            <Card className="relative overflow-hidden border-primary shadow-lg">
+            {/* 6-Month Plan - FEATURED */}
+            <Card className="relative overflow-hidden border-primary shadow-lg scale-105 md:scale-110">
               <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 text-sm font-semibold">
-                BEST VALUE
+                LIMITED TIME
               </div>
               <CardHeader>
+                <CardTitle className="text-2xl">6 Months</CardTitle>
+                <CardDescription>Best value - limited time offer!</CardDescription>
+                <div className="mt-4">
+                  <div className="flex items-baseline">
+                    <span className="text-5xl font-bold">$15</span>
+                    <span className="text-muted-foreground ml-2">/6 months</span>
+                  </div>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <Badge variant="secondary">
+                      First 30 days FREE
+                    </Badge>
+                    <Badge className="bg-green-500 hover:bg-green-600">
+                      Save $15
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  className="w-full bg-primary hover:bg-primary/90"
+                  size="lg"
+                  onClick={() => handleSubscribe('6month')}
+                  disabled={loading || (isActive && planType === '6month')}
+                >
+                  {isActive && planType === '6month' ? (
+                    'Current Plan'
+                  ) : (
+                    <>
+                      Start Free Trial
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Yearly Plan */}
+            <Card className="relative overflow-hidden border-muted shadow-md">
+              <CardHeader>
                 <CardTitle className="text-2xl">Yearly</CardTitle>
-                <CardDescription>Save $27/year with annual billing</CardDescription>
+                <CardDescription>Best long-term value</CardDescription>
                 <div className="mt-4">
                   <div className="flex items-baseline">
                     <span className="text-5xl font-bold">$32.99</span>
                     <span className="text-muted-foreground ml-2">/year</span>
                   </div>
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="secondary">
-                      First 30 days FREE
-                    </Badge>
-                    <Badge className="bg-green-500 hover:bg-green-600">
-                      Save $27
-                    </Badge>
-                  </div>
+                  <Badge variant="secondary" className="mt-2">
+                    First 30 days FREE
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">

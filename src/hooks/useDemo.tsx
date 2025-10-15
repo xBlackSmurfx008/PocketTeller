@@ -26,6 +26,7 @@ interface DemoTransaction extends Omit<Transaction, 'user_id' | 'created_at' | '
  */
 interface DemoGoal extends Goal {
   // Additional demo-specific fields if needed
+  demoId?: string;
 }
 
 /**
@@ -33,6 +34,7 @@ interface DemoGoal extends Goal {
  */
 interface DemoBill extends Bill {
   // Additional demo-specific fields if needed
+  demoId?: string;
 }
 
 /**

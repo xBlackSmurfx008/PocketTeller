@@ -28,13 +28,32 @@ export const useTransactions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTransactions = useCallback(async () => {
+  /**
+   * Fetch transactions with standardized options
+   * includePending: whether to include pending transactions (default false)
+   * accountId: optional plaid_account_id to filter by account
+   */
+  const fetchTransactions = useCallback(async (
+    options: { includePending?: boolean; accountId?: string | null } = {}
+  ) => {
     setLoading(true);
     setError(null);
 
     if (isDemo) {
       // Use demo data
-      setTransactions(sampleData.transactions || []);
+      // Map demo data to Transaction shape when necessary
+      const demoTxns = (sampleData.transactions || []).map((t: any) => ({
+        id: t.id || t.transaction_id || Math.random().toString(),
+        date: t.date,
+        description: t.name || t.description,
+        amount: typeof t.amount === 'number' ? t.amount : Number(t.amount),
+        category: Array.isArray(t.category) ? (t.category[0] || 'Other') : (t.category || 'Other'),
+        account_id: t.account_id,
+        plaid_account_id: t.account_id,
+        merchant_name: t.merchant_name,
+        pending: !!t.pending,
+      }));
+      setTransactions(demoTxns);
       setLoading(false);
       return;
     }
@@ -45,11 +64,23 @@ export const useTransactions = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: false });
+
+      // Default exclude pending unless explicitly included
+      const includePending = options.includePending ?? false;
+      if (!includePending) {
+        query = query.eq('pending', false);
+      }
+
+      if (options.accountId) {
+        query = query.eq('plaid_account_id', options.accountId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;

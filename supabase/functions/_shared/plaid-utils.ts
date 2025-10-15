@@ -131,6 +131,24 @@ export function mapPlaidCategory(plaidCategories: string[]): string {
   const primary = plaidCategories[0]?.toLowerCase() || '';
   
   const categoryMap: { [key: string]: string } = {
+    // Transfer category (not income or expense - money movement)
+    'transfer': 'Transfer',
+    'third party': 'Transfer',
+    'payment transfer': 'Transfer',
+    'wire': 'Transfer',
+    'ach': 'Transfer',
+    'peer to peer': 'Transfer',
+    'venmo': 'Transfer',
+    'paypal transfer': 'Transfer',
+    'zelle': 'Transfer',
+    
+    // Subscriptions category (recurring services)
+    'subscription': 'Subscriptions',
+    'recurring': 'Subscriptions',
+    'membership': 'Subscriptions',
+    'streaming services': 'Subscriptions',
+    
+    // Food & Dining
     'food and drink': 'Food & Dining',
     'restaurants': 'Food & Dining',
     'fast food': 'Food & Dining',
@@ -138,14 +156,17 @@ export function mapPlaidCategory(plaidCategories: string[]): string {
     'groceries': 'Food & Dining',
     'food': 'Food & Dining',
     
+    // Transportation (more specific - removed 'travel')
     'transportation': 'Transportation',
     'gas stations': 'Transportation',
     'parking': 'Transportation',
     'public transportation': 'Transportation',
     'taxi': 'Transportation',
     'car service': 'Transportation',
-    'travel': 'Transportation',
+    'ride share': 'Transportation',
+    'automotive': 'Transportation',
     
+    // Shopping
     'shops': 'Shopping',
     'general merchandise': 'Shopping',
     'clothing and accessories': 'Shopping',
@@ -153,12 +174,14 @@ export function mapPlaidCategory(plaidCategories: string[]): string {
     'home improvement': 'Shopping',
     'retail': 'Shopping',
     
+    // Entertainment
     'recreation': 'Entertainment',
     'entertainment': 'Entertainment',
     'arts and entertainment': 'Entertainment',
     'gyms and fitness centers': 'Entertainment',
     'sports': 'Entertainment',
     
+    // Bills & Utilities
     'service': 'Bills & Utilities',
     'utilities': 'Bills & Utilities',
     'telecommunication services': 'Bills & Utilities',
@@ -166,16 +189,20 @@ export function mapPlaidCategory(plaidCategories: string[]): string {
     'phone': 'Bills & Utilities',
     'bills': 'Bills & Utilities',
     
+    // Healthcare
     'healthcare': 'Healthcare',
     'medical': 'Healthcare',
     'dentists': 'Healthcare',
     'hospitals': 'Healthcare',
     
+    // Travel (separated from Transportation)
     'airlines and aviation services': 'Travel',
     'lodging': 'Travel',
     'car rental': 'Travel',
     'hotels': 'Travel',
+    'travel': 'Travel',
     
+    // Income (deposits detected separately by amount sign)
     'payment': 'Income',
     'payroll': 'Income',
     'deposit': 'Income',
@@ -183,6 +210,7 @@ export function mapPlaidCategory(plaidCategories: string[]): string {
     'interest': 'Income',
     'dividend': 'Income',
     
+    // Bank Fees
     'bank fees': 'Bills & Utilities',
     'overdraft': 'Bills & Utilities',
   };
@@ -282,6 +310,9 @@ export class PlaidAPIClient {
       products: ['transactions'],
       country_codes: ['US'],
       language: 'en',
+      transactions: {
+        days_requested: 730  // Request MAXIMUM 24 months (730 days) of transaction history
+      }
     });
     
     return data.link_token;
@@ -315,7 +346,7 @@ export class PlaidAPIClient {
     return await this.request('/transactions/sync', {
       access_token: accessToken,
       cursor,
-      count: 100,
+      count: 500,  // MAXIMUM per request - fetch 5x more transactions per API call
     });
   }
 

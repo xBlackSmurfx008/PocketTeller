@@ -4,14 +4,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { calculateAccountSummary } from '@/utils/accountCategories';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFinancialTotals } from '@/hooks/useFinancialTotals';
 
 /**
  * Financial Summary Bar
  * Displays key financial metrics in a compact horizontal bar
  * Used on Transactions page and other detail pages
  */
-export function FinancialSummaryBar() {
+interface FinancialSummaryBarProps {
+  dateRangeDays?: number;
+  accountFilter?: string | null;
+}
+
+export function FinancialSummaryBar({ dateRangeDays = 30, accountFilter = null }: FinancialSummaryBarProps) {
   const { user } = useAuth();
+  const { totals, refetch } = useFinancialTotals({ mode: 'days', dateRangeDays, accountFilter });
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
     checkingBalance: 0,
@@ -19,6 +26,7 @@ export function FinancialSummaryBar() {
     monthlyExpenses: 0,
     totalDebts: 0,
     monthlyCashFlow: 0,
+    savingsBalance: 0,
   });
 
   useEffect(() => {
@@ -37,8 +45,13 @@ export function FinancialSummaryBar() {
           .eq('type', 'depository')
           .eq('subtype', 'checking');
 
-        const checkingBalance = (checkingAccounts || []).reduce((sum, acc) => 
-          sum + (Number(acc.available_balance) || Number(acc.current_balance) || 0), 0);
+        const checkingBalance = (checkingAccounts || []).reduce((sum, acc) => {
+          // For checking accounts, use available_balance if present, otherwise current_balance
+          const balance = acc.available_balance !== null && acc.available_balance !== undefined 
+            ? Number(acc.available_balance) 
+            : Number(acc.current_balance) || 0;
+          return sum + balance;
+        }, 0);
 
         // Get debts
         const { data: allAccounts } = await supabase
@@ -48,41 +61,51 @@ export function FinancialSummaryBar() {
 
         const accountSummary = calculateAccountSummary(allAccounts || []);
 
-        // Get monthly transactions
+        // Get savings balance (savings accounts)
+        const { data: savingsAccounts } = await supabase
+          .from('accounts')
+          .select('available_balance, current_balance, type, subtype')
+          .eq('user_id', user.id)
+          .eq('type', 'depository')
+          .eq('subtype', 'savings');
+
+        const savingsBalance = (savingsAccounts || []).reduce((sum, acc) => {
+          const balance = acc.available_balance !== null && acc.available_balance !== undefined
+            ? Number(acc.available_balance)
+            : Number(acc.current_balance) || 0;
+          return sum + balance;
+        }, 0);
+
+        // Get transactions within the selected date range (default last 30 days)
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startDate = startOfMonth.toISOString().split('T')[0];
+        const fromDate = new Date(now);
+        fromDate.setDate(fromDate.getDate() - (dateRangeDays || 0));
+        const startDate = (dateRangeDays && dateRangeDays > 0)
+          ? fromDate.toISOString().split('T')[0]
+          : '1900-01-01';
         const endDate = now.toISOString().split('T')[0];
 
-        const { data: incomeTransactions } = await supabase
+        let txQuery = supabase
           .from('transactions')
-          .select('amount')
+          .select('amount, category, plaid_account_id')
           .eq('user_id', user.id)
           .eq('pending', false)
           .gte('date', startDate)
-          .lte('date', endDate)
-          .gt('amount', 0);
+          .lte('date', endDate);
 
-        const { data: expenseTransactions } = await supabase
-          .from('transactions')
-          .select('amount')
-          .eq('user_id', user.id)
-          .eq('pending', false)
-          .gte('date', startDate)
-          .lte('date', endDate)
-          .lt('amount', 0);
+        if (accountFilter) {
+          txQuery = txQuery.eq('plaid_account_id', accountFilter);
+        }
 
-        const monthlyIncome = (incomeTransactions || []).reduce((sum, t) => 
-          sum + Math.abs(Number(t.amount) || 0), 0);
-        const monthlyExpenses = (expenseTransactions || []).reduce((sum, t) => 
-          sum + Math.abs(Number(t.amount) || 0), 0);
+        const { data: allTransactions } = await txQuery;
 
         setData({
           checkingBalance,
-          monthlyIncome,
-          monthlyExpenses,
+          monthlyIncome: totals.income,
+          monthlyExpenses: totals.expenses,
           totalDebts: accountSummary.totalDebts,
-          monthlyCashFlow: monthlyIncome - monthlyExpenses,
+          monthlyCashFlow: totals.net,
+          savingsBalance,
         });
       } catch (error) {
         console.error('Error fetching summary data:', error);
@@ -92,7 +115,8 @@ export function FinancialSummaryBar() {
     };
 
     fetchSummaryData();
-  }, [user]);
+    // Keep in sync if totals refetch updates
+  }, [user, totals.income, totals.expenses, totals.net]);
 
   if (loading) {
     return (
@@ -123,36 +147,49 @@ export function FinancialSummaryBar() {
   return (
     <Card>
       <CardContent className="py-3">
-        <div className="flex flex-wrap justify-between items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Checking:</span>
-            <span className="font-semibold text-blue-600 dark:text-blue-400">
-              {formatCurrency(data.checkingBalance)}
-            </span>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          {/* Left column: Checking, Expenses, Cash Flow */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Checking:</span>
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {formatCurrency(data.checkingBalance)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Expenses:</span>
+              <span className="font-semibold text-orange-600 dark:text-orange-400">
+                {formatCurrency(data.monthlyExpenses)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Cash Flow:</span>
+              <span className={`font-bold ${isPositiveCashFlow ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {isPositiveCashFlow ? '+' : ''}{formatCurrency(data.monthlyCashFlow)}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Income:</span>
-            <span className="font-semibold text-green-600 dark:text-green-400">
-              {formatCurrency(data.monthlyIncome)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Expenses:</span>
-            <span className="font-semibold text-orange-600 dark:text-orange-400">
-              {formatCurrency(data.monthlyExpenses)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Debts:</span>
-            <span className="font-semibold text-red-600 dark:text-red-400">
-              {formatCurrency(data.totalDebts)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Cash Flow:</span>
-            <span className={`font-bold ${isPositiveCashFlow ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {isPositiveCashFlow ? '+' : ''}{formatCurrency(data.monthlyCashFlow)}
-            </span>
+
+          {/* Right column: Income, Debts, Savings */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Income:</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">
+                {formatCurrency(data.monthlyIncome)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Debts:</span>
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                {formatCurrency(data.totalDebts)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Savings:</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">
+                {formatCurrency(data.savingsBalance)}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>

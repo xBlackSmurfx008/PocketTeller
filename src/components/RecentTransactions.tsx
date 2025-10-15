@@ -9,8 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/useToast';
-import { Search, Plus, ChevronDown, ChevronRight, Zap, Sparkles } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Search, Plus, ChevronDown, ChevronRight, Zap, Sparkles, Clock } from 'lucide-react';
+// Removed tooltip imports after simplifying source indicators
 import { format } from 'date-fns';
 import AddTransactionDialog from '@/components/AddTransactionDialog';
 import { TransactionSyncButton } from '@/components/TransactionSyncButton';
@@ -21,112 +21,62 @@ import {
   groupTransactionsByCategory, 
   getCategoryTotals
 } from '@/utils/transactionCategorizer';
+import { isIncomeCategory } from '@/utils/categoryNormalizer';
+import { useTransactions } from '@/hooks/useTransactions';
 import { Transaction, GroupedTransactions } from '@/types/models';
 
 interface RecentTransactionsProps {
   accountFilter?: string | null;
+  dateFilter?: number;
+  onDateFilterChange?: (days: number) => void;
 }
 
-export default function RecentTransactions({ accountFilter }: RecentTransactionsProps = {}) {
+export default function RecentTransactions({ accountFilter, dateFilter = 30, onDateFilterChange }: RecentTransactionsProps = {}) {
   const { user } = useAuth();
-  const { isDemo, sampleData } = useDemo();
+  const { isDemo } = useDemo();
   const { toast } = useToast();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { transactions, loading, refetch } = useTransactions();
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [groupedTransactions, setGroupedTransactions] = useState<GroupedTransactions>({});
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<number>(30); // Days to show, default 30
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grouped'>('grouped');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch on mount and on account filter change
+  useEffect(() => {
+    refetch({ includePending: false, accountId: accountFilter || undefined });
+  }, [accountFilter, refetch]);
 
   useEffect(() => {
-    if (isDemo && !user) {
-      // Only show demo data if in demo mode AND no authenticated user
-      const demoTransactions = sampleData.transactions.map(t => ({
-        id: t.id,
-        date: t.date,
-        description: t.name,
-        amount: t.amount,
-        category: t.category[0] || 'Other',
-        account_id: t.account_id
-      }));
-      setTransactions(demoTransactions);
-      setLoading(false);
-    } else if (user) {
-      fetchTransactions();
-      
-      // Set up real-time subscription for transactions
-      const channel = supabase
-        .channel('transactions-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'transactions',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('Real-time transaction update:', payload);
-            
-            if (payload.eventType === 'INSERT') {
-              setTransactions(prev => [payload.new as Transaction, ...prev.slice(0, 49)]);
-            } else if (payload.eventType === 'UPDATE') {
-              setTransactions(prev => 
-                prev.map(t => t.id === payload.new.id ? payload.new as Transaction : t)
-              );
-            } else if (payload.eventType === 'DELETE') {
-              setTransactions(prev => 
-                prev.filter(t => t.id !== payload.old.id)
-              );
-            }
-          }
-        )
-        .subscribe();
+    if (!user) return;
+    const channel = supabase
+      .channel('transactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          refetch({ includePending: false, accountId: accountFilter || undefined });
+        }
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } else {
-      setLoading(false);
-    }
-  }, [user, isDemo, sampleData]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, accountFilter, refetch]);
 
-  // Count uncategorized transactions
+  // Count uncategorized transactions (Plaid will handle categorization)
   const uncategorizedCount = transactions.filter(t => 
-    t.category === 'Other' || t.category === null
+    (t.category === 'Other' || t.category === null) &&
+    (!t.category_source || t.category_source === 'auto')
   ).length;
-
-  const fetchTransactions = async () => {
-    try {
-      console.log('Fetching transactions for user:', user?.id);
-      // Fetch ALL transactions - Plaid limits how much data is synced, we show everything
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('date', { ascending: false });
-
-      console.log('Transactions fetch result:', { data: data?.length || 0, error });
-      if (error) throw error;
-      
-      setTransactions(data || []);
-      console.log('Transactions state updated with', data?.length || 0, 'items');
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch transactions",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filterTransactions = useCallback(() => {
     console.log('Filtering transactions. Raw count:', transactions.length);
@@ -137,17 +87,14 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
       filtered = filtered.filter(t => t.plaid_account_id === accountFilter || t.account_id === accountFilter);
     }
 
-    // Date filter - always use month-to-month basis (full calendar months)
+    // Date filter - true day-based filtering (last X days from today)
     if (dateFilter > 0) {
-      const now = new Date();
-      const monthsToShow = Math.ceil(dateFilter / 30); // Convert days to months
-      
-      // Go back to the first day of X months ago
-      const startDate = new Date(now.getFullYear(), now.getMonth() - monthsToShow, 1);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - dateFilter);
       
       filtered = filtered.filter(t => {
         const txDate = new Date(t.date);
-        return txDate >= startDate;
+        return txDate >= cutoffDate;
       });
     }
 
@@ -198,6 +145,14 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
 
   const updateTransactionCategory = async (transactionId: string, newCategory: string) => {
     try {
+      // Find the transaction being categorized
+      const currentTransaction = transactions.find(t => t.id === transactionId);
+      if (!currentTransaction) return;
+
+      // Find matching merchant name
+      const merchantName = currentTransaction.merchant_name || currentTransaction.description;
+      
+      // Update the selected transaction
       const { error } = await supabase
         .from('transactions')
         .update({ 
@@ -209,15 +164,55 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
 
       if (error) throw error;
 
-      setTransactions(prev => 
-        prev.map(t => 
-          t.id === transactionId ? { ...t, category: newCategory } : t
-        )
-      );
+      // Smart propagation: Find and categorize other transactions from same merchant
+      let propagatedCount = 0;
+      if (merchantName) {
+        const { data: similarTransactions, error: fetchError } = await supabase
+          .from('transactions')
+          .select('id, merchant_name, description')
+          .eq('user_id', user?.id)
+          .neq('id', transactionId)  // Don't update the one we just updated
+          .or(`merchant_name.eq.${merchantName},description.eq.${merchantName}`);
 
+        if (!fetchError && similarTransactions && similarTransactions.length > 0) {
+          const similarIds = similarTransactions.map(t => t.id);
+          
+          const { error: propagateError } = await supabase
+            .from('transactions')
+            .update({
+              category: newCategory,
+              category_source: 'user'
+            })
+            .in('id', similarIds)
+            .eq('user_id', user?.id);
+
+          if (!propagateError) {
+            propagatedCount = similarIds.length;
+          }
+        }
+        
+        // Save category rule for future transactions from this merchant
+        await supabase
+          .from('user_category_rules')
+          .upsert({
+            user_id: user?.id,
+            merchant_name: merchantName,
+            category: newCategory,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,merchant_name'
+          });
+      }
+
+      // Refresh from server to ensure consistency
+      refetch({ includePending: false, accountId: accountFilter || undefined });
+
+      const totalUpdated = 1 + propagatedCount;
       toast({
         title: "Success",
-        description: "Transaction category updated",
+        description: propagatedCount > 0 
+          ? `Updated ${totalUpdated} transactions to "${newCategory}" (${propagatedCount} similar merchants)`
+          : "Transaction category updated",
       });
     } catch (error) {
       console.error('Error updating transaction:', error);
@@ -229,122 +224,6 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
     }
   };
 
-  const autoCategorizeAllTransactions = async (silent = false) => {
-    if (isDemo) {
-      // Fallback to keyword-based categorization in demo mode
-      const uncategorizedTransactions = transactions.filter(
-        t => t.category === 'Other' || !t.category
-      );
-      
-      let categorizedCount = 0;
-      const updatedTransactions = transactions.map(transaction => {
-        if (transaction.category === 'Other' || !transaction.category) {
-          const newCategory = autoCategorizeTransaction(transaction.description, transaction.amount);
-          categorizedCount++;
-          return { ...transaction, category: newCategory, category_source: 'auto' };
-        }
-        return transaction;
-      });
-      
-      setTransactions(updatedTransactions);
-      
-      toast({
-        title: "Auto-categorization complete",
-        description: `Categorized ${categorizedCount} transactions`,
-      });
-      return;
-    }
-
-    // Prevent concurrent runs
-    if (isLoading) {
-      toast({
-        title: "Categorization in progress",
-        description: "Please wait for the current categorization to complete.",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
-    // Show immediate feedback
-    if (!silent) {
-      toast({
-        title: "🤖 AI Categorization Started",
-        description: "Analyzing your transactions with AI...",
-      });
-    }
-    
-    try {
-      // Try AI categorization with higher limit and better threshold
-      const { data, error } = await supabase.functions.invoke('ai-categorize-transactions', {
-        body: { limit: 100, threshold: 0.70 } // Increased threshold from 0.55 to 0.70 for better accuracy
-      });
-
-      if (error) {
-        console.error('AI categorization error:', error);
-        
-        // Better error handling based on error type
-        if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
-          throw new Error('AI service is temporarily busy. Please try again in a few minutes.');
-        } else if (error.message?.includes('Unauthorized') || error.message?.includes('Invalid session')) {
-          throw new Error('Your session has expired. Please refresh the page and try again.');
-        } else if (error.message?.includes('not configured') || error.message?.includes('API key')) {
-          throw new Error('AI service is temporarily unavailable. Please try again later.');
-        } else {
-          throw new Error(error.details || error.message || 'AI categorization failed');
-        }
-      }
-
-      // CRITICAL: Refresh transactions to get updated categories from database
-      await fetchTransactions();
-      
-      // Store timestamp for throttling future manual runs
-      localStorage.setItem('aiCatLastRun', new Date().toISOString());
-      
-      if (data) {
-        const updatedCount = data.updatedCount || 0;
-        const totalProcessed = data.totalProcessed || 0;
-        const remaining = data.remainingUncategorized || 0;
-        
-        if (updatedCount > 0) {
-          toast({
-            title: "✅ AI Categorization Complete",
-            description: `Successfully categorized ${updatedCount} of ${totalProcessed} transactions.${remaining > 0 ? ` ${remaining} transactions still need manual review.` : ''}`,
-            duration: 5000,
-          });
-        } else if (totalProcessed === 0) {
-          toast({
-            title: "✨ All Transactions Categorized",
-            description: "All your transactions already have categories assigned!",
-            duration: 3000,
-          });
-        } else {
-          toast({
-            title: "Review Needed",
-            description: `${remaining} transactions need manual categorization. Use the dropdowns below to categorize them.`,
-            duration: 5000,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Categorization error:', error);
-      
-      const errorMessage = error?.message || "Unknown error";
-      const uncategorizedCount = transactions.filter(
-        t => (t.category === 'Other' || !t.category) && 
-        (!t.category_source || t.category_source === 'auto')
-      ).length;
-      
-      toast({
-        title: "Categorization Issue",
-        description: errorMessage + (uncategorizedCount > 0 ? ` You can manually categorize ${uncategorizedCount} transactions using the dropdowns below.` : ''),
-        variant: "destructive",
-        duration: 7000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const toggleCategory = (category: string) => {
     setOpenCategories(prev => ({
@@ -373,25 +252,7 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
           <CardTitle>Recent Transactions</CardTitle>
           <div className="flex flex-col sm:flex-row gap-2 w-full">
             {user && !isDemo && (
-              <>
-                <TransactionSyncButton onSyncComplete={fetchTransactions} />
-                <Button
-                  onClick={() => autoCategorizeAllTransactions()}
-                  size="sm"
-                  variant="outline"
-                  disabled={isLoading || uncategorizedCount === 0}
-                  className="gap-2 flex-1 sm:flex-none"
-                  title={uncategorizedCount === 0 ? "All transactions are categorized" : `Categorize ${uncategorizedCount} uncategorized transactions with AI`}
-                >
-                  <Sparkles className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">
-                    {isLoading ? 'AI Categorizing...' : uncategorizedCount > 0 ? `AI Categorize (${uncategorizedCount})` : 'All Categorized ✓'}
-                  </span>
-                  <span className="sm:hidden">
-                    {isLoading ? 'AI...' : `${uncategorizedCount}`}
-                  </span>
-                </Button>
-              </>
+              <TransactionSyncButton onSyncComplete={() => refetch({ includePending: false, accountId: accountFilter || undefined })} />
             )}
             <Button 
               onClick={() => isDemo ? toast({ title: "Demo Mode", description: "Adding transactions disabled in demo" }) : setShowAddDialog(true)} 
@@ -405,6 +266,8 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Removed categorization dashboard for simpler UI focus */}
+
         {/* Compact Filters Bar */}
         <div className="flex flex-col gap-3 pb-3 border-b">
           {/* Search and Category Filter Row */}
@@ -446,7 +309,7 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
               ].map(({ label, days }) => (
                 <Button
                   key={days}
-                  onClick={() => setDateFilter(days)}
+                  onClick={() => onDateFilterChange?.(days)}
                   size="sm"
                   variant={dateFilter === days ? 'default' : 'ghost'}
                   className="h-8 px-3"
@@ -483,7 +346,7 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
             </span>
             {uncategorizedCount > 0 && (
               <Badge variant="outline" className="text-xs text-orange-600 dark:text-orange-400 border-orange-400">
-                {uncategorizedCount} need categorization
+                {uncategorizedCount} need manual review
               </Badge>
             )}
           </div>
@@ -517,68 +380,64 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
               </Card>
             </div>
           ) : viewMode === 'list' ? (
-            (filteredTransactions || []).map((transaction) => (
-              <div key={transaction.id} className="flex items-start sm:items-center justify-between p-3 border border-border rounded-lg hover:border-primary/50 transition-colors gap-3">
-                <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                    <span className="font-medium truncate">{transaction.description}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {format(new Date(transaction.date), 'MMM dd, yyyy')}
-                    </span>
+            (filteredTransactions || []).map((transaction) => {
+              const isIncome = isIncomeCategory(transaction.category);
+              return (
+                <div
+                  key={transaction.id}
+                  className={`flex items-center gap-4 p-3 border border-border rounded-lg hover:border-primary/50 transition-colors ${transaction.pending ? 'opacity-70 border-dashed' : ''}`}
+                >
+                  {/* Amount - primary emphasis */}
+                  <div className="text-right min-w-[110px]">
+                    <div className={`text-xl font-bold tabular-nums ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
+                      {isIncome ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                      {transaction.pending && <Clock className="h-3 w-3" />}
+                      <span>{format(new Date(transaction.date), 'MMM dd')}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Select
-                      value={transaction.category}
-                      onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
-                    >
-                      <SelectTrigger className="w-[140px] h-7 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border border-border shadow-lg z-50">
-                        {CATEGORIES.map(category => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {(transaction as any).category_source === 'ai' && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge variant="secondary" className="text-xs gap-1 cursor-help">
-                              <Sparkles className="h-3 w-3" />
-                              AI {Math.round(((transaction as any).category_confidence || 0) * 100)}%
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="text-xs space-y-1">
-                              <div>AI suggested category</div>
-                              {(transaction as any).category_reason && (
-                                <div className="text-muted-foreground">{(transaction as any).category_reason}</div>
-                              )}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {transaction.merchant_name && transaction.merchant_name !== transaction.description && (
-                      <span className="text-xs text-muted-foreground truncate max-w-[150px]">
-                        {transaction.merchant_name}
-                      </span>
-                    )}
+
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm sm:text-base truncate">
+                      {transaction.merchant_name || transaction.description}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <Select
+                        value={transaction.category}
+                        onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
+                      >
+                        <SelectTrigger className="w-[140px] h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border shadow-lg z-50">
+                          {CATEGORIES.map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {/* Source icon-only */}
+                      {(transaction as any).category_source && (
+                        <span className="text-xs opacity-60">
+                          {(transaction as any).category_source === 'user' && '👤'}
+                          {(transaction as any).category_source === 'plaid' && '🏦'}
+                          {(transaction as any).category_source === 'ai' && '✨'}
+                          {(transaction as any).category_source === 'auto' && '🤖'}
+                        </span>
+                      )}
+                      {transaction.pending && (
+                        <Badge variant="secondary" className="text-[10px] h-5">
+                          <Clock className="h-3 w-3 mr-1" /> Pending
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <Badge 
-                    variant={transaction.category === 'Income' ? 'default' : 'outline'} 
-                    className={`text-sm font-bold ${transaction.category === 'Income' ? 'bg-green-600 text-white' : 'text-foreground'}`}
-                  >
-                    ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </Badge>
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             Object.entries(groupedTransactions)
               .sort(([a], [b]) => {
@@ -604,52 +463,69 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
                           </div>
                         </div>
                         <Badge 
-                          variant={category === 'Income' ? 'default' : 'outline'} 
-                          className={`text-sm font-bold ${category === 'Income' ? 'bg-green-600 text-white' : ''}`}
+                          variant={isIncomeCategory(category) ? 'default' : 'outline'} 
+                          className={`text-sm font-bold ${isIncomeCategory(category) ? 'bg-green-600 text-white' : ''}`}
                         >
                           ${categoryTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </Badge>
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-1 mt-1">
-                      {(categoryTransactions || []).map((transaction) => (
-                        <div key={transaction.id} className="flex items-start sm:items-center justify-between p-2.5 ml-8 border border-border rounded-lg hover:border-primary/30 transition-colors gap-3 bg-background">
-                          <div className="flex-1 min-w-0 space-y-1.5">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <span className="font-medium text-sm truncate">{transaction.description}</span>
-                              <span className="text-xs text-muted-foreground shrink-0">
-                                {format(new Date(transaction.date), 'MMM dd')}
-                              </span>
+                      {(categoryTransactions || []).map((transaction) => {
+                        const isIncome = isIncomeCategory(transaction.category);
+                        return (
+                          <div
+                            key={transaction.id}
+                            className={`flex items-center gap-4 p-2.5 ml-8 border border-border rounded-lg hover:border-primary/30 transition-colors bg-background ${transaction.pending ? 'opacity-70 border-dashed' : ''}`}
+                          >
+                            {/* Amount */}
+                            <div className="text-right min-w-[90px]">
+                              <div className={`text-sm font-bold tabular-nums ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
+                                {isIncome ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground flex items-center justify-end gap-1">
+                                {transaction.pending && <Clock className="h-3 w-3" />}
+                                <span>{format(new Date(transaction.date), 'MMM dd')}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Select
-                                value={transaction.category}
-                                onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
-                              >
-                                <SelectTrigger className="w-[130px] h-6 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-background border border-border shadow-lg z-50">
-                                  {CATEGORIES.map(cat => (
-                                    <SelectItem key={cat} value={cat}>
-                                      {cat}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {(transaction as any).category_source === 'ai' && (
-                                <Badge variant="secondary" className="text-xs gap-1">
-                                  <Sparkles className="h-3 w-3" />
-                                  AI
-                                </Badge>
-                              )}
+
+                            {/* Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">{transaction.merchant_name || transaction.description}</div>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <Select
+                                  value={transaction.category}
+                                  onValueChange={(value) => updateTransactionCategory(transaction.id, value)}
+                                >
+                                  <SelectTrigger className="w-[130px] h-6 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-background border border-border shadow-lg z-50">
+                                    {CATEGORIES.map(cat => (
+                                      <SelectItem key={cat} value={cat}>
+                                        {cat}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {(transaction as any).category_source && (
+                                  <span className="text-xs opacity-60">
+                                    {(transaction as any).category_source === 'user' && '👤'}
+                                    {(transaction as any).category_source === 'plaid' && '🏦'}
+                                    {(transaction as any).category_source === 'ai' && '✨'}
+                                    {(transaction as any).category_source === 'auto' && '🤖'}
+                                  </span>
+                                )}
+                                {transaction.pending && (
+                                  <Badge variant="secondary" className="text-[10px] h-5">
+                                    <Clock className="h-3 w-3 mr-1" /> Pending
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <Badge variant="outline" className="shrink-0 text-xs font-semibold">
-                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </Badge>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </CollapsibleContent>
                   </Collapsible>
                 );
@@ -661,7 +537,7 @@ export default function RecentTransactions({ accountFilter }: RecentTransactions
       <AddTransactionDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
-        onTransactionAdded={fetchTransactions}
+        onTransactionAdded={() => refetch({ includePending: false, accountId: accountFilter || undefined })}
       />
     </Card>
   );

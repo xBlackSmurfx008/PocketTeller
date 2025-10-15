@@ -49,6 +49,7 @@ serve(async (req) => {
     let isActive = false;
     let isPro = false;
     let trialDaysRemaining = 0;
+    let isTrialExpired = false;
 
     if (subscription) {
       // Check if subscription is active
@@ -62,6 +63,23 @@ serve(async (req) => {
         const trialEnd = new Date(subscription.trial_end);
         const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         trialDaysRemaining = Math.max(0, daysRemaining);
+        
+        // Check if trial has expired
+        if (trialEnd < now) {
+          isTrialExpired = true;
+          isPro = false;
+          isActive = false;
+        }
+      }
+      
+      // Check if subscription ended without payment
+      if (subscription.status === 'incomplete' || 
+          subscription.status === 'incomplete_expired' ||
+          subscription.status === 'canceled' ||
+          subscription.status === 'unpaid') {
+        isTrialExpired = true;
+        isPro = false;
+        isActive = false;
       }
     }
 
@@ -70,9 +88,11 @@ serve(async (req) => {
         hasSubscription: !!subscription,
         isActive,
         isPro,
+        isTrialExpired,
         status: subscription?.status || 'none',
         planType: subscription?.plan_type || null,
         trialDaysRemaining,
+        trialEndDate: subscription?.trial_end || null,
         currentPeriodEnd: subscription?.current_period_end || null,
         cancelAtPeriodEnd: subscription?.cancel_at_period_end || false,
         freeMonthsRemaining: subscription?.free_months_remaining || 0,
@@ -91,6 +111,7 @@ serve(async (req) => {
         hasSubscription: false,
         isActive: false,
         isPro: false,
+        isTrialExpired: false,
       }),
       {
         status: 200, // Return 200 to avoid breaking the app

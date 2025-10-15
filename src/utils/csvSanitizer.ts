@@ -11,7 +11,7 @@ export const sanitizeCsvField = (value: string | number | null | undefined): str
   const stringValue = String(value);
   
   // If the field starts with dangerous characters, prepend with single quote
-  if (/^[=@+\-]/.test(stringValue)) {
+  if (/^[=@+-]/.test(stringValue)) {
     return `'${stringValue}`;
   }
   
@@ -48,7 +48,7 @@ export const sanitizeDataToCsv = <T extends Record<string, any>>(
  * @param headers - Array of header names
  * @param filename - Name of the file to download
  */
-export const downloadSanitizedCsv = <T extends Record<string, any>>(
+export const downloadSanitizedCsv = <T extends Record<string, unknown>>(
   data: T[],
   headers: (keyof T)[],
   filename: string

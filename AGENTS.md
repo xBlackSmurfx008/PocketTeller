@@ -168,6 +168,7 @@ cd ios && xcodebuild
 - **NO LOCALHOST ANYWHERE**: This is production code only. No localhost references in any code files.
 - **Production URLs Only**: Use production domains (pocketbanker.app, supabase.co) in all configurations
 - **No Development Fallbacks**: No conditional localhost allowances or dev-mode switches
+- **NO CREATING MD FILES**: Do NOT create documentation or .md files unless explicitly requested by the user. Output all reports, summaries, and findings directly in chat
 
 ### TypeScript
 - Use TypeScript strict mode

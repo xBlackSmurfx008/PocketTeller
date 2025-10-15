@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     // Initialize Stripe
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || Deno.env.get('STRIPE_SECRET_KEY_TEST');
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
       throw new Error('Stripe secret key not configured');
     }
@@ -46,8 +46,8 @@ serve(async (req) => {
     const { planType, promoCode, successUrl, cancelUrl } = await req.json();
 
     // Validate plan type
-    if (!['monthly', 'yearly'].includes(planType)) {
-      throw new Error('Invalid plan type. Must be "monthly" or "yearly"');
+    if (!['monthly', 'yearly', '6month'].includes(planType)) {
+      throw new Error('Invalid plan type. Must be "monthly", "yearly", or "6month"');
     }
 
     // Get user email
@@ -78,9 +78,14 @@ serve(async (req) => {
     }
 
     // Determine price ID
-    const priceId = planType === 'monthly'
-      ? Deno.env.get('STRIPE_PRICE_MONTHLY')
-      : Deno.env.get('STRIPE_PRICE_YEARLY');
+    let priceId: string | undefined;
+    if (planType === 'monthly') {
+      priceId = Deno.env.get('STRIPE_PRICE_MONTHLY');
+    } else if (planType === 'yearly') {
+      priceId = Deno.env.get('STRIPE_PRICE_YEARLY');
+    } else if (planType === '6month') {
+      priceId = Deno.env.get('STRIPE_PRICE_6MONTH');
+    }
 
     if (!priceId) {
       throw new Error(`Price ID not configured for ${planType} plan`);

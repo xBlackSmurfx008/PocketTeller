@@ -11,13 +11,23 @@ interface ProFeatureGateProps {
 }
 
 export function ProFeatureGate({ feature, description, children }: ProFeatureGateProps) {
-  const { isPro, loading } = useSubscription();
+  const { isPro, isTrialExpired, loading } = useSubscription();
   const navigate = useNavigate();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
         <div className="animate-pulse">Loading...</div>
+      </div>
+    );
+  }
+
+  // If trial expired, redirect to subscription page immediately
+  if (isTrialExpired || !isPro) {
+    navigate('/subscription');
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-pulse">Redirecting to subscription...</div>
       </div>
     );
   }

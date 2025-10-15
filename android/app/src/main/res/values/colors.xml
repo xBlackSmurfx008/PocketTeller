@@ -94,7 +94,7 @@
     <color name="accent_rose">#F43F5E</color>
     
     <!-- Splash Screen -->
-    <color name="splash_background">#7C3AED</color>
+    <color name="splash_background">#FFFFFF</color>
     <color name="splash_foreground">#FFFFFF</color>
 </resources>
 

@@ -105,3 +105,8 @@ verify_jwt = true
 
 [functions.stripe-apply-referral-credit]
 verify_jwt = true
+
+[functions.trial-expiration-checker]
+verify_jwt = false
+# Note: Cron schedule must be configured in Supabase Dashboard
+# Recommended: Daily at 9 AM UTC (0 9 * * *)

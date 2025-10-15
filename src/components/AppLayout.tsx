@@ -14,6 +14,7 @@ interface AppLayoutProps {
 const NAVIGATION_ROUTES = [
   '/home',
   '/budget', 
+  '/bills',
   '/chat',
   '/goals',
   '/transactions',
@@ -24,6 +25,7 @@ const NAVIGATION_ROUTES = [
 const PADDED_ROUTES = [
   '/home',
   '/budget',
+  '/bills',
   '/chat', 
   '/goals',
   '/transactions',

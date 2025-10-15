@@ -7,9 +7,11 @@ export interface SubscriptionStatus {
   hasSubscription: boolean;
   isActive: boolean;
   isPro: boolean;
+  isTrialExpired: boolean;
   status: string;
   planType: string | null;
   trialDaysRemaining: number;
+  trialEndDate: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   freeMonthsRemaining: number;
@@ -23,9 +25,11 @@ export function useSubscription() {
     hasSubscription: false,
     isActive: false,
     isPro: false,
+    isTrialExpired: false,
     status: 'none',
     planType: null,
     trialDaysRemaining: 0,
+    trialEndDate: null,
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
     freeMonthsRemaining: 0,
@@ -56,9 +60,11 @@ export function useSubscription() {
         hasSubscription: false,
         isActive: false,
         isPro: false,
+        isTrialExpired: false,
         status: 'none',
         planType: null,
         trialDaysRemaining: 0,
+        trialEndDate: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         freeMonthsRemaining: 0,
@@ -73,9 +79,11 @@ export function useSubscription() {
         hasSubscription: false,
         isActive: false,
         isPro: false,
+        isTrialExpired: false,
         status: 'none',
         planType: null,
         trialDaysRemaining: 0,
+        trialEndDate: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         freeMonthsRemaining: 0,
@@ -87,7 +95,7 @@ export function useSubscription() {
   };
 
   const createCheckoutSession = async (
-    planType: 'monthly' | 'yearly',
+    planType: 'monthly' | 'yearly' | '6month',
     promoCode?: string
   ) => {
     if (!user) {

@@ -467,7 +467,7 @@ async function buildUserDataContext(supabase: any, userId: string): Promise<stri
       .from('transactions')
       .select('id, amount, category, date, description, merchant_name')
       .eq('user_id', userId)
-      .eq('pending', false)
+      .or('pending.is.null,pending.eq.false')
       .order('date', { ascending: false })
       .limit(50);
     
@@ -522,6 +522,140 @@ async function buildUserDataContext(supabase: any, userId: string): Promise<stri
       context += `\nFINANCIAL GOALS: No goals set\n`;
     }
     
+    // Monthly summary (last 30 days)
+    const monthlyCutoff = new Date();
+    monthlyCutoff.setDate(monthlyCutoff.getDate() - 30);
+    const cutoffISO = monthlyCutoff.toISOString().split('T')[0];
+
+    const { data: monthlyTxns } = await supabase
+      .from('transactions')
+      .select('amount, category, date')
+      .eq('user_id', userId)
+      .or('pending.is.null,pending.eq.false')
+      .gte('date', cutoffISO)
+      .order('date', { ascending: false });
+
+    if (monthlyTxns && monthlyTxns.length > 0) {
+      const isIncome = (c: string | null | undefined) => (c || '').toLowerCase() === 'income';
+      const isTransfer = (c: string | null | undefined) => (c || '').toLowerCase() === 'transfer';
+
+      const totalIncome = monthlyTxns
+        .filter(t => isIncome(t.category))
+        .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+      const totalExpenses = monthlyTxns
+        .filter(t => !isIncome(t.category) && !isTransfer(t.category))
+        .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+      const netCashFlow = totalIncome - totalExpenses;
+
+      context += `\n30-DAY SUMMARY:\n`;
+      context += `- Income: $${totalIncome.toLocaleString()}\n`;
+      context += `- Expenses: $${totalExpenses.toLocaleString()}\n`;
+      context += `- Net: $${netCashFlow.toLocaleString()}\n`;
+    } else {
+      context += `\n30-DAY SUMMARY:\n- No transactions in the last 30 days\n`;
+    }
+
+    // All-time summary (entire history)
+    const { data: allTxns } = await supabase
+      .from('transactions')
+      .select('amount, category, date')
+      .eq('user_id', userId)
+      .or('pending.is.null,pending.eq.false')
+      .order('date', { ascending: true });
+
+    if (allTxns && allTxns.length > 0) {
+      const isIncomeAll = (c: string | null | undefined) => (c || '').toLowerCase() === 'income';
+      const isTransferAll = (c: string | null | undefined) => (c || '').toLowerCase() === 'transfer';
+      const firstDate = allTxns[0]?.date;
+      const lastDate = allTxns[allTxns.length - 1]?.date;
+
+      const totalIncomeAll = allTxns
+        .filter(t => isIncomeAll(t.category))
+        .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+      const totalExpensesAll = allTxns
+        .filter(t => !isIncomeAll(t.category) && !isTransferAll(t.category))
+        .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+      const netAll = totalIncomeAll - totalExpensesAll;
+
+      // Category totals (top 5) over all history
+      const categoryTotalsAll = allTxns.reduce((acc: Record<string, number>, t: any) => {
+        const c = (t.category || 'Other');
+        if (!isIncomeAll(c) && !isTransferAll(c)) {
+          acc[c] = (acc[c] || 0) + Math.abs(Number(t.amount) || 0);
+        }
+        return acc;
+      }, {});
+      const top5All = Object.entries(categoryTotalsAll)
+        .sort(([,a],[,b]) => (b as number) - (a as number))
+        .slice(0, 5);
+
+      context += `\nALL-TIME SUMMARY (${firstDate} → ${lastDate}):\n`;
+      context += `- Income: $${totalIncomeAll.toLocaleString()}\n`;
+      context += `- Expenses: $${totalExpensesAll.toLocaleString()}\n`;
+      context += `- Net: $${netAll.toLocaleString()}\n`;
+      if (top5All.length > 0) {
+        context += `- Top Categories (all-time):\n`;
+        top5All.forEach(([name, total]) => {
+          context += `  • ${name}: $${Number(total).toLocaleString()}\n`;
+        });
+      }
+    } else {
+      context += `\nALL-TIME SUMMARY:\n- No transactions found\n`;
+    }
+
+    // Upcoming bills (next due, unpaid)
+    const todayISO = new Date().toISOString().split('T')[0];
+    const { data: bills } = await supabase
+      .from('bills')
+      .select('name, amount, due_date, is_paid')
+      .eq('user_id', userId)
+      .order('due_date', { ascending: true })
+      .limit(10);
+
+    if (bills && bills.length > 0) {
+      const upcoming = bills.filter(b => !b.is_paid && b.due_date && b.due_date >= todayISO);
+      const totalUpcoming = upcoming.reduce((sum, b) => sum + Math.abs(Number(b.amount) || 0), 0);
+
+      context += `\nBILLS:\n`;
+      context += `- Upcoming (unpaid): ${upcoming.length}, Total Due: $${totalUpcoming.toLocaleString()}\n`;
+      upcoming.slice(0, 5).forEach(b => {
+        context += `  • ${b.due_date}: ${b.name} - $${Math.abs(Number(b.amount) || 0)}\n`;
+      });
+    } else {
+      context += `\nBILLS: None found\n`;
+    }
+
+    // Budget overview (if configured)
+    const { data: budget } = await supabase
+      .from('budget')
+      .select('time_period, income, expenses, categories')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (budget) {
+      context += `\nBUDGET (${(budget.time_period || 'monthly').toUpperCase()}):\n`;
+      context += `- Planned Income: $${Number(budget.income || 0).toLocaleString()}\n`;
+      context += `- Planned Expenses: $${Number(budget.expenses || 0).toLocaleString()}\n`;
+      // Optionally summarize top 3 categories if present
+      try {
+        const categories = (budget as any).categories || {};
+        const entries = Object.entries(categories as Record<string, any>)
+          .map(([name, val]) => ({ name, planned: Number((val as any)?.planned || 0) }))
+          .sort((a, b) => b.planned - a.planned)
+          .slice(0, 3);
+        if (entries.length > 0) {
+          context += `- Top Categories (planned):\n`;
+          entries.forEach(e => {
+            context += `  • ${e.name}: $${e.planned.toLocaleString()}\n`;
+          });
+        }
+      } catch {
+        // Ignore budget fetch errors
+      }
+    } else {
+      context += `\nBUDGET: Not configured\n`;
+    }
+
     context += '\nUse this financial data to provide personalized advice based on the user\'s actual financial situation.\n';
     
     return context;
@@ -696,7 +830,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    let processedAttachments: { name: string; type: string; url: string; content?: string; }[] = [];
+    const processedAttachments: { name: string; type: string; url: string; content?: string; }[] = [];
     let attachmentErrors = 0;
 
     if (attachments && attachments.length > 0) {
@@ -724,7 +858,7 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          let attachmentInfo = {
+          const attachmentInfo = {
             name: attachment.name,
             type: attachment.type,
             url: attachment.url

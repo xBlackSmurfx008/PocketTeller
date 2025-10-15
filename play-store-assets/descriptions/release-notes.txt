@@ -1,0 +1,27 @@
+Welcome to PocketTeller! 🎉
+
+Initial release featuring:
+
+✨ Core Features:
+• Connect bank accounts securely via Plaid
+• Automatic transaction tracking and categorization
+• Smart budgeting with visual progress tracking
+• Savings goals with milestone achievements
+• AI-powered financial coaching
+• Spending insights and analytics
+
+🔒 Security:
+• Bank-level encryption
+• Biometric authentication
+• Secure cloud storage
+
+💎 Premium Features:
+• Unlimited AI chat sessions
+• Advanced analytics
+• Custom budget categories
+• Priority support
+
+Get started with a free 14-day trial of all premium features!
+
+Questions? Contact support@pocketbanker.app
+

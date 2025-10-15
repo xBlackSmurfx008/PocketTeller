@@ -1,5 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
+import { updateAndroidStatusBar, isAndroid } from "@/utils/androidUI"
 
 type Theme = "dark" | "light" | "system"
 
@@ -36,17 +37,21 @@ export function ThemeProvider({
 
     root.classList.remove("light", "dark")
 
+    const isDark = theme === "system" 
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : theme === "dark";
+
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
-
+      const systemTheme = isDark ? "dark" : "light"
       root.classList.add(systemTheme)
-      return
+    } else {
+      root.classList.add(theme)
     }
-
-    root.classList.add(theme)
+    
+    // Update Android status bar to match theme
+    if (isAndroid()) {
+      updateAndroidStatusBar(isDark);
+    }
   }, [theme])
 
   const value = {

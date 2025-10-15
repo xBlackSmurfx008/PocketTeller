@@ -281,6 +281,356 @@ npx cap sync ios
 
 ---
 
+## 🔐 App Store Connect API Key Setup
+
+### Overview
+
+**Key ID:** `V43L3BZNA9`  
+**Key File:** `AuthKey_V43L3BZNA9.p8`  
+**Team ID:** `Z3L3NYSA9D`  
+**Bundle ID:** `com.pocketteller.app`
+
+The App Store Connect API Key enables automated deployment to TestFlight and App Store using Fastlane and CI/CD pipelines.
+
+### Getting Your Issuer ID
+
+1. Go to [App Store Connect → Users and Access → Keys](https://appstoreconnect.apple.com/access/api)
+2. Copy the **Issuer ID** (displayed above the key table)
+3. Save it - you'll need it for configuration
+
+### Fastlane Setup
+
+#### 1. Install Fastlane
+
+```bash
+# Using gem (recommended)
+gem install fastlane
+
+# Or using Bundler
+cd ios
+bundle install
+```
+
+#### 2. Configure API Key
+
+```bash
+cd ios
+bash setup-api-key.sh
+```
+
+This creates an `.env` file with the following configuration:
+
+```bash
+# ios/.env
+APP_STORE_CONNECT_API_KEY_KEY_ID=V43L3BZNA9
+APP_STORE_CONNECT_API_KEY_ISSUER_ID=YOUR_ISSUER_ID_HERE
+APP_STORE_CONNECT_API_KEY_PATH=./AuthKey_V43L3BZNA9.p8
+FASTLANE_TEAM_ID=Z3L3NYSA9D
+FASTLANE_APP_IDENTIFIER=com.pocketteller.app
+FASTLANE_APPLE_ID=your-apple-id@example.com
+```
+
+**Update these values:**
+- `APP_STORE_CONNECT_API_KEY_ISSUER_ID` - Your Issuer ID from step 1
+- `FASTLANE_APPLE_ID` - Your Apple Developer account email
+
+#### 3. Place API Key File
+
+```bash
+# Copy your .p8 file to the ios directory
+cp ~/Downloads/AuthKey_V43L3BZNA9.p8 ios/
+```
+
+### Fastlane Commands
+
+#### Deploy to TestFlight (Beta Testing)
+
+```bash
+cd ios
+fastlane beta
+```
+
+What it does:
+- ✅ Increments build number
+- ✅ Builds app for App Store
+- ✅ Uploads to TestFlight
+- ✅ Commits version bump
+- ⏱️ Skips waiting for processing (faster CI)
+
+#### Deploy to App Store (Production)
+
+```bash
+cd ios
+fastlane release
+```
+
+What it does:
+- ✅ Increments build number
+- ✅ Builds app for App Store
+- ✅ Uploads to App Store Connect
+- ✅ Commits version bump
+- ⚠️ Does NOT auto-submit for review (manual control)
+
+#### Build Only (No Upload)
+
+```bash
+cd ios
+fastlane build_only
+```
+
+Useful for:
+- Testing build process locally
+- Generating IPA for manual distribution
+- Verifying configuration
+
+#### Sync Certificates
+
+```bash
+cd ios
+fastlane sync_certificates
+```
+
+Downloads and installs:
+- App Store distribution certificate
+- Provisioning profiles
+
+### Automated Deployment Script
+
+Use the convenience script for interactive deployment:
+
+```bash
+./deploy-ios-app-store.sh
+```
+
+Menu options:
+1. **TestFlight** - Upload beta build for testers
+2. **App Store** - Upload production build
+3. **Build Only** - Build without uploading
+4. **Cancel** - Exit script
+
+### GitHub Actions CI/CD
+
+#### Setup GitHub Secrets
+
+Required secrets in: **Settings → Secrets and variables → Actions**
+
+| Secret Name | Value | How to Get |
+|------------|-------|------------|
+| `APP_STORE_CONNECT_API_KEY` | Base64-encoded .p8 file | `cat AuthKey_V43L3BZNA9.p8 \| base64` |
+| `APP_STORE_CONNECT_ISSUER_ID` | Your Issuer ID | [App Store Connect](https://appstoreconnect.apple.com/access/api) |
+| `APPLE_ID` | Your Apple email | Your login email |
+| `MATCH_PASSWORD` | Certificates password | Create your own |
+| `VITE_SUPABASE_URL` | Supabase URL | Project settings |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key | Project settings |
+
+#### Trigger Deployment
+
+**Automatic (push to main):**
+```bash
+git push origin main
+# Automatically deploys to TestFlight
+```
+
+**Manual (choose target):**
+1. Go to **Actions** tab on GitHub
+2. Select **"iOS - Deploy to TestFlight"** workflow
+3. Click **"Run workflow"**
+4. Choose branch: `main`
+5. Choose target: `testflight` or `appstore`
+6. Click **"Run workflow"**
+
+#### Monitor Deployment
+
+- Check **Actions** tab for build progress
+- View logs for detailed information
+- Check App Store Connect for processing status
+- Receive email from Apple when processing completes
+
+### Certificate Management (Match)
+
+Fastlane Match manages your certificates and provisioning profiles.
+
+#### First-Time Setup
+
+```bash
+cd ios
+fastlane match init
+```
+
+Follow prompts:
+1. Choose storage: `git` (recommended)
+2. Provide Git URL for private certificates repo
+3. Set encryption password (save it!)
+
+#### Add Match Configuration
+
+Update `ios/Matchfile` with your certificates repository:
+
+```ruby
+git_url("https://github.com/YOUR_USERNAME/certificates")
+username("your-apple-id@example.com")
+```
+
+#### Sync Certificates
+
+```bash
+cd ios
+fastlane match appstore
+```
+
+This will:
+- Generate or download certificates
+- Install on your Mac
+- Sync provisioning profiles
+
+### Xcode Automatic Signing
+
+For automatic signing in Xcode:
+
+```bash
+# Run the configuration script
+./ios/configure-xcode-signing.sh
+```
+
+Or manually in Xcode:
+1. Open `ios/App/App.xcworkspace`
+2. Select **App** target
+3. **Signing & Capabilities** tab
+4. ✅ Check **"Automatically manage signing"**
+5. Select **Team:** Z3L3NYSA9D
+6. Verify **Bundle Identifier:** com.pocketteller.app
+
+### Security Best Practices
+
+#### Protect Your API Key
+
+```bash
+# Add to .gitignore (automatically done by setup script)
+echo "AuthKey_*.p8" >> .gitignore
+echo "ios/.env" >> .gitignore
+```
+
+**Never commit:**
+- ❌ `AuthKey_V43L3BZNA9.p8`
+- ❌ `ios/.env`
+- ❌ Issuer ID in plain text
+
+**Safe to commit:**
+- ✅ `ios/Fastfile`
+- ✅ `ios/Appfile` (without sensitive data)
+- ✅ `ios/Gemfile`
+- ✅ Deployment scripts
+
+#### Rotate Keys
+
+If your key is compromised:
+1. Revoke old key in App Store Connect
+2. Generate new key
+3. Update Key ID in scripts
+4. Update GitHub secrets
+5. Replace .p8 file
+
+### Troubleshooting
+
+#### "Authentication failed" Error
+
+**Check:**
+- [ ] Key ID is correct (`V43L3BZNA9`)
+- [ ] Issuer ID is correct (from App Store Connect)
+- [ ] .p8 file exists in correct location
+- [ ] .p8 file permissions (should be readable)
+
+**Fix:**
+```bash
+cd ios
+chmod 600 AuthKey_V43L3BZNA9.p8
+```
+
+#### "No profiles for bundle identifier" Error
+
+**Fix:**
+```bash
+cd ios
+fastlane match appstore
+# This will create/download provisioning profiles
+```
+
+#### "Build not appearing in TestFlight" Issue
+
+**Wait:** Processing takes 5-30 minutes after upload
+
+**Check:**
+- App Store Connect → TestFlight tab
+- Email from Apple about processing
+- Build status in Fastlane output
+
+**If stuck after 1 hour:**
+- Check for missing compliance info
+- Verify export compliance settings
+- Contact Apple Developer Support
+
+#### CI/CD Build Fails
+
+**Common causes:**
+1. **Secrets not set** - Verify all GitHub secrets
+2. **Base64 encoding wrong** - Re-encode: `cat AuthKey.p8 | base64`
+3. **Match password wrong** - Check `MATCH_PASSWORD` secret
+4. **Certificates expired** - Run `fastlane match appstore` locally
+
+### Testing Locally Before CI/CD
+
+Before pushing to GitHub Actions:
+
+```bash
+# 1. Test build locally
+./deploy-ios-app-store.sh
+# Choose option 3 (Build Only)
+
+# 2. If successful, try TestFlight
+./deploy-ios-app-store.sh
+# Choose option 1 (TestFlight)
+
+# 3. Monitor in App Store Connect
+# https://appstoreconnect.apple.com
+
+# 4. If all works, push to GitHub
+git push origin main
+```
+
+### Quick Reference
+
+#### Key Files
+
+| File | Purpose | Commit? |
+|------|---------|---------|
+| `ios/Fastfile` | Deployment automation | ✅ Yes |
+| `ios/Appfile` | App configuration | ✅ Yes |
+| `ios/Matchfile` | Certificate management | ✅ Yes |
+| `ios/Gemfile` | Ruby dependencies | ✅ Yes |
+| `ios/.env` | API key config | ❌ No |
+| `ios/AuthKey_V43L3BZNA9.p8` | API key | ❌ No |
+
+#### Common Commands
+
+| Command | Purpose |
+|---------|---------|
+| `fastlane beta` | Deploy to TestFlight |
+| `fastlane release` | Deploy to App Store |
+| `fastlane build_only` | Build without upload |
+| `fastlane sync_certificates` | Download certificates |
+| `./deploy-ios-app-store.sh` | Interactive deployment |
+| `./ios/setup-api-key.sh` | Configure API key |
+
+#### Useful Links
+
+- [App Store Connect](https://appstoreconnect.apple.com)
+- [API Keys Management](https://appstoreconnect.apple.com/access/api)
+- [Fastlane Documentation](https://docs.fastlane.tools)
+- [TestFlight Guide](https://developer.apple.com/testflight/)
+- [App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)
+
+---
+
 ## 🚀 iOS Release Checklist
 
 ### Before TestFlight:

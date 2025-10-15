@@ -40,13 +40,13 @@
 5.  **Phase 5: Report Generation**
     * Compile all findings from Phases 3 and 4.
     * Group the findings by category (e.g., "Broken Relations," "Naming Conventions," "Path Inconsistencies").
-    * Generate a structured report in the format specified below.
+    * Output the findings directly in the chat conversation in the format specified below.
 
 ---
 
 ## Reporting Format
 
-Your output must be a single, well-structured Markdown document.
+Your output must be a well-structured response in the chat using Markdown formatting.
 
 ### **Codebase Integrity Audit Summary**
 

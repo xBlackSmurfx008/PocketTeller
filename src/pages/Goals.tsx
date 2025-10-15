@@ -359,6 +359,11 @@ export default function Goals() {
             </p>
           </CardContent>
         </Card>
+        <AddGoalDialog
+          open={isAddGoalOpen}
+          onOpenChange={setIsAddGoalOpen}
+          onGoalAdded={fetchGoals}
+        />
       </div>
     );
   }
@@ -387,51 +392,32 @@ export default function Goals() {
                           }
                           <CardTitle className="text-lg">{goal.goal_name}</CardTitle>
                         </div>
-                         <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                            <Button
-                             size="icon"
-                             variant="ghost"
-                             className="h-8 w-8 ripple-effect"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               handleEditGoal(goal);
-                             }}
-                             title="Edit goal"
-                             aria-label="Edit goal"
+                           size="icon"
+                           variant="ghost"
+                           className="h-8 w-8 ripple-effect"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleEditGoal(goal);
+                           }}
+                           title="Edit goal"
+                           aria-label="Edit goal"
                            >
-                             <Edit className="h-3 w-3" />
+                           <Edit className="h-3 w-3" />
                            </Button>
                            <Button
-                             size="icon"
-                             variant="ghost"
-                             className="h-8 w-8 text-destructive hover:text-destructive ripple-effect"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               setDeletingGoalId(goal.id);
-                             }}
-                             title="Delete goal"
-                             aria-label="Delete goal"
+                           size="icon"
+                           variant="ghost"
+                           className="h-8 w-8 text-destructive hover:text-destructive ripple-effect"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             setDeletingGoalId(goal.id);
+                           }}
+                           title="Delete goal"
+                           aria-label="Delete goal"
                            >
-                             <Trash2 className="h-3 w-3" />
-                           </Button>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             className="ripple-effect"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               if (isDemo) {
-                                 toast({ title: "Demo Mode", description: "Adding tasks disabled in demo" });
-                               } else {
-                                 setSelectedGoal(goal.id);
-                                 setIsAddTaskOpen(true);
-                               }
-                             }}
-                             title="Add task to this goal"
-                             aria-label="Add task to this goal"
-                           >
-                             <Plus className="h-3 w-3 mr-1" />
-                             Add Task
+                           <Trash2 className="h-3 w-3" />
                            </Button>
                           {onTrack ? (
                             <Badge variant="outline" className="text-green-600 border-green-600">

@@ -5,7 +5,7 @@ import { useDemo } from '@/hooks/useDemo';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { autoCategorizeTransaction } from '@/utils/transactionCategorizer';
-import { normalizeCategoryName } from '@/utils/categoryNormalizer';
+import { normalizeCategoryName, isIncomeCategory, isExpenseCategory } from '@/utils/categoryNormalizer';
 
 import { CategoryBudget, BudgetData, TotalsData } from '@/types/models';
 
@@ -66,18 +66,18 @@ export const useBudgetData = (selectedMonth: string) => {
         
         // Calculate monthly totals for selected month
         if (transactionMonth === selectedMonth) {
-          if (category === 'Income') {
+          if (isIncomeCategory(category)) {
             monthlyIncome += amount;
-          } else {
+          } else if (isExpenseCategory(category)) {
             monthlyExpenses += amount;
           }
         }
         
         // Calculate yearly totals for selected year
         if (transactionYear === currentYear) {
-          if (category === 'Income') {
+          if (isIncomeCategory(category)) {
             yearlyIncome += amount;
-          } else {
+          } else if (isExpenseCategory(category)) {
             yearlyExpenses += amount;
           }
         }
@@ -137,14 +137,14 @@ export const useBudgetData = (selectedMonth: string) => {
         const category = transaction.category;
         const amount = Math.abs(Number(transaction.amount));
         
-        // Only include expense categories in actuals (exclude Income)
-        if (category !== 'Income') {
+        // Only include expense categories in actuals (exclude Income and Transfer)
+        if (isExpenseCategory(category)) {
           actuals[category] = (actuals[category] || 0) + amount;
         }
         
-        if (category === 'Income') {
+        if (isIncomeCategory(category)) {
           monthlyIncome += amount;
-        } else {
+        } else if (isExpenseCategory(category)) {
           monthlyExpenses += amount;
         }
       });
@@ -168,9 +168,9 @@ export const useBudgetData = (selectedMonth: string) => {
       let yearlyIncome = 0, yearlyExpenses = 0;
       yearlyTransactions?.forEach(transaction => {
         const amount = Math.abs(Number(transaction.amount));
-        if (transaction.category === 'Income') {
+        if (isIncomeCategory(transaction.category)) {
           yearlyIncome += amount;
-        } else {
+        } else if (isExpenseCategory(transaction.category)) {
           yearlyExpenses += amount;
         }
       });

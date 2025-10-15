@@ -113,7 +113,7 @@ serve(async (req) => {
       .from('transactions')
       .select('id, description, amount, date, category, merchant_name')
       .eq('user_id', user.id)
-      .eq('pending', false)
+      .or('pending.is.null,pending.eq.false')
       .neq('category', 'Income') // Exclude income transactions
       .gte('date', cutoffDate.toISOString().split('T')[0])
       .order('date', { ascending: false });

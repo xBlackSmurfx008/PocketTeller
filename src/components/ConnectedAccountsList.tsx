@@ -20,6 +20,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { isDebtAccount } from '@/utils/accountCategories';
+import { getAccountDisplayName } from '@/utils/accountDisplay';
 
 export function ConnectedAccountsList() {
   const { connectedBanks, limitInfo, loading, refetch } = useConnectedAccounts();
@@ -173,14 +174,25 @@ export function ConnectedAccountsList() {
                             className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900"
                           >
                             <div className="flex-1">
-                              <div className="font-medium">{account.name}</div>
+                              <div className="font-medium">{getAccountDisplayName({
+                                type: account.type,
+                                subtype: account.subtype,
+                                officialName: account.officialName,
+                                name: account.name,
+                                mask: account.mask,
+                              })}</div>
                               <div className="text-xs text-muted-foreground">
                                 {account.type} {account.subtype && `• ${account.subtype}`}
                                 {account.mask && ` • ••${account.mask}`}
                               </div>
                             </div>
                             <Badge variant="secondary" className="ml-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">
-                              {formatBalance(account.balanceAvailable || account.balanceCurrent)}
+                              {account.balanceCurrent != null
+                                ? formatBalance(account.balanceCurrent)
+                                : formatBalance(account.balanceAvailable)}
+                              {account.balanceAvailable != null && account.balanceCurrent != null && account.balanceAvailable !== account.balanceCurrent && (
+                                <span className="ml-1 opacity-80 text-[10px]">avail {formatBalance(account.balanceAvailable)}</span>
+                              )}
                             </Badge>
                           </div>
                         ))}
@@ -201,7 +213,13 @@ export function ConnectedAccountsList() {
                             <div className="flex-1 flex items-center gap-2">
                               <CreditCard className="h-4 w-4 text-red-600 dark:text-red-400" />
                               <div>
-                                <div className="font-medium">{account.name}</div>
+                                <div className="font-medium">{getAccountDisplayName({
+                                  type: account.type,
+                                  subtype: account.subtype,
+                                  officialName: account.officialName,
+                                  name: account.name,
+                                  mask: account.mask,
+                                })}</div>
                                 <div className="text-xs text-muted-foreground">
                                   {account.type} {account.subtype && `• ${account.subtype}`}
                                   {account.mask && ` • ••${account.mask}`}
@@ -209,7 +227,10 @@ export function ConnectedAccountsList() {
                               </div>
                             </div>
                             <Badge variant="secondary" className="ml-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-400">
-                              {formatBalance(Math.abs(account.balanceAvailable || account.balanceCurrent || 0))}
+                              {formatBalance(Math.abs((account.balanceCurrent ?? account.balanceAvailable ?? 0)))}
+                              {account.balanceAvailable != null && account.balanceCurrent != null && account.balanceAvailable !== account.balanceCurrent && (
+                                <span className="ml-1 opacity-80 text-[10px]">avail {formatBalance(Math.abs(account.balanceAvailable))}</span>
+                              )}
                             </Badge>
                           </div>
                         ))}
@@ -226,7 +247,7 @@ export function ConnectedAccountsList() {
                       <span className="font-bold text-green-700 dark:text-green-400">
                         {formatBalance(bank.accounts
                           .filter(acc => !isDebtAccount(acc.type, acc.subtype))
-                          .reduce((sum, acc) => sum + (acc.balanceAvailable || acc.balanceCurrent || 0), 0)
+                          .reduce((sum, acc) => sum + (acc.balanceCurrent ?? acc.balanceAvailable ?? 0), 0)
                         )}
                       </span>
                     </div>
@@ -237,7 +258,7 @@ export function ConnectedAccountsList() {
                       <span className="font-bold text-red-700 dark:text-red-400">
                         {formatBalance(bank.accounts
                           .filter(acc => isDebtAccount(acc.type, acc.subtype))
-                          .reduce((sum, acc) => sum + Math.abs(acc.balanceAvailable || acc.balanceCurrent || 0), 0)
+                          .reduce((sum, acc) => sum + Math.abs(acc.balanceCurrent ?? acc.balanceAvailable ?? 0), 0)
                         )}
                       </span>
                     </div>

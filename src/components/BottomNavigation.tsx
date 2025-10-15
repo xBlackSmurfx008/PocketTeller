@@ -7,7 +7,8 @@ import {
   Target, 
   Receipt, 
   Settings,
-  BarChart3
+  BarChart3,
+  Calendar
 } from 'lucide-react';
 
 interface TabItem {
@@ -30,6 +31,12 @@ const tabs: TabItem[] = [
     label: 'Budget',
     icon: BarChart3,
     path: '/budget'
+  },
+  {
+    id: 'bills',
+    label: 'Bills',
+    icon: Calendar,
+    path: '/bills'
   },
   {
     id: 'transactions',
@@ -71,9 +78,11 @@ export default function BottomNavigation({ className }: BottomNavigationProps) {
 
   return (
     <div className={cn(
-      "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+      "fixed bottom-0 left-0 right-0 z-50",
+      "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
       "border-t border-border/40",
-      "safe-area-pb", // iOS safe area padding
+      "safe-area-pb android-nav-spacing", // iOS and Android safe area padding
+      "elevation-3 bottom-nav-android bottom-nav-enhanced", // Material Design 3 elevation and enhanced styling
       className
     )}>
       <div className="flex items-center justify-around h-16 px-4">
@@ -89,6 +98,7 @@ export default function BottomNavigation({ className }: BottomNavigationProps) {
               className={cn(
                 "flex flex-col items-center justify-center min-w-0 flex-1",
                 "py-3 px-2 rounded-lg transition-all duration-200",
+                "state-layer", // Material Design 3 state layer
                 "active:scale-95 active:bg-accent/50",
                 isActive 
                   ? "text-primary" 
@@ -99,7 +109,7 @@ export default function BottomNavigation({ className }: BottomNavigationProps) {
               <div className="relative">
                 <Icon 
                   className={cn(
-                    "h-5 w-5 transition-all duration-200",
+                    "h-6 w-6 transition-all duration-200",
                     isActive && "scale-110"
                   )} 
                 />
@@ -109,13 +119,6 @@ export default function BottomNavigation({ className }: BottomNavigationProps) {
                   </div>
                 )}
               </div>
-              <span className={cn(
-                "text-xs mt-1 transition-all duration-200",
-                isActive ? "font-semibold" : "font-normal",
-                "truncate max-w-full leading-tight"
-              )}>
-                {tab.label}
-              </span>
             </button>
           );
         })}

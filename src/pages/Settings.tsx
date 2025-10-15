@@ -104,7 +104,7 @@ export default function Settings() {
             return (
               <Card 
                 key={section.id} 
-                className="cursor-pointer hover:shadow-md transition-all duration-200 card-hover-lift"
+                className="cursor-pointer hover:shadow-md transition-all duration-200 card-hover-lift state-layer touch-target"
                 onClick={() => navigate(section.path)}
               >
                 <CardContent className="p-6">

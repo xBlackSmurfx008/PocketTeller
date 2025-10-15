@@ -87,7 +87,16 @@ export function calculateAccountSummary(
   let totalDebts = 0;
   
   accounts.forEach((account) => {
-    const balance = Number(account.available_balance) || Number(account.current_balance) || 0;
+    // For checking accounts, prioritize available_balance; for others use current_balance
+    let balance = 0;
+    if (account.type === 'depository' && account.subtype === 'checking') {
+      balance = account.available_balance !== null && account.available_balance !== undefined 
+        ? Number(account.available_balance) 
+        : Number(account.current_balance) || 0;
+    } else {
+      balance = Number(account.current_balance) || Number(account.available_balance) || 0;
+    }
+    
     const { asset, debt } = categorizeAccountBalance(balance, account.type, account.subtype);
     
     totalAssets += asset;

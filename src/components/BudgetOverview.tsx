@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { CATEGORIES } from '@/utils/transactionCategorizer';
+import { isIncomeCategory, isExpenseCategory } from '@/utils/categoryNormalizer';
 import { ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
@@ -79,9 +80,14 @@ function BudgetOverview({ accountFilter }: BudgetOverviewProps = {}): JSX.Elemen
       const categoryTotals: Record<string, number> = {};
 
       monthlyTransactions.forEach(tx => {
-        if (tx.category === 'Income' && tx.amount > 0) {
-          income += tx.amount;
-        } else if (tx.category !== 'Income') {
+        // Skip transfers - not income or expense
+        if (tx.category === 'Transfer') {
+          return;
+        }
+        
+        if (isIncomeCategory(tx.category)) {
+          income += Math.abs(tx.amount);
+        } else if (isExpenseCategory(tx.category)) {
           expenses += Math.abs(tx.amount);
           categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + Math.abs(tx.amount);
         }
@@ -134,9 +140,14 @@ function BudgetOverview({ accountFilter }: BudgetOverviewProps = {}): JSX.Elemen
         const categoryTotals: Record<string, number> = {};
 
         transactions.forEach(tx => {
-          if (tx.category === 'Income' && tx.amount > 0) {
-            income += tx.amount;
-          } else if (tx.category !== 'Income') {
+          // Skip transfers - not income or expense
+          if (tx.category === 'Transfer') {
+            return;
+          }
+          
+          if (isIncomeCategory(tx.category)) {
+            income += Math.abs(tx.amount);
+          } else if (isExpenseCategory(tx.category)) {
             expenses += Math.abs(tx.amount);
             categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + Math.abs(tx.amount);
           }
@@ -262,13 +273,13 @@ function BudgetOverview({ accountFilter }: BudgetOverviewProps = {}): JSX.Elemen
   };
 
   return (
-    <Card>
+    <Card className="card-hover-lift elevation-2">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Budget Overview</CardTitle>
           <CardDescription>Current month planned vs actual</CardDescription>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/budget')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/budget')} className="btn-magnetic">
           View Details
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
