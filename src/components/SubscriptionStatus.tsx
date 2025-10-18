@@ -20,6 +20,7 @@ export function SubscriptionStatus() {
     referralCredits,
     loading,
     openCustomerPortal,
+    createCheckoutSession,
   } = useSubscription();
 
   if (loading) {
@@ -48,9 +49,18 @@ export function SubscriptionStatus() {
           </CardDescription>
         </CardHeader>
         <CardFooter>
-          <Button className="w-full" onClick={() => window.location.href = '/subscription'}>
+          <Button 
+            className="w-full" 
+            disabled={loading}
+            onClick={async () => {
+              const session = await createCheckoutSession('monthly');
+              if (session?.url) {
+                window.location.href = session.url;
+              }
+            }}
+          >
             <Crown className="mr-2 h-4 w-4" />
-            Upgrade to Pro
+            Start Free Trial
           </Button>
         </CardFooter>
       </Card>

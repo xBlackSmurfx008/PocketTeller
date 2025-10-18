@@ -16,12 +16,21 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useSignOutAction } from '@/hooks/useSignOutAction';
 import { useConnectedAccounts } from '@/hooks/useConnectedAccounts';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export default function Settings() {
   const { user } = useAuth();
   const { handleSignOut } = useSignOutAction();
   const { connectedBanks, limitInfo } = useConnectedAccounts();
   const navigate = useNavigate();
+  const { createCheckoutSession, loading } = useSubscription();
+
+  const handleCheckout6Month = async () => {
+    const session = await createCheckoutSession('6month');
+    if (session?.url) {
+      window.location.href = session.url;
+    }
+  };
 
   const settingsSections = [
     {
@@ -140,6 +149,14 @@ export default function Settings() {
             <CardDescription>Common settings and actions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <Button 
+              className="w-full justify-start gap-3"
+              onClick={handleCheckout6Month}
+              disabled={loading}
+            >
+              <CreditCard className="h-4 w-4" />
+              Start 6‑Month Checkout ($14.99)
+            </Button>
             <Button 
               variant="outline" 
               className="w-full justify-start gap-3"
